@@ -36,10 +36,28 @@ const fruit = fs.readFileSync(path.join(ROOT, 'world/samples/fruit-catch.html'),
 async function fillPlan(page, name, appName) {
   await page.click('#startBtn');
   await page.waitForSelector('#topics:not([hidden])');
-  assert.equal(await page.locator('.topic-card').count(), 20, '주제 20개');
-  await page.click('#catFilter >> text=액션');
-  assert.equal(await page.locator('.topic-card').count(), 4, '액션 주제 4개');
-  await page.click('[data-topic="fruit-bomb"]');
+  // 실제 게임 이름 + 폭력 → 안내만 나오고 그대로는 추천하지 않음
+  await page.fill('#wish', '마인크래프트처럼 총으로 좀비 죽이는 게임');
+  await page.click('#askBtn');
+  await page.waitForSelector('.notice-item.existing');
+  await page.waitForSelector('.notice-item.violence');
+  for (const t of await page.locator('.topic-card').allTextContents()) assert.ok(!/마인크래프트|총|죽이/.test(t), `걸러진 추천: ${t}`);
+  // 부적절한 내용 → 추천 없음
+  await page.fill('#wish', '카지노 도박 게임');
+  await page.click('#askBtn');
+  await page.waitForSelector('.notice-item.blocked');
+  assert.equal(await page.locator('.topic-card').count(), 0, '부적절한 요청은 추천 없음');
+  // 예시 칩 + 관심사 → 배움 요소가 있는 추천
+  await page.fill('#wish', '');
+  await page.click('#exampleChips >> text=🌊 바다');
+  assert.equal(await page.inputValue('#wish'), '바다');
+  await page.click('#askBtn');
+  await page.waitForSelector('[data-rec]');
+  const cards = await page.locator('.topic-card').count();
+  assert.ok(cards >= 3, '바다 추천');
+  assert.equal(await page.locator('.topic-card .learn').count(), cards, '모든 추천에 배움 요소');
+  await snap(page, 'recommend');
+  await page.click('.topic-card >> text=바다 쓰레기 청소부');
   await page.waitForSelector('#preview:not([hidden])');
   assert.equal(await page.locator('.phone').count(), 3, '예상 화면 3종');
   await snap(page, 'preview');
@@ -89,12 +107,29 @@ try {
   await st.click('[data-step="prompts"]');
   await st.waitForSelector('#prompts:not([hidden])');
   const prompt = await st.textContent('#appPrompt');
-  for (const s of ['다람이의 과일 바구니', '30초 안에 100점 넘기기', '황금 사과', '노란 모자를 쓴 다람쥐', 'HTML 파일 하나', '보통']) assert.ok(prompt.includes(s), `프롬프트에 "${s}"`);
+  for (const s of ['다람이의 과일 바구니', '바다 쓰레기 청소부', '배움 요소: 해양 오염과 분리배출', '30초 안에 100점 넘기기', '황금 사과', '노란 모자를 쓴 다람쥐', 'HTML 파일 하나', '보통']) assert.ok(prompt.includes(s), `프롬프트에 "${s}"`);
   assert.equal(await st.isHidden('#missingBox'), true, '★ 항목 모두 채움');
   await st.click('#prompts details summary');
   assert.ok((await st.locator('.img-prompt').count()) >= 2, '이미지 프롬프트');
   assert.ok((await st.textContent('#imagePrompts')).includes('16:9'));
   await snap(st, 'prompts');
+
+  step('학생: 기획서에 실제 게임 이름이 있으면 프롬프트 복사가 막힘');
+  await st.goto(`${base}/student/#plan`);
+  await st.waitForSelector('#plan:not([hidden])');
+  await st.fill('[data-key="appName"]', '포켓몬 과일 바구니');
+  await st.click('[data-step="prompts"]');
+  await st.waitForSelector('#safetyBox:not([hidden])');
+  assert.match(await st.textContent('#safetyBox'), /포켓몬/);
+  await st.evaluate(() => navigator.clipboard.writeText('비어 있음'));
+  await st.click('[data-copy="app"]');
+  assert.equal(await st.evaluate(() => navigator.clipboard.readText()), '비어 있음', '복사되지 않음');
+  await st.click('#safetyBox >> text=고치러 가기');
+  await st.fill('[data-key="appName"]', '다람이의 과일 바구니');
+  await st.click('[data-step="prompts"]');
+  await st.waitForSelector('#prompts:not([hidden]) #safetyBox[hidden]', { state: 'attached' });
+  await st.click('[data-copy="app"]');
+  assert.match(await st.evaluate(() => navigator.clipboard.readText()), /바다 쓰레기 청소부/, '고친 뒤 복사됨');
 
   step('학생: 앱 붙여 넣기 → 상자 안 실행 (저장소 막힘 보완 포함)');
   await st.click('[data-go="myapp"]');

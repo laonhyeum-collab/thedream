@@ -1,6 +1,6 @@
 // [교사 앱] 제출물 확인 · 입점 승인/수정 요청 · 부스 배정 · 일괄 인쇄 · 4차시 수업 타이머
 import { topicById, categoryById } from '../shared/topics.js';
-import { normalizePlan, planRows, progress, missingRequired } from '../shared/plan.js';
+import { normalizePlan, planRows, progress, missingRequired, topicView, planSafety } from '../shared/plan.js';
 import { loadConfig, saveConfig, createApi, isValidEndpoint } from '../shared/api.js';
 import { mountApp } from '../shared/sandbox.js';
 import { download, readFileText, safeName } from '../shared/files.js';
@@ -87,7 +87,7 @@ function renderStudents() {
 function stat(emo, n, label) { return h('div', { class: 'stat card' }, h('span', { class: 'emo' }, emo), h('b', {}, String(n)), h('span', { class: 'muted small' }, label)); }
 
 function studentCard(x) {
-  const t = topicById(x.topicId);
+  const t = viewOf(x);
   const st = STATUS[x.status] || STATUS.submitted;
   const pct = x.plan ? progress(normalizePlanSafe(x.plan)) : 0;
   return h('button', { class: 'student card', type: 'button', 'data-id': x.id, onclick: () => openDetail(x.id) },
@@ -97,6 +97,11 @@ function studentCard(x) {
     h('span', { class: 'meta muted small' }, `${t ? t.name : '주제 없음'} · 기획서 ${pct}% · ${x.hasHtml ? '코드' : (x.appUrl ? '링크' : '앱 없음')} ${x.source === 'file' ? '· 📁' : ''}`),
     h('span', { class: 'row' }, h('span', { class: `pill ${st.cls}` }, st.label), x.booth ? h('span', { class: 'pill' }, `${x.booth}번 부스`) : '', x.likes ? h('span', { class: 'pill' }, `👍 ${x.likes}`) : ''),
     h('span', { class: 'muted small' }, fmtTime(x.submittedAt)));
+}
+// 학생이 고른 나만의 주제(없으면 기본 게임 방식)
+function viewOf(x) {
+  const p = x.plan ? normalizePlanSafe(x.plan) : null;
+  return (p && topicView(p)) || topicById(x.topicId);
 }
 function normalizePlanSafe(p) { try { return normalizePlan(p); } catch { return null; } }
 
@@ -111,7 +116,7 @@ async function openDetail(id) {
   const x = items.find((i) => i.id === id);
   if (!x) return;
   const plan = normalizePlanSafe(x.plan);
-  const t = topicById(x.topicId);
+  const t = viewOf(x);
   const miss = plan ? missingRequired(plan) : [];
   const frame = h('iframe', { class: 'app-frame', title: `${x.appName} 실행 화면`, style: 'height:420px' });
   const fb = h('textarea', { rows: 3, placeholder: '예) 실패 화면에서 다시하기 버튼이 안 눌려요. 고쳐 달라고 해 볼까요?' }); fb.value = x.feedback || '';
@@ -129,6 +134,8 @@ async function openDetail(id) {
       h('div', { class: 'grow' }, h('h2', { id: 'dtTitle' }, x.appName || '(앱 이름 없음)'), h('p', { class: 'muted' }, `${x.developer} ${x.classInfo || ''} · ${t ? `${t.name} (${categoryById(t.cat).name})` : ''} · ${fmtTime(x.submittedAt)}`)),
       h('button', { class: 'ghost', onclick: closeDetail, 'aria-label': '닫기' }, '✕')),
     miss.length ? h('p', { class: 'pill warn' }, `비어 있는 ★ 항목: ${miss.map((m) => m.title).join(', ')}`) : '',
+    plan && planSafety(plan).length ? h('p', { class: 'pill bad' }, `🚫 확인 필요: ${planSafety(plan).map((it) => `${it.n}번 「${it.words.join('」「')}」`).join(', ')}`) : '',
+    t && t.learn ? h('p', { class: 'pill ok' }, `📚 배움 요소: ${t.learn}`) : '',
     h('div', { class: 'detail-grid' },
       h('div', {}, h('h3', {}, '🕹️ 앱 실행'), frame,
         x.appUrl ? h('p', { class: 'small' }, '공유 주소: ', h('a', { href: x.appUrl, target: '_blank', rel: 'noopener noreferrer' }, x.appUrl)) : ''),
@@ -212,7 +219,7 @@ $('#importSubs').onchange = async (e) => {
 function printPlans(list) {
   const sheets = list.map((x, i) => {
     const plan = normalizePlanSafe(x.plan);
-    const t = topicById(x.topicId);
+    const t = viewOf(x);
     return h('div', { class: `print-sheet${i ? ' page-break' : ''}` },
       h('h1', {}, `📱 ${x.appName || (t ? t.name : '')} — 앱 기획서`),
       h('p', {}, `개발자: ${x.developer} ${x.classInfo || ''} · 상태: ${(STATUS[x.status] || STATUS.submitted).label}${x.booth ? ` · ${x.booth}번 부스` : ''}${x.feedback ? ` · 피드백: ${x.feedback}` : ''}`),
@@ -238,7 +245,7 @@ $('#exportAllBtn').onclick = async () => {
 function renderBooths() {
   const approved = items.filter((x) => x.status === 'approved').sort((a, b) => (a.booth || 999) - (b.booth || 999));
   $('#boothMap').replaceChildren(...(approved.length ? approved.map((x) => {
-    const t = topicById(x.topicId);
+    const t = viewOf(x);
     const c = t ? categoryById(t.cat) : null;
     return h('button', { class: 'booth card', type: 'button', style: c ? `--c:${c.color}` : '', onclick: () => openDetail(x.id) },
       h('span', { class: 'no' }, x.booth ? `${x.booth}` : '?'),

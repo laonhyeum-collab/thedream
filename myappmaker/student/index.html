@@ -42,7 +42,7 @@
           <p id="resumeInfo" class="muted small"></p>
         </div>
         <ol class="journey" aria-label="만드는 순서">
-          <li><span>🎯</span><b>주제 고르기</b><small>20개 중 하나</small></li>
+          <li><span>🎯</span><b>주제 추천받기</b><small>하고 싶은 걸 말하면 추천</small></li>
           <li><span>📝</span><b>기획서 쓰기</b><small>목표·규칙·캐릭터</small></li>
           <li><span>🤖</span><b>프롬프트 받기</b><small>AI에게 줄 설명서</small></li>
           <li><span>🛠️</span><b>앱 만들고 시험</b><small>고쳐 달라고 하기</small></li>
@@ -56,14 +56,24 @@
       </div>
     </section>
 
-    <!-- 1. 주제 목록 -->
+    <!-- 1. 주제 추천 -->
     <section id="topics" class="screen" hidden>
-      <div class="row head">
-        <h2 class="grow">1. 어떤 게임을 만들까요?</h2>
-        <span class="muted small">주제를 누르면 미리보기가 열려요</span>
+      <div class="row head"><h2 class="grow">1. 어떤 게임을 만들고 싶나요?</h2></div>
+      <div class="card ask">
+        <label for="wish" class="ask-label">좋아하는 것이나 만들고 싶은 게임을 자유롭게 이야기해 주세요</label>
+        <div class="ask-row">
+          <textarea id="wish" rows="2" maxlength="200" placeholder="예) 공룡이 좋아요 · 우주에서 요리하는 게임 · 달리기 게임"></textarea>
+          <button id="micBtn" type="button" class="mic" hidden title="말로 하기 (브라우저 음성 인식을 써요)">🎤</button>
+        </div>
+        <div id="exampleChips" class="chips" aria-label="예시 넣기"></div>
+        <div class="row">
+          <button id="askBtn" class="primary big">✨ 주제 추천받기</button>
+          <button id="surpriseBtn" class="ghost">🎲 아이디어가 없어요</button>
+        </div>
+        <p class="muted small safe-note">🔒 이미 있는 게임을 그대로 따라 한 것, 무섭거나 다치게 하는 것, 배움이 없는 주제는 추천하지 않아요. 모든 추천에는 <b>📚 배움 요소</b>가 들어 있어요.</p>
       </div>
-      <div id="catFilter" class="chips filter" role="group" aria-label="분야 고르기"></div>
-      <div id="topicGrid" class="topic-grid"></div>
+      <div id="notices" class="notices" aria-live="polite"></div>
+      <div id="recGrid" class="topic-grid"></div>
     </section>
 
     <!-- 2. 기획서 -->
@@ -97,6 +107,7 @@
         <button id="copyAll">📋 전체 복사</button>
       </div>
       <div id="missingBox" class="card warn-box" hidden></div>
+      <div id="safetyBox" class="card bad-box" hidden></div>
       <div class="card">
         <div class="row"><h3 class="grow">🤖 앱 제작 프롬프트</h3><button class="primary" data-copy="app">📋 복사하기</button></div>
         <p class="muted small">선생님이 알려 준 AI 도구에 그대로 붙여 넣어요. 내 기획서 내용이 모두 들어가 있어요.</p>
