@@ -1,6 +1,6 @@
 // 오프라인에서도 놀 수 있도록 앱 파일을 기기에 담아 둡니다.
 // 카메라 영상은 여기를 지나가지 않습니다 (네트워크로 보내는 코드가 없음).
-const VERSION = 'mugunghwa-v3';
+const VERSION = 'mugunghwa-v4';
 const FILES = [
   './',
   './index.html',
@@ -29,14 +29,15 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// 먼저 기기에 담긴 파일을 쓰고, 없으면 받아 옵니다.
+// 인터넷이 되면 늘 새 파일을 받아 오고(고친 내용이 바로 보이게), 안 되면 기기에 담긴 파일을 씁니다.
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   e.respondWith(
-    caches.match(req, { ignoreSearch: true }).then((hit) => hit || fetch(req).then((res) => {
+    fetch(req, { cache: 'no-cache' }).then((res) => {
       if (res.ok) { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); }
       return res;
-    }).catch(() => caches.match('./index.html'))),
+    }).catch(() => caches.match(req, { ignoreSearch: true })
+      .then((hit) => hit || caches.match('./index.html'))),
   );
 });
