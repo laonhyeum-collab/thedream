@@ -1,0 +1,108 @@
+/* MY APP MAKER 공통 꾸미기 — 밝은 파스텔, 태블릿 손가락 조작 기준 */
+:root {
+  --bg: #f6f7ff;
+  --card: #ffffff;
+  --ink: #23253a;
+  --muted: #6b6f8a;
+  --line: #e3e5f3;
+  --brand: #6c5ce7;
+  --brand-soft: #ece9ff;
+  --mint: #12b886;
+  --mint-soft: #e3f9f1;
+  --sun: #fab005;
+  --sun-soft: #fff6d6;
+  --coral: #ff6b6b;
+  --coral-soft: #ffeaea;
+  --sky: #339af0;
+  --radius: 18px;
+  --shadow: 0 6px 20px rgba(60, 64, 120, .10);
+  --tap: 48px;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+}
+h1, h2, h3, .title-font { font-family: "Jua", "Gowun Dodum", system-ui, sans-serif; font-weight: 400; line-height: 1.25; margin: 0 0 .4em; }
+h1 { font-size: clamp(28px, 6vw, 44px); }
+h2 { font-size: clamp(22px, 4.4vw, 30px); }
+h3 { font-size: 20px; }
+p { margin: 0 0 .7em; }
+a { color: var(--brand); }
+[hidden] { display: none !important; }
+.wrap { max-width: 1080px; margin: 0 auto; padding: 16px; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.grow { flex: 1 1 auto; }
+.grid { display: grid; gap: 14px; }
+
+/* 버튼 */
+button, .btn {
+  font: inherit; cursor: pointer; border: 0; border-radius: 14px;
+  min-height: var(--tap); padding: 10px 18px;
+  background: var(--brand-soft); color: var(--brand); font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;
+  transition: transform .08s ease, filter .15s ease;
+}
+button:hover, .btn:hover { filter: brightness(.97); }
+button:active, .btn:active { transform: scale(.97); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button:focus-visible, .btn:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid #b3a8ff; outline-offset: 2px; }
+.primary { background: var(--brand); color: #fff; }
+.mint { background: var(--mint); color: #fff; }
+.sun { background: var(--sun); color: #3b2c00; }
+.danger { background: var(--coral-soft); color: #c92a2a; }
+.ghost { background: transparent; color: var(--muted); }
+.big { font-size: 20px; min-height: 60px; padding: 12px 28px; border-radius: 18px; }
+
+/* 입력 */
+label.field { display: block; margin: 0 0 14px; }
+label.field > span { display: block; font-weight: 700; margin-bottom: 6px; }
+input[type=text], input[type=url], input[type=password], input[type=number], textarea, select {
+  width: 100%; font: inherit; color: var(--ink); background: #fbfbff;
+  border: 2px solid var(--line); border-radius: 12px; padding: 10px 12px; min-height: var(--tap);
+}
+textarea { min-height: 90px; resize: vertical; }
+textarea.code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; min-height: 180px; white-space: pre; }
+input::placeholder, textarea::placeholder { color: #a3a6c2; }
+
+/* 칩 (여러 개 고르기) */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  min-height: 42px; padding: 6px 14px; border-radius: 999px; font-weight: 600;
+  background: #fff; color: var(--ink); border: 2px solid var(--line);
+}
+.chip[aria-pressed="true"] { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+/* 알림 */
+.toast {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+  background: #2b2d42; color: #fff; padding: 12px 20px; border-radius: 14px; z-index: 1000;
+  max-width: calc(100vw - 32px); box-shadow: var(--shadow); font-weight: 600;
+}
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 12px; font-size: 14px; font-weight: 700; background: var(--brand-soft); color: var(--brand); }
+.pill.ok { background: var(--mint-soft); color: #087f5b; }
+.pill.warn { background: var(--sun-soft); color: #8a6100; }
+.pill.bad { background: var(--coral-soft); color: #c92a2a; }
+
+/* 모달 */
+.modal { position: fixed; inset: 0; background: rgba(35, 37, 58, .45); display: grid; place-items: center; z-index: 500; padding: 16px; }
+.modal > .sheet { background: #fff; border-radius: 22px; max-width: 760px; width: 100%; max-height: calc(100vh - 32px); overflow: auto; padding: 22px; box-shadow: var(--shadow); }
+.modal > .sheet.wide { max-width: 1100px; }
+
+/* 앱 실행 상자 */
+.app-frame { width: 100%; border: 0; border-radius: 14px; background: #fff; box-shadow: inset 0 0 0 2px var(--line); }
+
+@media (max-width: 560px) {
+  body { font-size: 16px; }
+  .card { padding: 16px; }
+  .big { width: 100%; }
+}

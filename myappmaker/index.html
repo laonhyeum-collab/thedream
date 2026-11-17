@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MY APP MAKER</title>
+  <meta name="description" content="아이들이 기획한 게임 앱을 AI와 함께 만들어 메타버스 앱 월드에 여는 4차시 프로젝트">
+  <meta name="theme-color" content="#6c5ce7">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .hub { min-height: 100dvh; display: grid; place-content: center; gap: 22px; padding: 24px 16px; text-align: center;
+      background: radial-gradient(circle at 15% 15%, #fff3bf 0, transparent 35%), radial-gradient(circle at 85% 80%, #d0ebff 0, transparent 40%), var(--bg); }
+    .doors { display: grid; grid-template-columns: repeat(3, minmax(0, 260px)); gap: 16px; justify-content: center; }
+    .door { display: grid; gap: 6px; justify-items: center; padding: 26px 18px; text-decoration: none; color: var(--ink); border-radius: 24px; background: #fff; box-shadow: var(--shadow); transition: transform .12s; }
+    .door:hover { transform: translateY(-3px); }
+    .door .emo { font-size: 58px; }
+    .door b { font-family: "Jua", sans-serif; font-weight: 400; font-size: 26px; }
+    .door small { color: var(--muted); }
+    @media (max-width: 760px) { .doors { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="hub">
+    <div>
+      <h1>📱 MY APP MAKER</h1>
+      <p class="muted">내가 기획하고, AI와 함께 만들고, 메타버스 앱 월드에 열어요 · 40분 × 4차시</p>
+    </div>
+    <nav class="doors">
+      <a class="door" href="student.html"><span class="emo">🧒</span><b>학생</b><small>주제 고르기 · 기획서 · 프롬프트 · 내 앱 입점</small></a>
+      <a class="door" href="world.html"><span class="emo">🌏</span><b>앱 월드</b><small>친구들의 앱 부스를 걸어 다니며 체험</small></a>
+      <a class="door" href="teacher.html"><span class="emo">🧑‍🏫</span><b>선생님</b><small>제출 확인 · 입점 승인 · 부스 배치 · 수업 타이머</small></a>
+    </nav>
+  </main>
+  <script>
+    // 주소에 붙은 반 연결 정보(?api=&class=)를 각 문으로 그대로 넘겨요
+    if (location.search) document.querySelectorAll('.door').forEach((a) => { a.href += location.search; });
+  </script>
+</body>
+</html>

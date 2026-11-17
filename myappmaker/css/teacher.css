@@ -1,0 +1,54 @@
+.t-top { position: sticky; top: 0; z-index: 50; background: #2b2d42; color: #fff; }
+.t-top .wrap { padding-top: 8px; padding-bottom: 8px; }
+.t-top .logo { font-size: 20px; white-space: nowrap; }
+.t-tabs { display: flex; gap: 6px; overflow-x: auto; }
+.t-tabs button { background: transparent; color: #cfd2ea; min-height: 42px; white-space: nowrap; }
+.t-tabs button[aria-selected="true"] { background: #fff; color: #2b2d42; }
+.tab-panel { display: grid; gap: 14px; padding-top: 14px; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stat { display: grid; justify-items: center; padding: 14px; }
+.stat .emo { font-size: 26px; }
+.stat b { font-family: "Jua", sans-serif; font-weight: 400; font-size: 34px; line-height: 1.1; }
+@media (max-width: 600px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+.toolbar { gap: 8px; }
+.toolbar button, .toolbar .btn { min-height: 42px; padding: 6px 14px; font-size: 15px; }
+.student-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.student { text-align: left; display: grid; gap: 4px; justify-items: start; color: var(--ink); background: #fff; font-weight: 400; padding: 16px; }
+.student .emo { font-size: 30px; }
+.student .app { font-family: "Jua", sans-serif; font-size: 20px; }
+.empty { text-align: center; }
+.emo-lg { font-size: 52px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 10px 0; }
+@media (max-width: 900px) { .detail-grid { grid-template-columns: 1fr; } }
+.plan-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.plan-table th, .plan-table td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.plan-table th { width: 32%; color: var(--brand); white-space: nowrap; }
+.plan-table td { white-space: pre-wrap; }
+.review-box { background: #fafaff; box-shadow: none; border: 2px solid var(--line); }
+.review-box input[type=number] { width: 110px; }
+.booth-map { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.booth { position: relative; display: grid; justify-items: center; gap: 2px; background: #fff; color: var(--ink); font-weight: 400; border-top: 10px solid var(--c, var(--brand)); padding-top: 18px; }
+.booth .no { position: absolute; top: 6px; left: 10px; font-family: "Jua", sans-serif; font-size: 20px; color: var(--c, var(--brand)); }
+.booth .emo { font-size: 36px; }
+.link-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.link-row code { flex: 1; background: #f3f3fb; border-radius: 10px; padding: 10px; font-size: 13px; overflow-wrap: anywhere; }
+.timer-card { text-align: center; }
+.timer { font-family: "Jua", sans-serif; font-size: clamp(64px, 16vw, 160px); line-height: 1; margin: 10px 0 16px; color: var(--brand); font-variant-numeric: tabular-nums; }
+.timer.ending { color: var(--coral); }
+.timer.done { color: var(--muted); }
+.timer-card:fullscreen { display: grid; place-content: center; background: #fff; }
+.timer-card:fullscreen .timer { font-size: 30vw; }
+.lesson-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.lesson-steps { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 8px; }
+.lesson-steps li { display: grid; grid-template-columns: 64px 1fr; gap: 8px; align-items: start; font-size: 15px; }
+.lesson-steps .chip { min-height: 34px; padding: 2px 8px; }
+.print-only { display: none; }
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block; }
+  body { background: #fff; font-size: 11pt; }
+  .print-sheet h1 { font-size: 20pt; }
+  .print-sheet .plan-table th, .print-sheet .plan-table td { border: 1px solid #999; }
+  .print-sheet .plan-table th { color: #000; background: #f1f0ff; white-space: normal; }
+  .page-break { break-before: page; }
+}
