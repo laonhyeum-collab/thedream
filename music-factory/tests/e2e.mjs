@@ -1,0 +1,262 @@
+// 진짜 브라우저(Chromium)에서 처음부터 끝까지 써 보는 시험
+// 실행: npm run e2e   (Playwright 와 Chromium 이 필요)
+import { createRequire } from 'node:module';
+import http from 'node:http';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const require = createRequire(import.meta.url);
+const { chromium } = require('playwright');
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const OUT = process.env.E2E_OUT || fs.mkdtempSync(path.join(os.tmpdir(), 'music-factory-e2e-'));
+fs.mkdirSync(OUT, { recursive: true });
+
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.json': 'application/json' };
+const server = http.createServer((req, res) => {
+  const p = path.join(ROOT, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+  const file = p.endsWith('/') ? path.join(p, 'index.html') : p;
+  if (!file.startsWith(ROOT) || !fs.existsSync(file)) { res.writeHead(404); res.end(); return; }
+  res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream' });
+  fs.createReadStream(file).pipe(res);
+});
+await new Promise((r) => server.listen(0, r));
+const URL_ = `http://localhost:${server.address().port}/`;
+
+let failures = 0;
+function check(cond, msg) {
+  console.log(`${cond ? '✅' : '❌'} ${msg}`);
+  if (!cond) failures++;
+}
+
+const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
+const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+const page = await ctx.newPage();
+const errors = [];
+page.on('pageerror', (e) => errors.push(String(e)));
+page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
+
+const center = async (sel) => {
+  const b = await page.locator(sel).boundingBox();
+  return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+};
+async function dragTo(fromSel, toSel) {
+  const a = await center(fromSel);
+  const b = await center(toSel);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(a.x + 15, a.y + 5, { steps: 3 });
+  await page.mouse.move(b.x, b.y, { steps: 8 });
+  await page.mouse.up();
+}
+const slot = (r, c) => `#cupRows .slot[data-row="${r}"][data-col="${c}"]`;
+const itemsState = () => page.evaluate(() => window.__mpf.state.items.map(({ ing, row, col, size }) => ({ ing, row, col, size })).sort((a, b) => a.row - b.row || a.col - b.col));
+
+// 소리가 정말 나는지 재는 장치
+async function attachMeter() {
+  await page.evaluate(() => {
+    const a = window.__mpf.audio;
+    a.ensure();
+    const an = a.ctx.createAnalyser();
+    an.fftSize = 2048;
+    a.master.connect(an);
+    window.__level = () => {
+      const d = new Float32Array(an.fftSize);
+      an.getFloatTimeDomainData(d);
+      return Math.sqrt(d.reduce((s, v) => s + v * v, 0) / d.length);
+    };
+  });
+}
+
+// ---------- 1. 메인 → 테마 → 창작 ----------
+await page.goto(URL_);
+await page.screenshot({ path: path.join(OUT, '1-home.png') });
+check(await page.locator('#home .menu-btn').count() === 4, '메인 메뉴 4개');
+await page.click('text=음악 만들기');
+check(await page.locator('.theme-card').count() === 7, '테마 7개');
+check(await page.locator('.theme-card:not([disabled])').count() === 1, '빙수만 열려 있음');
+await page.screenshot({ path: path.join(OUT, '2-themes.png') });
+await page.click('.theme-card[data-theme="bingsu"]');
+check(await page.locator('#create').isVisible(), '창작 화면 열림');
+check(await page.locator('#palette .ing').count() === 10, '빙수 재료 10개');
+check(await page.locator('#cupRows .slot').count() === 24, '컵 칸 8층 × 3');
+await attachMeter();
+
+// ---------- 2. 기획서 예시대로 쌓기 ----------
+await dragTo('#palette .ing[data-ing="ice"]', slot(0, 1));
+await dragTo('#palette .ing[data-ing="redbean"]', slot(1, 1));
+await dragTo('#palette .ing[data-ing="strawberry"]', slot(3, 0));
+await dragTo('#palette .ing[data-ing="mango"]', slot(3, 2));
+await dragTo('#palette .ing[data-ing="icecream"]', slot(6, 1));
+check((await itemsState()).length === 5, '재료 5개를 끌어다 놓음');
+
+// 크기 바꾸기: 얼음 2박, 망고 2박
+await page.click(`${slot(0, 1)} .item`);
+await page.click('#sizeBtns .size-btn[data-level="3"]');
+await page.click(`${slot(3, 2)} .item`);
+await page.click('#sizeBtns .size-btn[data-level="3"]');
+// 손잡이로 크기 끌기: 아이스크림을 키웠다가 다시 1박으로
+await page.click(`${slot(6, 1)} .item`);
+{
+  const g = await center(`${slot(6, 1)} .grip`);
+  await page.mouse.move(g.x, g.y);
+  await page.mouse.down();
+  await page.mouse.move(g.x + 80, g.y - 10, { steps: 6 });
+  const big = (await itemsState()).find((i) => i.ing === 'icecream').size;
+  await page.mouse.move(g.x, g.y, { steps: 6 });
+  await page.mouse.up();
+  const back = (await itemsState()).find((i) => i.ing === 'icecream').size;
+  check(big === 4 && back === 2, `손잡이로 크기 조절 (커짐 ${big}단계 → 되돌림 ${back}단계)`);
+}
+check(/6박/.test(await page.textContent('#lengthInfo')), `전체 길이 6박 표시: "${await page.textContent('#lengthInfo')}"`);
+check((await page.textContent('#cupRows .row[data-row="3"] .row-label')) === '3', '딸기·망고 줄은 3번째 연주');
+await page.screenshot({ path: path.join(OUT, '3-built.png') });
+
+// 위치 옮기기: 팥을 2층 → 0층 왼쪽으로 옮기면 얼음과 동시에
+await dragTo(`${slot(1, 1)} .item`, slot(0, 0));
+check((await itemsState()).filter((i) => i.row === 0).length === 2, '재료를 옮겨 같은 줄로');
+await dragTo(`${slot(0, 0)} .item`, slot(1, 1));
+check((await itemsState()).find((i) => i.ing === 'redbean').row === 1, '다시 제자리로');
+
+// ---------- 3. 재생: 순서와 동시 연주 ----------
+await page.evaluate(() => { const r = document.querySelector('#bpm'); r.value = 150; r.dispatchEvent(new Event('input', { bubbles: true })); r.dispatchEvent(new Event('change', { bubbles: true })); });
+await page.click('#btnPlay');
+const timeline = [];
+let maxLevel = 0;
+let shot = false;
+const t0 = Date.now();
+while (Date.now() - t0 < 5000) {
+  const snap = await page.evaluate(() => ({
+    on: [...document.querySelectorAll('#cupRows .item.playing')].map((d) => d.dataset.ing).sort().join('+'),
+    st: window.__mpf.player.state,
+    lv: window.__level(),
+  }));
+  maxLevel = Math.max(maxLevel, snap.lv);
+  if (snap.on && timeline[timeline.length - 1] !== snap.on) timeline.push(snap.on);
+  if (!shot && snap.on === 'mango+strawberry') { shot = true; await page.screenshot({ path: path.join(OUT, '4-playing.png') }); }
+  if (snap.st === 'stopped' && timeline.length) break;
+  await page.waitForTimeout(15);
+}
+console.log('   연주 순서:', timeline.join(' → '));
+check(JSON.stringify(timeline) === JSON.stringify(['ice', 'redbean', 'mango+strawberry', 'mango', 'icecream']),
+  '아래부터 순서대로, 딸기·망고 동시 시작, 1박 딸기가 먼저 끝남');
+check(maxLevel > 0.02, `실제로 소리가 남 (최대 크기 ${maxLevel.toFixed(3)})`);
+check(await page.evaluate(() => window.__mpf.player.state) === 'stopped', '끝나면 저절로 멈춤');
+check(await page.locator('#cupRows .item.playing').count() === 0, '끝나면 반짝임 꺼짐');
+
+// ---------- 4. 연주 중 잠금, 마구 누르기, 멈춤 ----------
+await page.click('#btnPlay');
+await page.waitForTimeout(200);
+const before = JSON.stringify(await itemsState());
+await dragTo(`${slot(1, 1)} .item`, slot(5, 0));
+check(JSON.stringify(await itemsState()) === before, '연주 중에는 재료가 안 움직임');
+check(await page.locator('#toast').isVisible(), '연주 중 안내 메시지');
+for (let i = 0; i < 8; i++) await page.click('#btnRestart', { delay: 0 });
+await page.waitForTimeout(300);
+check(await page.evaluate(() => window.__mpf.player.state) === 'playing', '처음부터를 여러 번 눌러도 한 번만 연주');
+await page.click('#btnPlay'); // 일시정지
+check(await page.evaluate(() => window.__mpf.player.state) === 'paused', '일시정지');
+await page.click('#btnPlay'); // 이어서
+check(await page.evaluate(() => window.__mpf.player.state) === 'playing', '이어서 연주');
+await page.click('#btnStop');
+await page.waitForTimeout(300);
+const quiet = await page.evaluate(() => window.__level());
+check(quiet < 0.002, `멈추면 소리가 남지 않음 (${quiet.toFixed(4)})`);
+
+// ---------- 5. 저장 → 새로 열어 불러오기 ----------
+const savedItems = await itemsState();
+await page.click('#btnSave');
+await page.fill('#saveTitle', '시험 빙수 노래');
+await page.click('#saveOk');
+check(await page.waitForSelector('#doneDialog[open]', { timeout: 3000 }).then(() => true, () => false), '완성 화면');
+await page.click('#doneLibrary');
+check(await page.locator('#workList .work').count() === 1, '보관함에 작품 1개');
+await page.screenshot({ path: path.join(OUT, '5-library.png') });
+await page.reload();
+await page.click('#home [data-go="library"]');
+await page.click('#workList .work [data-act="edit"]');
+await attachMeter();
+check(JSON.stringify(await itemsState()) === JSON.stringify(savedItems), '불러오면 위치·크기 그대로');
+check(await page.inputValue('#bpm') === '150', '빠르기도 그대로');
+check(/시험 빙수 노래/.test(await page.textContent('#createTitle')), '제목 표시');
+
+// 초기화
+await page.click('#btnClear');
+await page.click('#confirmYes');
+check((await itemsState()).length === 0, '초기화하면 모두 비움');
+await page.reload(); // 보관함 작품은 그대로
+await page.click('#home [data-go="library"]');
+check(await page.locator('#workList .work').count() === 1, '초기화해도 저장한 작품은 남음');
+
+// ---------- 6. 도전 미션 ----------
+await page.click('[data-go="home"] >> visible=true');
+await page.click('#home [data-go="challenge"]');
+await page.click('.mission[data-mission="together"]');
+await attachMeter();
+await dragTo('#palette .ing[data-ing="ice"]', slot(0, 0));
+await dragTo('#palette .ing[data-ing="redbean"]', slot(0, 1));
+check(await page.locator('#missionPanel.ok').count() === 1, '미션 조건 충족 표시');
+await page.click('#btnPlay');
+await page.waitForSelector('#doneDialog[open]', { timeout: 8000 });
+check(/미션 성공/.test(await page.textContent('#doneTitle')), '끝까지 들으면 미션 성공');
+await page.click('#doneClose');
+await page.click('#btnBack');
+check(await page.locator('.mission[data-mission="together"].done').count() === 1, '도전 목록에 성공 표시');
+
+// ---------- 7. 악기 소리 체험 ----------
+await page.click('[data-go="home"] >> visible=true');
+await page.click('#home [data-go="instruments"]');
+check(await page.locator('.inst-card').count() === 7, '악기 7가지');
+check(await page.locator('.inst-ing').count() === 10, '재료 버튼 10개');
+await page.click('#lenPick [data-level="4"]');
+for (const b of await page.locator('.inst-ing').all()) await b.click();
+await page.screenshot({ path: path.join(OUT, '6-instruments.png') });
+
+// ---------- 8. 태블릿 터치로 끌어다 놓기 ----------
+const tctx = await browser.newContext({ viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });
+const tp = await tctx.newPage();
+tp.on('pageerror', (e) => errors.push(String(e)));
+await tp.goto(URL_);
+await tp.tap('text=음악 만들기');
+await tp.tap('.theme-card[data-theme="bingsu"]');
+const cdp = await tctx.newCDPSession(tp);
+async function touchDrag(fromSel, toSel) {
+  const a = await tp.locator(fromSel).boundingBox();
+  const b = await tp.locator(toSel).boundingBox();
+  const p0 = { x: a.x + a.width / 2, y: a.y + a.height / 2 };
+  const p1 = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [p0] });
+  for (let i = 1; i <= 10; i++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: p0.x + (p1.x - p0.x) * i / 10, y: p0.y + (p1.y - p0.y) * i / 10 }] });
+  }
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+await touchDrag('#palette .ing[data-ing="banana"]', slot(2, 1));
+await touchDrag('#palette .ing[data-ing="jelly"]', slot(2, 2));
+const touchItems = await tp.evaluate(() => window.__mpf.state.items.map((i) => `${i.ing}@${i.row},${i.col}`).sort());
+check(JSON.stringify(touchItems) === JSON.stringify(['banana@2,1', 'jelly@2,2']), `터치로 끌어다 놓기 (${touchItems.join(' ')})`);
+// 눌러서 고르고 빈 칸 누르기
+await tp.tap('#palette .ing[data-ing="cereal"]');
+await tp.tap(slot(4, 0));
+check(await tp.evaluate(() => window.__mpf.state.items.some((i) => i.ing === 'cereal' && i.row === 4)), '재료를 누르고 빈 칸을 눌러도 놓임');
+await tp.screenshot({ path: path.join(OUT, '7-tablet.png') });
+
+// 세로 폰 화면도 깨지지 않는지
+const pctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+const pp = await pctx.newPage();
+await pp.goto(URL_);
+await pp.tap('text=음악 만들기');
+await pp.tap('.theme-card[data-theme="bingsu"]');
+const overflow = await pp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+check(overflow <= 0, `폰 화면 가로 넘침 없음 (${overflow}px)`);
+await pp.screenshot({ path: path.join(OUT, '8-phone.png'), fullPage: true });
+
+check(errors.length === 0, `스크립트 오류 없음${errors.length ? `: ${errors.join(' | ')}` : ''}`);
+
+await browser.close();
+server.close();
+console.log(`\n스크린샷: ${OUT}`);
+console.log(failures ? `❌ ${failures}개 실패` : '🎉 모두 통과');
+process.exit(failures ? 1 : 0);
