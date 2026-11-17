@@ -73,3 +73,47 @@ test('가만히 재기: 잡음 수준을 기억하고, 너무 크면 상한', ()
   t.calib[0].push(...Array(50).fill(0.5));
   assert.equal(t.finishCalibration()[0], 0.012);
 });
+
+// ---------- 팔 흔들기 세기 ----------
+import { StrokeCounter } from '../js/motion.js';
+
+test('흔들기 세기: 위아래로 3번 왕복하면 6번', () => {
+  const sc = new StrokeCounter();
+  let n = 0;
+  for (let i = 0; i < 90; i++) {
+    const y = 0.4 + 0.15 * Math.sin((i / 30) * Math.PI * 2); // 1초에 1번 왕복, 3초
+    if (sc.push(y, 1 / 30)) n++;
+  }
+  assert.ok(n >= 5 && n <= 7, `${n}번`);
+});
+
+test('흔들기 세기: 조금 떨리는 건 안 셈', () => {
+  const sc = new StrokeCounter();
+  let n = 0;
+  for (let i = 0; i < 90; i++) if (sc.push(0.4 + 0.015 * Math.sin(i), 1 / 30)) n++;
+  assert.equal(n, 0);
+});
+
+/** 카메라 장면 흉내: 1P 쪽(원본 오른쪽)에서 팔 하나가 위아래로 움직임 */
+function armFrame(yTop) {
+  const f = blank();
+  box(f, W - 30, W - 10, 18, 40);              // 몸
+  box(f, W - 14, W - 4, yTop, yTop + 6, 30);  // 팔 (어두운 색)
+  return f;
+}
+
+test('추적기: 팔을 흔든 횟수를 사람별로 센다', () => {
+  const t = new MotionTracker(2);
+  t.push(armFrame(25), 1 / 30);
+  for (let i = 1; i <= 120; i++) {               // 4초 동안 1초에 1번 왕복
+    const y = Math.round(22 + 14 * Math.sin((i / 30) * Math.PI * 2));
+    t.push(armFrame(y), 1 / 30);
+  }
+  const got = t.takeStrokes();
+  assert.ok(got[0] >= 6 && got[0] <= 9, `1P ${got[0]}번 (약 8번 기대)`);
+  assert.equal(got[1], 0, '2P는 안 흔듦');
+  assert.deepEqual(t.takeStrokes(), [0, 0], '꺼낸 뒤에는 0');
+  // 가만히 있으면 안 셈
+  for (let i = 0; i < 60; i++) t.push(armFrame(22), 1 / 30);
+  assert.deepEqual(t.takeStrokes(), [0, 0]);
+});

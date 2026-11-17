@@ -104,6 +104,7 @@ const state = (page) => page.evaluate(() => {
   return {
     screen: m.screen,
     effort: [...m.tracker.effort],
+    strokes: [...m.tracker.strokes],
     floor: [...m.tracker.floor],
     game: m.game && {
       phase: m.game.phase,
@@ -120,6 +121,7 @@ async function watch(page, seconds, onTick) {
   while (Date.now() < end) {
     const s = await state(page);
     log.push(s);
+    if (s.screen === 'result' || s.game?.phase === 'end') break;
     if (onTick) await onTick(s);
     await sleep(100);
   }
@@ -145,6 +147,13 @@ const bothVideo = makeVideo(path.join(OUT, 'both-move.y4m'), { leftMoves: true, 
   let s = await state(page);
   check('자리 잡기: 왼쪽(1P) 움직임을 알아챔', s.effort[0] > 0.5, `1P 막대 ${s.effort[0].toFixed(2)}`);
   check('자리 잡기: 가만히 있는 오른쪽(2P)은 조용함', s.effort[1] < 0.1, `2P 막대 ${s.effort[1].toFixed(2)}`);
+  const s0 = s.strokes[0];
+  await sleep(2000);
+  s = await state(page);
+  const perSec = (s.strokes[0] - s0) / 2;
+  // 영상 속 팔은 1초에 2번 왕복 = 위아래 4번
+  check('팔 흔들기 세기: 1P 팔을 1초에 약 4번으로 셈', perSec >= 2.5 && perSec <= 5.5, `1초에 ${perSec.toFixed(1)}번`);
+  check('팔 흔들기 세기: 2P는 0번', s.strokes[1] === 0, `${s.strokes[1]}번`);
   await page.screenshot({ path: path.join(OUT, '02-setup-2p.png') });
 
   await page.click('#readyBtn');
@@ -163,7 +172,7 @@ const bothVideo = makeVideo(path.join(OUT, 'both-move.y4m'), { leftMoves: true, 
       shotFreeze = true; await page.screenshot({ path: path.join(OUT, '04-play-caught.png') });
     }
   });
-  const last = log.at(-1).game;
+  const last = log.filter((l) => l.game).at(-1).game;
   const maxP1 = Math.max(...log.filter((l) => l.game).map((l) => l.game.players[0].progress));
   check('부르는 동안 움직인 1P는 앞으로 감', maxP1 > 10, `가장 멀리 ${maxP1.toFixed(1)}칸`);
   check('얼음 때도 움직인 1P는 걸려서 뒤로 감', last.players[0].caught >= 1, `걸린 횟수 ${last.players[0].caught}`);
@@ -173,8 +182,10 @@ const bothVideo = makeVideo(path.join(OUT, 'both-move.y4m'), { leftMoves: true, 
   check('카운트다운 → 부르기 → 얼음 이 번갈아 나옴', phases.has('countdown') && phases.has('chant') && phases.has('freeze'), [...phases].join(', '));
 
   // 결과 화면까지: 1P를 결승선 바로 앞에 두고 계속 움직이게 함
-  await page.waitForFunction(() => window.__mugunghwa.game?.phase === 'chant', null, { timeout: 15000 });
-  await page.evaluate(() => { window.__mugunghwa.game.players[0].progress = 99.5; });
+  if (!['end'].includes(last.phase)) {
+    await page.waitForFunction(() => window.__mugunghwa.game?.phase === 'chant', null, { timeout: 15000 });
+    await page.evaluate(() => { window.__mugunghwa.game.players[0].progress = 99.5; });
+  }
   await page.waitForFunction(() => window.__mugunghwa.screen === 'result', null, { timeout: 10000 });
   const title = await page.textContent('#resultTitle');
   check('먼저 도착한 1P가 이김 → 결과 화면', title.includes('1P'), title);
