@@ -1,0 +1,60 @@
+# main 브랜치에 올라온 앱을 GitHub Pages 로 자동 배포합니다.
+# 저장소 Settings → Pages → Source 를 "GitHub Actions" 로 한 번 설정해야 합니다.
+name: GitHub Pages 배포
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: pixel-magic-lab/package-lock.json
+
+      - name: 픽셀 마법사 연구소 설치·테스트·빌드
+        working-directory: pixel-magic-lab
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+      - name: 배포할 파일 모으기
+        run: |
+          mkdir -p _site
+          cp site/index.html _site/index.html
+          cp -r pixel-magic-lab/dist _site/pixel-magic-lab
+          cp -r mugunghwa _site/mugunghwa
+          rm -rf _site/mugunghwa/tests _site/mugunghwa/tools _site/mugunghwa/package.json
+          touch _site/.nojekyll
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
