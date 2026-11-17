@@ -1,9 +1,9 @@
-// [학생 앱] 이미지 AI로 만든 그림 파일을 게임에 넣기 좋게 다듬기
+// 이미지 AI로 만든 그림 파일을 앱에 넣기 좋게 다듬기 (학생: 게임·부스 그림, 교사: 월드 그림)
 // - 배경: 16:9로 가운데를 잘라 960×540 안으로 줄이고 JPEG로
 // - 주인공·아이콘: 가장자리부터 이어진 하얀 배경을 투명하게 지우고(안쪽 흰색은 그대로),
 //   그림 둘레만 남겨 정사각형에 맞춘 뒤 WebP(안 되면 PNG)로
 // - 그림 파일은 기기 밖으로 보내지 않고, 이 브라우저 안에서만 바꿔요.
-import { MAX_IMAGE_CHARS } from '../shared/images.js';
+import { MAX_IMAGE_CHARS } from './images.js';
 
 const MAX_FILE = 15 * 1024 * 1024;
 
@@ -73,12 +73,12 @@ function encode(c, transparent, quality) {
 }
 
 // file → { dataUrl, cleared(지운 배경 비율) }
-export async function processPicture(file, slot, { clearWhite = slot.clear } = {}) {
+export async function processPicture(file, slot, { clearWhite = slot.clear, maxChars = slot.maxChars || MAX_IMAGE_CHARS } = {}) {
   const img = await loadImage(file);
   let [maxW, maxH] = slot.max;
   for (let attempt = 0; attempt < 5; attempt++) {
     let out, cleared = 0;
-    if (slot.key === 'background') {
+    if (!slot.clear && slot.ratio !== '1:1') {
       // 16:9 가운데 자르기
       const want = maxW / maxH;
       let sw = img.naturalWidth, sh = img.naturalHeight;
@@ -102,8 +102,8 @@ export async function processPicture(file, slot, { clearWhite = slot.clear } = {
       const k = size / side;
       out.getContext('2d').drawImage(work, b.x, b.y, b.w, b.h, (size - b.w * k) / 2, (size - b.h * k) / 2, b.w * k, b.h * k);
     }
-    const dataUrl = encode(out, slot.key !== 'background', 0.82 - attempt * 0.08);
-    if (dataUrl.length <= MAX_IMAGE_CHARS) return { dataUrl, cleared, width: out.width, height: out.height };
+    const dataUrl = encode(out, !!slot.clear, 0.82 - attempt * 0.08);
+    if (dataUrl.length <= maxChars) return { dataUrl, cleared, width: out.width, height: out.height };
     maxW = Math.round(maxW * 0.8); maxH = Math.round(maxH * 0.8);   // 너무 크면 더 줄여서 다시
   }
   throw new Error('그림이 너무 복잡해서 작게 줄이지 못했어요. 더 단순한 그림으로 해 볼까요?');

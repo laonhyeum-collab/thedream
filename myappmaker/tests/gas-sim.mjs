@@ -11,6 +11,7 @@ export function createGas({ classCode = 'TEST-CLASS', teacherKey = 'TEST-TEACHER
   const sheets = new Map();
   const files = new Map();
   const folders = [];
+  const props = new Map();
 
   function makeSheet(name) {
     const data = [];
@@ -57,7 +58,8 @@ export function createGas({ classCode = 'TEST-CLASS', teacherKey = 'TEST-TEACHER
         return { setTrashed: (t) => { f.trashed = t; }, getBlob: () => ({ getDataAsString: () => f.content }) };
       },
     },
-    MimeType: { HTML: 'text/html' },
+    MimeType: { HTML: 'text/html', PLAIN_TEXT: 'text/plain' },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => (props.has(k) ? props.get(k) : null), setProperty: (k, v) => { props.set(k, String(v)); }, deleteProperty: (k) => { props.delete(k); } }) },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
     ContentService: {
       MimeType: { JSON: 'application/json' },
@@ -71,7 +73,7 @@ export function createGas({ classCode = 'TEST-CLASS', teacherKey = 'TEST-TEACHER
   ctx.TEACHER_KEY = teacherKey;
 
   return {
-    ctx, sheets, files,
+    ctx, sheets, files, props,
     get: (params) => JSON.parse(ctx.doGet({ parameter: params }).getContent()),
     post: (body) => JSON.parse(ctx.doPost({ postData: { contents: typeof body === 'string' ? body : JSON.stringify(body) } }).getContent()),
   };

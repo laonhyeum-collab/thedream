@@ -1,11 +1,17 @@
-// [앱 월드] 지도: 부스 배치·충돌·가까운 부스 찾기 (화면 그리기와 상관없는 순수 계산)
-export const CELL_W = 240;
-export const CELL_H = 230;
-export const BOOTH_W = 150;
-export const BOOTH_H = 110;
-export const PLAZA_H = 360;
-export const MARGIN = 120;
-export const PLAYER_R = 18;
+// [앱 월드] 섬 지도: 부스 배치(선생님 건물 1 + 학생 부스 12), 땅·물, 부딪힘, 가까운 문 찾기 (화면과 상관없는 순수 계산)
+import { WORLD_W, WORLD_H, HALL, FOUNTAIN, ARCH, BOOTH_SIZE, SLOTS, STUDENT_BOOTHS } from '../shared/worldart.js';
+
+export const PLAYER_R = 16;
+export const DOOR_REACH = 80;
+
+// 섬 모양: 큰 타원 + 아래쪽 입구 + 왼쪽 아래 등대 섬(걸어갈 수 없음)
+export function isLand(x, y) {
+  const wob = 0.045 * Math.sin(x * 0.011) + 0.035 * Math.cos(y * 0.015 + x * 0.004);
+  const e1 = ((x - 960) / 930) ** 2 + ((y - 540) / 500) ** 2 < 1 + wob;
+  const e2 = ((x - 960) / 240) ** 2 + ((y - 985) / 125) ** 2 < 1;
+  return e1 || e2;
+}
+export const isIslet = (x, y) => ((x - 150) / 85) ** 2 + ((y - 945) / 62) ** 2 < 1;
 
 export function sortItems(items) {
   return [...items].sort((a, b) => {
@@ -15,73 +21,73 @@ export function sortItems(items) {
   });
 }
 
-export function layoutWorld(items, { cols: wantCols } = {}) {
-  const list = sortItems(items);
-  const cols = wantCols || Math.max(3, Math.min(6, Math.ceil(Math.sqrt(list.length * 1.6))));
-  const rows = Math.max(1, Math.ceil(list.length / cols));
-  const width = MARGIN * 2 + cols * CELL_W;
-  const height = PLAZA_H + rows * CELL_H + MARGIN;
-  const booths = list.map((item, i) => {
-    const c = i % cols, r = Math.floor(i / cols);
-    const cx = MARGIN + c * CELL_W + CELL_W / 2;
-    const top = PLAZA_H + r * CELL_H + 30;
-    const x = cx - BOOTH_W / 2, y = top;
+const box = (x, y, w, h) => ({ x, y, w, h });
+
+// 부스 번호(1~12)대로 자리에 앉히고, 번호가 없거나 겹치면 빈자리에. 12개를 넘으면 extra 로.
+export function layoutWorld(items) {
+  const slots = SLOTS.map((s) => ({ ...s, item: null }));
+  const rest = [];
+  for (const it of sortItems(items)) {
+    const want = Number.isFinite(it.booth) && it.booth >= 1 && it.booth <= STUDENT_BOOTHS ? slots[it.booth - 1] : null;
+    if (want && !want.item) want.item = it; else rest.push(it);
+  }
+  const extra = [];
+  for (const it of rest) { const free = slots.find((s) => !s.item); if (free) free.item = it; else extra.push(it); }
+
+  const booths = slots.map((s) => {
+    const { w, h } = BOOTH_SIZE;
     return {
-      item, index: i, label: Number.isFinite(item.booth) && item.booth > 0 ? item.booth : i + 1,
-      x, y, w: BOOTH_W, h: BOOTH_H,
-      door: { x: cx, y: y + BOOTH_H + 26 },
-      host: { x: x + BOOTH_W + 18, y: y + BOOTH_H + 6 },
+      n: s.n, item: s.item, x: s.x, y: s.y, w, h,
+      body: box(s.x - w * 0.42, s.y - h * 0.62, w * 0.84, h * 0.62 - 12),
+      door: { x: s.x, y: s.y + 26 },
+      host: { x: s.x + w * 0.5 + 6, y: s.y + 12 },
     };
   });
-  const plaza = { x: width / 2, y: PLAZA_H / 2 + 10, r: 70 };
-  const sign = { x: width / 2 - 230, y: 90, w: 150, h: 70 };
-  return { width, height, cols, rows, booths, plaza, sign, spawn: { x: width / 2, y: PLAZA_H - 60 } };
+  const hall = { ...HALL, body: box(HALL.x - HALL.w * 0.45, HALL.y - HALL.h * 0.62, HALL.w * 0.9, HALL.h * 0.62 - 10), door: { x: HALL.x, y: HALL.y + 30 } };
+  const arch = { ...ARCH, pillars: [box(ARCH.x - ARCH.w / 2 + 6, ARCH.y - 70, 40, 64), box(ARCH.x + ARCH.w / 2 - 46, ARCH.y - 70, 40, 64)] };
+  const sign = { x: 1060, y: 820 };   // 광장 안내판
+  return {
+    width: WORLD_W, height: WORLD_H, booths, hall, fountain: { ...FOUNTAIN }, arch, sign, extra,
+    spawn: { x: ARCH.x, y: ARCH.y - 205 },
+    plaza: { x: FOUNTAIN.x, y: FOUNTAIN.y, r: 165 },
+  };
 }
 
-// 동그라미(플레이어)와 네모(부스·안내판)가 겹치면 밀어내기
-function pushOut(p, r, box) {
-  const nx = Math.max(box.x, Math.min(p.x, box.x + box.w));
-  const ny = Math.max(box.y, Math.min(p.y, box.y + box.h));
-  const dx = p.x - nx, dy = p.y - ny;
-  const d2 = dx * dx + dy * dy;
-  if (d2 >= r * r) return p;
-  if (d2 === 0) { // 중심이 상자 안: 가장 가까운 변으로
-    const opts = [
-      { x: box.x - r, y: p.y, d: p.x - box.x }, { x: box.x + box.w + r, y: p.y, d: box.x + box.w - p.x },
-      { x: p.x, y: box.y - r, d: p.y - box.y }, { x: p.x, y: box.y + box.h + r, d: box.y + box.h - p.y },
-    ].sort((a, b) => a.d - b.d);
-    return { x: opts[0].x, y: opts[0].y };
-  }
-  const d = Math.sqrt(d2);
-  return { x: nx + (dx / d) * r, y: ny + (dy / d) * r };
+function inBox(p, b, r) { return p.x > b.x - r && p.x < b.x + b.w + r && p.y > b.y - r && p.y < b.y + b.h + r; }
+
+export function blocked(world, p, r = PLAYER_R) {
+  if (!isLand(p.x, p.y + r * 0.5) || p.x < r || p.y < r || p.x > world.width - r || p.y > world.height - r) return true;
+  if (world.booths.some((b) => inBox(p, b.body, r * 0.6))) return true;
+  if (inBox(p, world.hall.body, r * 0.6)) return true;
+  if (world.arch.pillars.some((b) => inBox(p, b, r * 0.4))) return true;
+  if (Math.hypot(p.x - world.fountain.x, p.y - world.fountain.y) < world.fountain.r * 0.85 + r * 0.5) return true;
+  return false;
 }
 
+// 막히면 x, y 를 따로 움직여 벽을 따라 미끄러지기
 export function moveWithin(world, from, dx, dy, r = PLAYER_R) {
-  let p = { x: from.x + dx, y: from.y + dy };
-  p.x = Math.max(r, Math.min(world.width - r, p.x));
-  p.y = Math.max(r, Math.min(world.height - r, p.y));
-  for (const b of world.booths) p = pushOut(p, r, b);
-  p = pushOut(p, r, world.sign);
-  // 분수대
-  const fx = p.x - world.plaza.x, fy = p.y - world.plaza.y, fd = Math.hypot(fx, fy), fr = world.plaza.r * 0.6 + r;
-  if (fd < fr) p = fd === 0 ? { x: p.x, y: world.plaza.y + fr } : { x: world.plaza.x + (fx / fd) * fr, y: world.plaza.y + (fy / fd) * fr };
-  return p;
+  const full = { x: from.x + dx, y: from.y + dy };
+  if (!blocked(world, full, r)) return full;
+  const onlyX = { x: from.x + dx, y: from.y };
+  if (dx && !blocked(world, onlyX, r)) return onlyX;
+  const onlyY = { x: from.x, y: from.y + dy };
+  if (dy && !blocked(world, onlyY, r)) return onlyY;
+  return { ...from };
 }
 
-export function nearestBooth(world, p, maxDist = 70) {
+// 가장 가까운 문: { kind: 'teacher' | 'booth', booth? }
+export function nearestDoor(world, p, reach = DOOR_REACH) {
   let best = null, bd = Infinity;
-  for (const b of world.booths) {
-    const d = Math.hypot(p.x - b.door.x, p.y - b.door.y);
-    if (d < bd) { bd = d; best = b; }
-  }
-  return bd <= maxDist ? best : null;
+  const consider = (door, v) => { const d = Math.hypot(p.x - door.x, p.y - door.y); if (d < bd) { bd = d; best = v; } };
+  consider(world.hall.door, { kind: 'teacher' });
+  for (const b of world.booths) if (b.item) consider(b.door, { kind: 'booth', booth: b });
+  return bd <= reach ? best : null;
 }
 
-export function boothAt(world, x, y) {
-  return world.booths.find((b) => x >= b.x - 10 && x <= b.x + b.w + 10 && y >= b.y - 30 && y <= b.door.y + 10) || null;
-}
-
-export function nearSign(world, p, maxDist = 90) {
-  const s = world.sign;
-  return Math.hypot(p.x - (s.x + s.w / 2), p.y - (s.y + s.h + 20)) <= maxDist;
+// 화면을 누른 곳의 건물
+export function buildingAt(world, x, y) {
+  const h = world.hall;
+  if (x > h.x - h.w / 2 && x < h.x + h.w / 2 && y > h.y - h.h && y < h.y + 30) return { kind: 'teacher' };
+  for (const b of world.booths) if (b.item && x > b.x - b.w / 2 && x < b.x + b.w / 2 && y > b.y - b.h && y < b.y + 34) return { kind: 'booth', booth: b };
+  return null;
 }

@@ -5,7 +5,7 @@ import { SECTIONS, emptyPlan, normalizePlan, missingRequired, progress, buildApp
 import { extractHtml, srcdocFor, looksLikeApp } from '../shared/sandbox.js';
 import { createStore } from '../student/store.js';
 import { createApi, isValidEndpoint } from '../shared/api.js';
-import { layoutWorld, moveWithin, nearestBooth, sortItems, PLAYER_R } from '../world/worldmap.js';
+import { layoutWorld, moveWithin, nearestDoor, sortItems, isLand, blocked, PLAYER_R } from '../world/worldmap.js';
 import { LESSONS } from '../teacher/lesson.js';
 
 test('주제 20개, 분야별 개수(모험4·액션4·창작4·추리3·생활5), 미리보기 항목 모두 있음', () => {
@@ -144,24 +144,28 @@ test('저장소 주소 검사와 미연결 처리', async () => {
   await assert.rejects(bad.world(), /응답/);
 });
 
-test('앱 월드: 부스 배치, 충돌, 가까운 부스', () => {
-  const items = Array.from({ length: 20 }, (_, i) => ({ id: `a${i}`, appName: `앱${i}`, developer: `학생${i}`, booth: i === 0 ? null : 20 - i }));
+test('앱 월드: 선생님 건물 1 + 학생 부스 12, 섬 위에 겹치지 않게, 충돌, 가까운 문', () => {
+  const items = Array.from({ length: 14 }, (_, i) => ({ id: `a${i}`, appName: `앱${i}`, developer: `학생${i}`, booth: i === 0 ? null : 14 - i }));
   assert.equal(sortItems(items)[0].booth, 1);
-  assert.equal(sortItems(items).at(-1).booth, null, '번호 없는 부스는 뒤로');
   const w = layoutWorld(items);
-  assert.equal(w.booths.length, 20);
+  assert.equal(w.booths.length, 12);
+  assert.equal(w.booths.filter((b) => b.item).length, 12);
+  assert.equal(w.extra.length, 2, '12개를 넘으면 목록에만');
+  assert.equal(w.booths[0].item.booth, 1, '부스 번호 자리에 앉음');
   for (const b of w.booths) {
-    assert.ok(b.x >= 0 && b.x + b.w <= w.width && b.door.y <= w.height, '지도 안');
-    for (const o of w.booths) if (o !== b) assert.ok(b.x + b.w <= o.x || o.x + o.w <= b.x || b.y + b.h <= o.y || o.y + o.h <= b.y, '부스끼리 안 겹침');
+    for (const [x, y] of [[b.x - b.w / 2, b.y - b.h], [b.x + b.w / 2, b.y - b.h], [b.x - b.w / 2, b.y], [b.x + b.w / 2, b.y]]) assert.ok(isLand(x, y), `${b.n}번 부스는 섬 위`);
+    assert.ok(!blocked(w, b.door), `${b.n}번 문 앞은 걸을 수 있음`);
+    for (const o of w.booths) if (o !== b) assert.ok(Math.abs(b.x - o.x) >= b.w || Math.abs(b.y - o.y) >= b.h, '부스끼리 안 겹침');
   }
+  assert.ok(!blocked(w, w.spawn) && !blocked(w, w.hall.door));
   const b = w.booths[0];
-  const inside = moveWithin(w, { x: b.x + b.w / 2, y: b.y + b.h + PLAYER_R + 2 }, 0, -40);
-  assert.ok(inside.y >= b.y + b.h + PLAYER_R - 0.01, '부스 벽을 뚫지 못함');
-  const edge = moveWithin(w, { x: 5, y: 5 }, -100, -100);
-  assert.ok(edge.x >= PLAYER_R && edge.y >= PLAYER_R, '지도 밖으로 못 나감');
-  assert.equal(nearestBooth(w, b.door), b);
-  assert.equal(nearestBooth(w, w.spawn), null);
-  assert.equal(layoutWorld([]).booths.length, 0);
+  const tryIn = moveWithin(w, { ...b.door }, 0, -60);
+  assert.ok(tryIn.y > b.body.y + b.body.h, '부스 벽을 뚫지 못함');
+  assert.ok(blocked(w, { x: 20, y: 20 }), '바다로는 못 감');
+  assert.equal(nearestDoor(w, b.door).booth, b);
+  assert.equal(nearestDoor(w, w.hall.door).kind, 'teacher');
+  assert.equal(nearestDoor(w, w.spawn), null);
+  assert.equal(layoutWorld([]).booths.filter((x) => x.item).length, 0);
 });
 
 test('수업: 4차시 모두 40분', () => {

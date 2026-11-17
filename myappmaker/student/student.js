@@ -10,7 +10,7 @@ import { download, readFileText, safeName } from '../shared/files.js';
 import { loadConfig, createApi } from '../shared/api.js';
 import { extractHtml, looksLikeApp, mountApp, isHttpUrl, MAX_APP_BYTES } from '../shared/sandbox.js';
 import { applyImages, findImagesBlock, imagesSize } from '../shared/images.js';
-import { processPicture } from './picture.js';
+import { processPicture } from '../shared/picture.js';
 import { h, $, toast, copyText } from '../shared/ui.js';
 
 const store = createStore();

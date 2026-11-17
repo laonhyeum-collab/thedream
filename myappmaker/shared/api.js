@@ -71,10 +71,17 @@ export function createApi(cfg, fetchImpl = globalThis.fetch.bind(globalThis)) {
     world: () => call('GET', { action: 'world', classCode }),
     app: (id) => call('GET', { action: 'app', classCode, id }),
     like: (id) => call('POST', { action: 'like', classCode, id }),
+    booth: (id) => call('GET', { action: 'booth', classCode, id }),
+    asset: (key) => call('GET', { action: 'asset', classCode, key }),
+    teacherAppHtml: () => call('GET', { action: 'teacherAppHtml', classCode }),
     // 교사 (teacherKey 필요)
     list: (teacherKey) => call('POST', { action: 'list', teacherKey }),
     teacherApp: (teacherKey, id) => call('POST', { action: 'teacherApp', teacherKey, id }),
     review: (teacherKey, r) => call('POST', { action: 'review', teacherKey, ...r }),
     remove: (teacherKey, id) => call('POST', { action: 'remove', teacherKey, id }),
+    worldAdmin: (teacherKey) => call('POST', { action: 'worldAdmin', teacherKey }),
+    setWorld: (teacherKey, settings) => call('POST', { action: 'setWorld', teacherKey, settings }),
+    setAsset: (teacherKey, key, data) => call('POST', { action: 'setAsset', teacherKey, key, data }),
+    setTeacherApp: (teacherKey, title, html) => call('POST', { action: 'setTeacherApp', teacherKey, title, html }),
   };
 }

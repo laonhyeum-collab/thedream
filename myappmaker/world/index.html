@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-  <title>우리 반 앱 월드</title>
-  <meta name="description" content="친구들이 만든 게임 앱이 부스로 열리는 메타버스 앱 월드">
-  <meta name="theme-color" content="#8fd694">
+  <title>MY APP META WORLD</title>
+  <meta name="description" content="친구들이 만든 게임 앱이 부스로 열리는 픽셀 섬 메타버스">
+  <meta name="theme-color" content="#2B2350">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
@@ -17,10 +17,11 @@
   <!-- 입장 -->
   <section id="lobby" class="lobby">
     <div class="card lobby-card">
-      <h1>🌏 우리 반 앱 월드</h1>
-      <p class="muted">친구들이 만든 게임 앱이 부스로 열려 있어요. 걸어 다니며 부스에 들어가 놀아 봐요!</p>
-      <label class="field"><span>내 이름(별명)</span><input id="nick" type="text" maxlength="10" placeholder="예) 하늘"></label>
-      <div class="field"><span class="small muted">내 아바타</span><div id="avatarPick" class="avatar-pick" role="group" aria-label="아바타 고르기"></div></div>
+      <p class="logo-line"><span class="logo-pad">🎮</span><span><b>MY APP</b><br><b>META WORLD</b></span></p>
+      <h1 id="lobbyTitle">친구들이 만든 앱 월드</h1>
+      <p class="muted">친구들이 만든 게임이 부스로 열려 있어요. 내 캐릭터로 섬을 걸어 다니며 부스에 들어가 놀아 봐요!</p>
+      <label class="field"><span>내 별명 <small class="muted">(🔒 진짜 이름은 쓰지 않아요)</small></span><input id="nick" type="text" maxlength="10" placeholder="예) 별빛코더"></label>
+      <div class="field"><span class="small"><b>내 캐릭터</b></span><div id="lobbyAvatar"></div></div>
       <button id="enterBtn" class="primary big">🚪 입장하기</button>
       <p id="sourceInfo" class="small muted"></p>
       <details class="small">
@@ -34,15 +35,27 @@
 
   <!-- 월드 -->
   <section id="stage" class="stage" hidden>
-    <canvas id="map" aria-label="앱 월드 지도. 방향키나 화면을 눌러 움직여요. 부스 목록 버튼으로도 앱을 열 수 있어요."></canvas>
-    <div class="hud top-left">
-      <span class="pill" id="worldTitle">🌏 우리 반 앱 월드</span>
-      <span class="pill" id="boothCount"></span>
-    </div>
-    <div class="hud top-right">
-      <button id="listBtn" class="primary">📋 부스 목록</button>
-      <button id="exitBtn" class="ghost" aria-label="나가기">🚪</button>
-    </div>
+    <canvas id="map" tabindex="0" aria-label="앱 월드 지도. 방향키나 화면을 눌러 움직여요. 탐험 버튼으로도 부스를 열 수 있어요."></canvas>
+
+    <header class="topbar">
+      <div class="brand"><span class="logo-pad">🎮</span><span class="brand-text"><b>MY APP</b><b>META WORLD</b></span></div>
+      <nav class="topnav" aria-label="앱 월드 메뉴">
+        <button data-nav="home" class="on"><span>🏠</span><b>홈</b></button>
+        <button data-nav="map"><span>🗺️</span><b>맵</b></button>
+        <button data-nav="teacher"><span>🏫</span><b>선생님 앱</b></button>
+        <button data-nav="friends"><span>👥</span><b>친구 <em id="friendCount">0</em></b></button>
+      </nav>
+      <button class="me-btn" data-nav="me" aria-label="나의 공간"><canvas id="meFace" width="48" height="48"></canvas><b id="meNick">나의 공간</b></button>
+      <button class="gear" data-nav="exit" aria-label="나가기">⚙️</button>
+    </header>
+
+    <aside class="sidebar" aria-label="활동 메뉴">
+      <button data-side="explore"><span>🧭</span><b>탐험</b></button>
+      <button data-side="missions"><span>✅</span><b>미션</b></button>
+      <button data-side="badges"><span>🏅</span><b>배지</b></button>
+      <button data-side="notice"><span>📢</span><b>공지</b><i id="noticeDot" hidden></i></button>
+    </aside>
+
     <div id="joystick" class="joystick" aria-hidden="true"><div class="knob"></div></div>
     <div id="enterHint" class="enter-hint" hidden>
       <span id="enterText"></span>
@@ -69,11 +82,11 @@
     </div>
   </div>
 
-  <!-- 부스 목록 -->
-  <div id="directory" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="dirTitle">
+  <!-- 메뉴 창 (탐험·미션·배지·공지·친구·나의 공간) -->
+  <div id="panel" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="panelTitle">
     <div class="sheet">
-      <div class="row"><h2 id="dirTitle" class="grow">📋 부스 목록</h2><button id="closeDir" class="ghost">✕</button></div>
-      <div id="dirList" class="dir-list"></div>
+      <div class="row"><h2 id="panelTitle" class="grow"></h2><button id="closePanel" class="ghost" aria-label="닫기">✕</button></div>
+      <div id="panelBody"></div>
     </div>
   </div>
 
