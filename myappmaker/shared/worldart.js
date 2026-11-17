@@ -16,12 +16,24 @@ export const SLOTS = [
   { n: 9, x: 385, y: 845 }, { n: 10, x: 640, y: 905 }, { n: 11, x: 1280, y: 905 }, { n: 12, x: 1535, y: 845 },
 ];
 
-export const DEFAULT_WORLD = { schoolName: '', title: '친구들이 만든 앱 월드', notice: '' };
+// hotspots: 지도 그림(일러스트) 위 문 자리. 그림 크기에 대한 비율(0~1)로 [x, y]
+//   hall = 선생님의 앱, start = 처음 서는 곳, booths[0..11] = 01~12번 부스
+// labelMode: 'small' = 그림 속 간판을 살리고 작은 이름표만 / 'big' = 큰 이름표
+export const DEFAULT_WORLD = { schoolName: '', title: '친구들이 만든 앱 월드', notice: '', hotspots: { hall: null, start: null, booths: Array(12).fill(null) }, labelMode: 'small' };
+
+const pt = (v) => (Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === 'number' && n >= 0 && n <= 1) ? [Math.round(v[0] * 10000) / 10000, Math.round(v[1] * 10000) / 10000] : null);
+export function cleanHotspots(v) {
+  const o = v && typeof v === 'object' ? v : {};
+  const booths = Array.from({ length: 12 }, (_, i) => pt(Array.isArray(o.booths) ? o.booths[i] : null));
+  return { hall: pt(o.hall), start: pt(o.start), booths };
+}
+export const hasHotspots = (hs) => !!(hs && (hs.hall || hs.booths.some(Boolean)));
 
 export function cleanWorldSettings(v) {
   const s = v && typeof v === 'object' ? v : {};
   const str = (x, n) => (typeof x === 'string' ? x.replace(/[<>]/g, '').trim().slice(0, n) : '');
-  return { schoolName: str(s.schoolName, 20), title: str(s.title, 24) || DEFAULT_WORLD.title, notice: str(s.notice, 300) };
+  return { schoolName: str(s.schoolName, 20), title: str(s.title, 24) || DEFAULT_WORLD.title, notice: str(s.notice, 300),
+    hotspots: cleanHotspots(s.hotspots), labelMode: s.labelMode === 'big' ? 'big' : 'small' };
 }
 
 export const worldName = (s) => (s && s.schoolName ? `${s.schoolName} ${s.title || DEFAULT_WORLD.title}` : (s && s.title) || DEFAULT_WORLD.title);

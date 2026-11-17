@@ -3,15 +3,16 @@ import { topicById, categoryById } from '../shared/topics.js';
 import { loadConfig, createApi } from '../shared/api.js';
 import { mountApp } from '../shared/sandbox.js';
 import { readFileText } from '../shared/files.js';
-import { cleanWorldSettings, worldName, DEFAULT_WORLD, WORLD_ASSET_KEYS } from '../shared/worldart.js';
+import { cleanWorldSettings, worldName, DEFAULT_WORLD, WORLD_ASSET_KEYS, hasHotspots } from '../shared/worldart.js';
 import { cleanAvatar, randomAvatar, avatarFromText, avatarPixels, avatarBuilder, AVATAR_W, AVATAR_H } from '../shared/avatar.js';
-import { layoutWorld, moveWithin, nearestDoor, buildingAt, PLAYER_R } from './worldmap.js';
+import { layoutWorld, layoutIllustrated, moveWithin, nearestDoor, buildingAt, PLAYER_R } from './worldmap.js';
 import { PX, buildGround, boothSprite, hallSprite, fountainSprite, archSprite } from './pixelart.js';
 import { h, $, toast } from '../shared/ui.js';
 
 const PREF = 'myappmaker.world.me';
 const LIKED = 'myappmaker.world.liked';
 const PROGRESS = 'myappmaker.world.progress';
+const MYBOOTH = 'myappmaker.world.mybooth';
 const SPEED = 260;
 
 const cfg = loadConfig('world');
@@ -85,11 +86,14 @@ async function loadData(first) {
 }
 
 function rebuild(first) {
-  const sig = JSON.stringify(state.items.map((x) => [x.id, x.booth]));
+  const map = state.assets.map;
+  const illustrated = !!(map && hasHotspots(state.settings.hotspots));
+  const sig = JSON.stringify([state.items.map((x) => [x.id, x.booth]), illustrated && state.settings.hotspots, map && map.width]);
   if (!state.world || state.sig !== sig) {
     state.sig = sig;
-    state.world = layoutWorld(state.items);
-    state.ground = state.ground || buildGround(state.world);
+    // 그림 지도 + 문 자리가 있으면 그 그림 그대로, 없으면 앱이 그린 픽셀 섬
+    state.world = illustrated ? layoutIllustrated(state.items, state.settings.hotspots, 1920, Math.round((1920 * map.height) / map.width)) : layoutWorld(state.items);
+    if (!illustrated) state.ground = state.ground || buildGround(state.world);
     if (first) pos = { ...state.world.spawn }; else pos = moveWithin(state.world, pos, 0, 0);
   }
   const name = worldName(state.settings);
@@ -253,9 +257,41 @@ function drawArch() {
   else { const s = cached('arch', archSprite); ctx.drawImage(s, a.x - (s.width * PX) / 2, a.y - s.height * PX + 4, s.width * PX, s.height * PX); }
 }
 
+function drawIllustrated(t) {
+  const w = state.world, small = state.settings.labelMode !== 'big';
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(state.assets.map, 0, 0, w.width, w.height);
+  ctx.imageSmoothingEnabled = false;
+  const ring = (x, y) => { ctx.strokeStyle = '#FFD54F'; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(x, y, 58 + Math.sin(t / 150) * 4, 22, 0, 0, Math.PI * 2); ctx.stroke(); };
+  if (near && near.kind === 'teacher' && w.hall) ring(w.hall.door.x, w.hall.door.y);
+  if (near && near.booth) ring(near.booth.door.x, near.booth.door.y);
+  const list = [
+    ...w.booths.filter((b) => b.item).map((b) => ({ y: b.host.y, fn: () => drawChar(b.item.avatar ? cleanAvatar(b.item.avatar) : avatarFromText(b.item.developer), b.host.x, b.host.y, 0, 3) })),
+    { y: pos.y + PLAYER_R, fn: () => drawChar(me.avatar, pos.x, pos.y + PLAYER_R, moving ? Math.floor(walkT / 0.16) % 2 : 0, 3) },
+  ].sort((a, b) => a.y - b.y);
+  for (const d of list) d.fn();
+  for (const b of w.booths) {
+    if (b.item) {
+      if (small) label(`${b.item.appName} · ${b.item.developer}`, b.x, b.y + 36, { size: 13, maxW: 200 });
+      else label(b.item.appName || '이름 없는 앱', b.x, b.y + 38, { n: b.n, color: itemColor(b.item) });
+    } else if (!small) label('빈 부스', b.x, b.y + 36, { n: b.n, color: '#B0A8C8', size: 14 });
+  }
+  if (w.hall && state.teacherApp) label(small ? state.teacherApp.title : `🎓 ${state.teacherApp.title}`, w.hall.x, w.hall.y + 36, { size: small ? 13 : 20, maxW: 240 });
+  if (state.settings.schoolName) label(`🏫 ${worldName(state.settings)}`, w.width / 2, 34, { size: 22, maxW: 600 });
+  label(me.nick || '나', pos.x, pos.y - 54, { size: 14, maxW: 120 });
+  if (target) { ctx.strokeStyle = 'rgba(110,79,192,.7)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(target.x, target.y, 12 + Math.sin(t / 120) * 3, 0, Math.PI * 2); ctx.stroke(); }
+}
+
 function draw(t) {
   const z = zoom(), cam = camera(z);
   labelScale = Math.max(1, 0.8 / z);
+  if (state.world.illustrated) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#5BC8F5'; ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+    ctx.setTransform(dpr * z, 0, 0, dpr * z, -cam.x * dpr * z, -cam.y * dpr * z);
+    drawIllustrated(t);
+    return;
+  }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = '#5BC8F5'; ctx.fillRect(0, 0, canvasEl.width, canvasEl.height);
   ctx.setTransform(dpr * z, 0, 0, dpr * z, -cam.x * dpr * z, -cam.y * dpr * z);
@@ -317,7 +353,7 @@ function step(dt) {
   }
   near = nearestDoor(state.world, pos);
   const f = state.world.fountain;
-  nearWish = !near && Math.hypot(pos.x - f.x, pos.y - f.y) < f.r + 70;
+  nearWish = !!f && !near && Math.hypot(pos.x - f.x, pos.y - f.y) < f.r + 70;
   const hint = $('#enterHint');
   hint.hidden = roomOpen || panelOpen || !(near || nearWish);
   if (near && near.kind === 'teacher') $('#enterText').textContent = state.teacherApp ? `🎓 선생님의 앱 · ${state.teacherApp.title}` : '🎓 선생님의 앱 (준비 중)';
@@ -366,6 +402,7 @@ function endJoy(e) {
     const b = buildingAt(state.world, p.x, p.y);
     if (overview) { overview = false; setNav('home'); }
     if (b) { target = b.kind === 'teacher' ? { ...state.world.hall.door } : { ...b.booth.door }; autoEnter = b; } else { target = p; autoEnter = null; }
+    if (target) target = moveWithin(state.world, target, 0, 0);
   }
   joy = null;
   $('#joystick').style.display = 'none';
@@ -390,7 +427,7 @@ function missions() {
     { id: 'visit3', emo: '🧭', title: '친구 부스 3곳 놀러 가기', val: Math.min(3, visitedNow), goal: 3 },
     { id: 'like3', emo: '💖', title: '마음에 드는 앱에 좋아요 3번', val: Math.min(3, likedSet().size), goal: 3 },
     { id: 'teacher', emo: '🎓', title: '선생님의 앱 해 보기', val: p.teacher ? 1 : 0, goal: 1 },
-    { id: 'wish', emo: '⭐', title: '광장 분수에서 소원 빌기', val: p.wish ? 1 : 0, goal: 1 },
+    ...(state.world && state.world.fountain ? [{ id: 'wish', emo: '⭐', title: '광장 분수에서 소원 빌기', val: p.wish ? 1 : 0, goal: 1 }] : []),
     { id: 'all', emo: '🏆', title: '모든 부스 가 보기', val: visitedNow, goal: Math.max(1, ids.size) },
   ];
 }
@@ -498,7 +535,7 @@ function faceCanvas(a, size = 44) {
 function explorePanel() {
   const visited = new Set(progress().visited);
   const rows = [
-    h('button', { class: 'dir-item', type: 'button', onclick: () => { closePanel(); goTo(state.world.hall.door); openTeacher(); } },
+    h('button', { class: 'dir-item', type: 'button', onclick: () => { closePanel(); if (state.world.hall) goTo(state.world.hall.door); openTeacher(); } },
       h('span', { class: 'emo' }, '🎓'), h('span', {}, h('b', {}, state.teacherApp ? state.teacherApp.title : '선생님의 앱'), h('br'), h('span', { class: 'muted small' }, state.teacherApp ? '가운데 큰 건물' : '곧 열려요')), h('span', { class: 'no' }, '★')),
     ...state.world.booths.filter((b) => b.item).map((b) => h('button', { class: `dir-item${visited.has(b.item.id) ? ' visited' : ''}`, type: 'button', 'data-booth': b.n, onclick: () => { closePanel(); goTo(b.door); openRoom(b.item); } },
       h('span', { class: 'emo' }, itemEmoji(b.item)),
@@ -537,6 +574,19 @@ function mePanel() {
     avatarBuilder(h, me.avatar, (a) => { me.avatar = a; saveJSON(PREF, me); paintMe(); }),
     h('p', { class: 'small muted' }, `🏅 배지 ${progress().badges.length}개 · 가 본 부스 ${progress().visited.length}곳`));
 }
+// ⭐ 내 앱: 내 부스를 한 번 골라 두면 바로 갈 수 있어요
+function myAppPanel() {
+  const mine = loadJSON(MYBOOTH, null);
+  const booths = state.world.booths.filter((b) => b.item);
+  const found = booths.find((b) => b.item.id === mine);
+  openPanel('⭐ 내 앱',
+    found ? h('div', { class: 'mission done' }, h('span', { class: 'emo' }, itemEmoji(found.item)), h('div', {}, h('b', {}, found.item.appName), h('br'), h('span', { class: 'small muted' }, `${String(found.n).padStart(2, '0')}번 부스 · 👍 ${found.item.likes || 0}`)),
+      h('button', { class: 'primary', onclick: () => { closePanel(); goTo(found.door); } }, '내 부스로 가기')) : h('p', { class: 'muted' }, '아래에서 내 부스를 골라 두면 다음부터 바로 갈 수 있어요.'),
+    h('div', { class: 'dir-list' }, ...booths.map((b) => h('button', { class: 'dir-item', type: 'button', onclick: () => { saveJSON(MYBOOTH, b.item.id); closePanel(); goTo(b.door); toast('⭐ 내 부스로 정했어요'); } },
+      h('span', { class: 'emo' }, itemEmoji(b.item)), h('span', {}, h('b', {}, b.item.appName), h('br'), h('span', { class: 'muted small' }, b.item.developer)), h('span', { class: 'no' }, String(b.n).padStart(2, '0'))))),
+    h('p', { class: 'small' }, h('a', { href: '../student/', target: '_blank', rel: 'noopener' }, '📝 학생 앱에서 내 앱 고치기 ↗')));
+}
+
 function paintMe() {
   $('#meNick').textContent = me.nick || '나의 공간';
   const c = $('#meFace'); const x = c.getContext('2d'); x.clearRect(0, 0, 48, 48); x.imageSmoothingEnabled = false;
@@ -551,7 +601,7 @@ document.addEventListener('click', (e) => {
     const id = n.dataset.nav;
     if (id === 'home') { overview = false; pos = { ...state.world.spawn }; setNav('home'); }
     if (id === 'map') toggleMap();
-    if (id === 'teacher') { goTo(state.world.hall.door); openTeacher(); }
+    if (id === 'myapp') myAppPanel();
     if (id === 'friends') friendsPanel();
     if (id === 'me') mePanel();
     if (id === 'exit') { closeRoom(); closePanel(); $('#stage').hidden = true; $('#lobby').hidden = false; renderLobby(); }

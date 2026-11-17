@@ -72,7 +72,8 @@ test('월드 설정: 교사만 바꾸고, 메타버스는 읽기만', () => {
   const g = createGas();
   assert.equal(g.post({ action: 'setWorld', teacherKey: 'nope', settings: {} }).ok, false);
   const r = g.post({ action: 'setWorld', teacherKey: 'TEST-TEACHER', settings: { schoolName: '해솔초<script>', title: '', notice: '오늘은 앱 월드 오픈!' } });
-  assert.deepEqual(r.settings, { schoolName: '해솔초script', title: '친구들이 만든 앱 월드', notice: '오늘은 앱 월드 오픈!' });
+  assert.deepEqual({ ...r.settings, hotspots: undefined, labelMode: undefined }, { schoolName: '해솔초script', title: '친구들이 만든 앱 월드', notice: '오늘은 앱 월드 오픈!', hotspots: undefined, labelMode: undefined });
+  assert.equal(r.settings.labelMode, 'small');
   const w = g.get({ action: 'world', classCode: 'TEST-CLASS' });
   assert.equal(w.settings.schoolName, '해솔초script');
   assert.deepEqual(w.assets, []);
@@ -129,4 +130,14 @@ test('Code.gs 의 월드 그림 자리 = shared/worldart.js 의 자리', async (
   const g = createGas();
   assert.deepEqual([...g.ctx.ASSET_KEYS], WORLD_ASSET_KEYS);
   assert.equal(g.ctx.STUDENT_BOOTHS, STUDENT_BOOTHS);
+});
+
+test('지도 그림 위 문 자리(hotspots)와 이름표 방식 저장', () => {
+  const g = createGas();
+  const r = g.post({ action: 'setWorld', teacherKey: 'TEST-TEACHER', settings: { hotspots: { hall: [0.5, 0.45], start: [0.47, 0.8], booths: [[0.1, 0.3], [2, 0.5], 'x'] }, labelMode: 'big' } });
+  assert.deepEqual(r.settings.hotspots.hall, [0.5, 0.45]);
+  assert.deepEqual(r.settings.hotspots.booths.slice(0, 3), [[0.1, 0.3], null, null], '범위 밖·이상한 값은 버림');
+  assert.equal(r.settings.hotspots.booths.length, 12);
+  assert.equal(r.settings.labelMode, 'big');
+  assert.deepEqual(g.get({ action: 'world', classCode: 'TEST-CLASS' }).settings.hotspots.start, [0.47, 0.8]);
 });

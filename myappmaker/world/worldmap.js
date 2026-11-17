@@ -66,6 +66,10 @@ export function blocked(world, p, r = PLAYER_R) {
 
 // 막히면 x, y 를 따로 움직여 벽을 따라 미끄러지기
 export function moveWithin(world, from, dx, dy, r = PLAYER_R) {
+  if (world.illustrated) {
+    const p = { x: Math.max(r, Math.min(world.width - r, from.x + dx)), y: Math.max(r + 20, Math.min(world.height - r, from.y + dy)) };
+    return p;
+  }
   const full = { x: from.x + dx, y: from.y + dy };
   if (!blocked(world, full, r)) return full;
   const onlyX = { x: from.x + dx, y: from.y };
@@ -79,7 +83,7 @@ export function moveWithin(world, from, dx, dy, r = PLAYER_R) {
 export function nearestDoor(world, p, reach = DOOR_REACH) {
   let best = null, bd = Infinity;
   const consider = (door, v) => { const d = Math.hypot(p.x - door.x, p.y - door.y); if (d < bd) { bd = d; best = v; } };
-  consider(world.hall.door, { kind: 'teacher' });
+  if (world.hall) consider(world.hall.door, { kind: 'teacher' });
   for (const b of world.booths) if (b.item) consider(b.door, { kind: 'booth', booth: b });
   return bd <= reach ? best : null;
 }
@@ -87,7 +91,32 @@ export function nearestDoor(world, p, reach = DOOR_REACH) {
 // 화면을 누른 곳의 건물
 export function buildingAt(world, x, y) {
   const h = world.hall;
+  if (world.illustrated) {
+    if (h && Math.abs(x - h.x) < 130 && y > h.y - 200 && y < h.y + 40) return { kind: 'teacher' };
+    for (const b of world.booths) if (b.item && Math.abs(x - b.x) < 90 && y > b.y - 160 && y < b.y + 40) return { kind: 'booth', booth: b };
+    return null;
+  }
   if (x > h.x - h.w / 2 && x < h.x + h.w / 2 && y > h.y - h.h && y < h.y + 30) return { kind: 'teacher' };
   for (const b of world.booths) if (b.item && x > b.x - b.w / 2 && x < b.x + b.w / 2 && y > b.y - b.h && y < b.y + 34) return { kind: 'booth', booth: b };
   return null;
 }
+
+// ---------- 그림 지도 모드: 선생님이 올린 지도 그림 + 그 위에 찍은 문 자리 ----------
+// 건물은 그림 속에 이미 있으니 앱은 문 자리에 이름표·부스 지기·들어가기만 얹어요. 걷기는 그림 안 어디든.
+export function layoutIllustrated(items, hotspots, W, H) {
+  const at = (p) => ({ x: p[0] * W, y: p[1] * H });
+  const slots = hotspots.booths.map((p, i) => (p ? { n: i + 1, ...at(p), item: null } : null)).filter(Boolean);
+  const rest = [];
+  for (const it of sortItems(items)) {
+    const want = slots.find((s) => s.n === it.booth);
+    if (want && !want.item) want.item = it; else rest.push(it);
+  }
+  const extra = [];
+  for (const it of rest) { const free = slots.find((s) => !s.item); if (free) free.item = it; else extra.push(it); }
+  const booths = slots.map((s) => ({ n: s.n, item: s.item, x: s.x, y: s.y, w: 150, h: 150, door: { x: s.x, y: s.y + 6 }, host: { x: s.x + 58, y: s.y + 8 } }));
+  const hall = hotspots.hall ? { ...at(hotspots.hall), w: 260, h: 220 } : null;
+  if (hall) hall.door = { x: hall.x, y: hall.y + 6 };
+  const start = hotspots.start ? at(hotspots.start) : { x: W / 2, y: H * 0.85 };
+  return { illustrated: true, width: W, height: H, booths, hall, extra, spawn: start };
+}
+

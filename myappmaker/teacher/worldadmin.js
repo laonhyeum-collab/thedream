@@ -1,6 +1,6 @@
 // [교사 앱] 월드 꾸미기: 학교 이름·월드 이름·공지, 선생님의 앱, 월드 그림(프롬프트 복사 → 그림 올리기)
 // 우리 반 저장소가 있으면 저장소에, 없으면 이 기기에 저장하고 「메타버스 파일」에 함께 담습니다.
-import { WORLD_ASSETS, worldPrompts, mapWithSchoolNamePrompt, cleanWorldSettings, worldName, STUDENT_BOOTHS } from '../shared/worldart.js';
+import { worldPrompts, mapWithSchoolNamePrompt, cleanWorldSettings, cleanHotspots, worldName, STUDENT_BOOTHS } from '../shared/worldart.js';
 import { processPicture } from '../shared/picture.js';
 import { extractHtml, looksLikeApp, mountApp, MAX_APP_BYTES } from '../shared/sandbox.js';
 import { readFileText } from '../shared/files.js';
@@ -92,7 +92,7 @@ export function createWorldAdmin({ getApi, getKey }) {
         h('div', { class: 'row' }, h('label', { class: 'field grow' }, h('span', {}, '학교 이름'), school), h('label', { class: 'field grow' }, h('span', {}, '월드 이름'), title)),
         h('label', { class: 'field' }, h('span', {}, '📢 공지 (앱 월드 「공지」에 보여요)'), notice),
         h('div', { class: 'row' }, h('span', { class: 'grow' }, '미리보기: 🚪 ', preview),
-          h('button', { class: 'primary', onclick: async () => { try { await saveSettings({ schoolName: school.value, title: title.value, notice: notice.value }); toast('💾 월드 이름과 공지를 저장했어요'); render(); } catch (e) { toast(e.message, 4000); } } }, '💾 저장'))),
+          h('button', { class: 'primary', onclick: async () => { try { await saveSettings({ ...conf.settings, schoolName: school.value, title: title.value, notice: notice.value }); toast('💾 월드 이름과 공지를 저장했어요'); render(); } catch (e) { toast(e.message, 4000); } } }, '💾 저장'))),
       h('div', { class: 'card' },
         h('h2', {}, '🎓 선생님의 앱 (가운데 큰 건물)'),
         h('p', { class: 'muted small' }, '선생님이 만든 앱 1개를 올리면 앱 월드 한가운데 「선생님의 앱」 건물에서 열려요.'),
@@ -116,9 +116,67 @@ export function createWorldAdmin({ getApi, getKey }) {
         h('p', { class: 'muted small' }, '순서: 📋 프롬프트 복사 → 이미지 AI(예: Gemini)에 붙여 넣기 → 그림 저장 → 📷 올리기. 건물·분수·아치 그림의 하얀 배경은 앱이 지워요. 이미지 AI는 한글 글씨를 틀리게 그릴 수 있어서, 학교 이름은 앱이 아치 현수막에 써 줘요.'),
         h('div', { class: 'row' }, h('button', { class: 'ghost small', onclick: () => copyText(mapWithSchoolNamePrompt(conf.settings), '📋 학교 이름을 그림에 넣는 지도 프롬프트를 복사했어요') }, '📋 (선택) 학교 이름을 그림에 직접 넣는 지도 프롬프트')),
         h('div', { class: 'asset-grid', id: 'assetGrid' })),
+      h('div', { class: 'card', id: 'hotspotCard' }),
     );
     renderAssets();
+    renderHotspots();
     showTA();
+  }
+
+  // ---------- 지도 그림 위에 문 자리 찍기 ----------
+  async function renderHotspots() {
+    const card = $('#hotspotCard');
+    const map = 'map' in conf.assets ? await assetData('map').catch(() => '') : '';
+    if (!map) {
+      card.replaceChildren(h('h2', {}, '📍 지도 그림 위에 문 자리 찍기'),
+        h('p', { class: 'muted small' }, '위에서 🗺️ 월드 지도 그림을 올리면 여기서 건물 문 자리를 찍을 수 있어요. 건물까지 다 그려진 지도를 쓰면 그 그림 그대로 앱 월드가 돼요.'));
+      return;
+    }
+    let hs = cleanHotspots(conf.settings.hotspots);
+    let labelMode = conf.settings.labelMode;
+    let pick = 'hall';
+    const targets = [['hall', '🎓 선생님의 앱'], ['start', '🚩 시작 자리'], ...Array.from({ length: STUDENT_BOOTHS }, (_, i) => [`b${i}`, String(i + 1).padStart(2, '0')])];
+    const getPt = (k) => (k === 'hall' ? hs.hall : k === 'start' ? hs.start : hs.booths[Number(k.slice(1))]);
+    const setPt = (k, v) => { if (k === 'hall') hs.hall = v; else if (k === 'start') hs.start = v; else hs.booths[Number(k.slice(1))] = v; };
+    const pickRow = h('div', { class: 'chips hs-pick' });
+    const stage = h('div', { class: 'hs-stage' });
+    const img = h('img', { src: map, alt: '월드 지도', draggable: 'false' });
+    stage.append(img);
+    const status = h('p', { class: 'small' });
+    const drawPick = () => {
+      pickRow.replaceChildren(...targets.map(([k, lbl]) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(pick === k), 'data-hs': k,
+        onclick: () => { pick = k; drawPick(); } }, `${getPt(k) ? '✅' : '⬜'} ${lbl}`)));
+      stage.querySelectorAll('.hs-marker').forEach((m) => m.remove());
+      for (const [k, lbl] of targets) {
+        const p = getPt(k);
+        if (p) stage.append(h('span', { class: `hs-marker${k === pick ? ' on' : ''}${k === 'hall' ? ' hall' : k === 'start' ? ' start' : ''}`, style: `left:${p[0] * 100}%;top:${p[1] * 100}%` }, k === 'hall' ? '🎓' : k === 'start' ? '🚩' : lbl));
+      }
+      const done = hs.booths.filter(Boolean).length;
+      status.textContent = `선생님의 앱 ${hs.hall ? '✅' : '⬜'} · 시작 자리 ${hs.start ? '✅' : '⬜'} · 학생 부스 ${done}/${STUDENT_BOOTHS}`;
+    };
+    stage.addEventListener('click', (e) => {
+      const r = img.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      if (x < 0 || x > 1 || y < 0 || y > 1) return;
+      setPt(pick, [Math.round(x * 10000) / 10000, Math.round(y * 10000) / 10000]);
+      const i = targets.findIndex(([k]) => k === pick);   // 다음 자리로 자동 이동
+      const next = targets.slice(i + 1).find(([k]) => !getPt(k));
+      if (next) pick = next[0];
+      drawPick();
+    });
+    const modes = h('div', { class: 'chips' }, ...[['small', '그림 속 간판 살리기 (작은 이름표)'], ['big', '앱이 큰 이름표 달기']].map(([m, lbl]) => h('button', {
+      type: 'button', class: 'chip', 'aria-pressed': String(labelMode === m), onclick: (e) => { labelMode = m; e.target.parentElement.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b === e.target))); },
+    }, lbl)));
+    card.replaceChildren(
+      h('h2', {}, '📍 지도 그림 위에 문 자리 찍기'),
+      h('p', { class: 'small' }, '① 아래에서 자리를 고르고 ② 지도에서 그 건물의 문(입구)을 눌러요. 다 찍으면 💾 저장. 문 자리를 찍으면 앱 월드는 이 그림을 그대로 쓰고, 그 위에 이름표·캐릭터·들어가기만 얹어요.'),
+      pickRow, stage, status,
+      h('div', { class: 'field' }, h('span', { class: 'small muted' }, '이름표'), modes),
+      h('div', { class: 'row' },
+        h('button', { class: 'primary', onclick: async () => { try { await saveSettings({ ...conf.settings, hotspots: hs, labelMode }); toast('💾 문 자리를 저장했어요. 앱 월드를 새로 열면 바뀌어요'); } catch (e) { toast(e.message, 4000); } } }, '💾 저장'),
+        h('button', { class: 'ghost', onclick: () => { if (!getPt(pick)) return; setPt(pick, null); drawPick(); } }, '고른 자리 지우기'),
+        h('button', { class: 'ghost', onclick: () => { if (!confirm('찍은 문 자리를 모두 지울까요?')) return; hs = cleanHotspots({}); pick = 'hall'; drawPick(); } }, '모두 지우기')));
+    drawPick();
   }
 
   async function renderAssets() {
@@ -138,6 +196,7 @@ export function createWorldAdmin({ getApi, getKey }) {
           await saveAsset(a.key, r.dataUrl);
           toast(`✨ ${a.title} 그림을 올렸어요`);
           renderAssets();
+          if (a.key === 'map') renderHotspots();
         } catch (err) { toast(err.message, 4500); }
       };
       return h('div', { class: `pic-slot${has ? ' done' : ''}`, 'data-asset': a.key },
@@ -147,7 +206,7 @@ export function createWorldAdmin({ getApi, getKey }) {
         h('div', { class: 'row' },
           h('button', { type: 'button', onclick: () => copyText(a.prompt, `📋 ${a.title} 프롬프트를 복사했어요`) }, '📋 프롬프트'),
           h('label', { class: 'btn primary', for: `asset-${a.key}` }, has ? '🔁 바꾸기' : '📷 올리기'), file,
-          has ? h('button', { type: 'button', class: 'ghost', 'aria-label': `${a.title} 빼기`, onclick: async () => { try { await saveAsset(a.key, null); renderAssets(); } catch (err) { toast(err.message); } } }, '✕') : ''));
+          has ? h('button', { type: 'button', class: 'ghost', 'aria-label': `${a.title} 빼기`, onclick: async () => { try { await saveAsset(a.key, null); renderAssets(); if (a.key === 'map') renderHotspots(); } catch (err) { toast(err.message); } } }, '✕') : ''));
     }));
   }
 

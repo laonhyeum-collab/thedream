@@ -200,13 +200,23 @@ function saveWorldConf_(w) { PropertiesService.getScriptProperties().setProperty
 
 function cleanSetting_(v, n) { return str_(v, n).replace(/[<>]/g, '').trim(); }
 
+// 지도 그림 위 문 자리 (0~1 비율)
+function pt_(v) { return (v && v.length === 2 && typeof v[0] === 'number' && typeof v[1] === 'number' && v[0] >= 0 && v[0] <= 1 && v[1] >= 0 && v[1] <= 1) ? [v[0], v[1]] : null; }
+function cleanHotspots_(v) {
+  v = v || {};
+  var booths = [];
+  for (var i = 0; i < STUDENT_BOOTHS; i++) booths.push(pt_(v.booths && v.booths[i]));
+  return { hall: pt_(v.hall), start: pt_(v.start), booths: booths };
+}
+
 function worldAdmin_() { var w = worldConf_(); return { settings: w.settings, assets: Object.keys(w.assets), teacherApp: w.teacherApp ? { title: w.teacherApp.title } : null }; }
 
 function setWorld_(p) {
   return withLock_(function () {
     var w = worldConf_();
     var s = p.settings || {};
-    w.settings = { schoolName: cleanSetting_(s.schoolName, 20), title: cleanSetting_(s.title, 24) || '친구들이 만든 앱 월드', notice: cleanSetting_(s.notice, 300) };
+    w.settings = { schoolName: cleanSetting_(s.schoolName, 20), title: cleanSetting_(s.title, 24) || '친구들이 만든 앱 월드', notice: cleanSetting_(s.notice, 300),
+      hotspots: cleanHotspots_(s.hotspots), labelMode: s.labelMode === 'big' ? 'big' : 'small' };
     saveWorldConf_(w);
     return { settings: w.settings };
   });

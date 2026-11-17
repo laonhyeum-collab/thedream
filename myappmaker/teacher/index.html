@@ -20,6 +20,7 @@
       <nav class="t-tabs grow" role="tablist">
         <button role="tab" data-tab="students" aria-selected="true">📋 학생 현황</button>
         <button role="tab" data-tab="booths">🗺️ 부스 배치</button>
+        <button role="tab" data-tab="world">🏝️ 월드 꾸미기</button>
         <button role="tab" data-tab="lesson">⏱️ 4차시 수업</button>
         <button role="tab" data-tab="settings">⚙️ 연결 설정</button>
       </nav>
@@ -56,6 +57,11 @@
         <p class="muted small">「메타버스 파일」은 인터넷 저장소 없이 교실 화면 한 대로 앱 월드를 열 때 써요 (메타버스 화면에서 파일 불러오기).</p>
       </div>
       <div id="boothMap" class="booth-map"></div>
+    </section>
+
+    <!-- 월드 꾸미기 -->
+    <section id="tab-world" class="tab-panel" hidden>
+      <div id="worldAdmin" class="world-admin"></div>
     </section>
 
     <!-- 4차시 수업 -->
