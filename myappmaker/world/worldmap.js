@@ -1,4 +1,4 @@
-// 앱 월드 지도: 부스 배치·충돌·가까운 부스 찾기 (화면 그리기와 상관없는 순수 계산)
+// [앱 월드] 지도: 부스 배치·충돌·가까운 부스 찾기 (화면 그리기와 상관없는 순수 계산)
 export const CELL_W = 240;
 export const CELL_H = 230;
 export const BOOTH_W = 150;

@@ -1,5 +1,5 @@
 // 로컬 개발 서버: 사이트 파일 + 가짜 우리 반 저장소(/gas)
-// 실행: node tests/serve.mjs [포트]   → http://localhost:8090/student.html?api=http://localhost:8090/gas&class=TEST-CLASS
+// 실행: node tests/serve.mjs [포트]   → 학생 앱 http://localhost:8090/myappmaker/student/?api=http://localhost:8090/gas&class=TEST-CLASS
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -29,7 +29,7 @@ export function startServer(port = 0, gasOpts) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const { port } = await startServer(Number(process.argv[2]) || 8090);
   const base = `http://localhost:${port}`;
-  console.log(`학생:   ${base}/myappmaker/student.html?api=${base}/gas&class=TEST-CLASS`);
-  console.log(`교사:   ${base}/myappmaker/teacher.html?api=${base}/gas&class=TEST-CLASS  (교사 열쇠 TEST-TEACHER)`);
-  console.log(`메타버스: ${base}/myappmaker/world.html?api=${base}/gas&class=TEST-CLASS`);
+  console.log(`학생:   ${base}/myappmaker/student/?api=${base}/gas&class=TEST-CLASS`);
+  console.log(`교사:   ${base}/myappmaker/teacher/?api=${base}/gas&class=TEST-CLASS  (교사 열쇠 TEST-TEACHER)`);
+  console.log(`메타버스: ${base}/myappmaker/world/?api=${base}/gas&class=TEST-CLASS`);
 }

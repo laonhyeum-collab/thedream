@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
-  <link rel="stylesheet" href="css/common.css">
-  <link rel="stylesheet" href="css/student.css">
-  <script src="config.js"></script>
+  <link rel="stylesheet" href="../shared/common.css">
+  <link rel="stylesheet" href="student.css">
+  <script src="../shared/config.js"></script>
 </head>
 <body>
   <header class="top no-print">
@@ -183,7 +183,7 @@
         <div id="statusBox" class="status-box" hidden></div>
       </div>
       <div class="card row">
-        <a class="btn sun" href="world.html" id="worldLink">🌏 메타버스 앱 월드 가기</a>
+        <a class="btn sun" href="../world/" id="worldLink">🌏 메타버스 앱 월드 가기</a>
         <button data-go="plan" class="ghost">📝 기획서 다시 보기</button>
         <button id="newTopicBtn" class="ghost">🆕 새 주제로 시작</button>
       </div>
@@ -198,6 +198,6 @@
   <!-- 인쇄용 기획서 -->
   <div id="printArea" class="print-only"></div>
 
-  <script type="module" src="js/student.js"></script>
+  <script type="module" src="student.js"></script>
 </body>
 </html>

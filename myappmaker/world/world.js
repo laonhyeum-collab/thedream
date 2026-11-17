@@ -1,10 +1,10 @@
-// 메타버스 앱 월드: 아바타로 걸어 다니며 친구들의 앱 부스에 들어가 놀아요.
-import { topicById, categoryById } from './topics.js';
-import { loadConfig, createApi } from './api.js';
-import { mountApp } from './sandbox.js';
-import { readFileText } from './store.js';
+// [앱 월드] 메타버스: 아바타로 걸어 다니며 친구들의 앱 부스에 들어가 놀아요.
+import { topicById, categoryById } from '../shared/topics.js';
+import { loadConfig, createApi } from '../shared/api.js';
+import { mountApp } from '../shared/sandbox.js';
+import { readFileText } from '../shared/files.js';
 import { layoutWorld, moveWithin, nearestBooth, boothAt, nearSign, PLAYER_R } from './worldmap.js';
-import { h, $, toast } from './ui.js';
+import { h, $, toast } from '../shared/ui.js';
 
 const AVATARS = ['🐰', '🐻', '🐱', '🐶', '🦊', '🐼', '🐧', '🐸', '🐯', '🦁', '🐨', '🐹'];
 const HOSTS = ['🧑‍💻', '👩‍💻', '👨‍💻', '🧑‍🎨', '👩‍🔬', '🧑‍🚀', '🦸', '🧙'];
@@ -12,7 +12,7 @@ const PREF = 'myappmaker.world.me';
 const LIKED = 'myappmaker.world.liked';
 const SPEED = 240;
 
-const cfg = loadConfig();
+const cfg = loadConfig('world');
 const api = createApi(cfg);
 const params = new URLSearchParams(location.search);
 
@@ -20,7 +20,7 @@ const params = new URLSearchParams(location.search);
 const DEMO = [
   { id: 'demo-fruit', developer: '샘플', appName: '과일 바구니', topicId: 'fruit-bomb', booth: 1, intro: '떨어지는 과일은 받고 폭탄은 피해요!', appUrl: 'samples/fruit-catch.html' },
   { id: 'demo-memory', developer: '샘플', appName: '동물 짝꿍 카드', topicId: 'memory-cards', booth: 2, intro: '뒤집힌 카드에서 같은 동물 짝을 찾아요.', appUrl: 'samples/memory-cards.html' },
-  { id: 'demo-mugunghwa', developer: '선생님', appName: '무궁화 꽃이 피었습니다', topicId: null, emoji: '🌺', booth: 3, intro: '카메라가 술래! 몸으로 하는 놀이 (카메라 허용 필요)', appUrl: '../mugunghwa/' },
+  { id: 'demo-mugunghwa', developer: '선생님', appName: '무궁화 꽃이 피었습니다', topicId: null, emoji: '🌺', booth: 3, intro: '카메라가 술래! 몸으로 하는 놀이 (카메라 허용 필요)', appUrl: '../../mugunghwa/' },
 ];
 
 let source = 'demo';

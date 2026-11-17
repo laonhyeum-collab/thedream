@@ -1,16 +1,17 @@
-// 학생용 MY APP MAKER: 주제 → 기획서 → 프롬프트 → 내 앱 → 입점
-import { TOPICS, CATEGORIES, topicById, categoryById } from './topics.js';
+// [학생 앱] 주제 → 기획서 → 프롬프트 → 내 앱 → 입점
+import { TOPICS, CATEGORIES, topicById, categoryById } from '../shared/topics.js';
 import {
   SECTIONS, PARTS, DIFFICULTY, emptyPlan, normalizePlan, missingRequired, progress,
   buildAppPrompt, buildImagePrompts, buildAllPromptsText, buildFixPrompt, planRows,
-} from './plan.js';
-import { createStore, download, readFileText, safeName } from './store.js';
-import { loadConfig, createApi } from './api.js';
-import { extractHtml, looksLikeApp, mountApp, isHttpUrl, MAX_APP_BYTES } from './sandbox.js';
-import { h, $, toast, copyText } from './ui.js';
+} from '../shared/plan.js';
+import { createStore } from './store.js';
+import { download, readFileText, safeName } from '../shared/files.js';
+import { loadConfig, createApi } from '../shared/api.js';
+import { extractHtml, looksLikeApp, mountApp, isHttpUrl, MAX_APP_BYTES } from '../shared/sandbox.js';
+import { h, $, toast, copyText } from '../shared/ui.js';
 
 const store = createStore();
-const cfg = loadConfig();
+const cfg = loadConfig('student');
 const api = createApi(cfg);
 let plan = store.load();
 let part = 1;
@@ -450,7 +451,7 @@ $('#fileSubmitBtn').onclick = () => {
 };
 
 if (api.enabled) {
-  const u = new URL('world.html', location.href);
+  const u = new URL('../world/', location.href);
   u.searchParams.set('api', cfg.endpoint); u.searchParams.set('class', cfg.classCode);
   $('#worldLink').href = u.toString();
 }

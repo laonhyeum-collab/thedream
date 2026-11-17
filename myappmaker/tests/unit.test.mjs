@@ -1,12 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TOPICS, CATEGORIES, topicById } from '../js/topics.js';
-import { SECTIONS, emptyPlan, normalizePlan, missingRequired, progress, buildAppPrompt, buildImagePrompts, buildFixPrompt, planRows } from '../js/plan.js';
-import { extractHtml, srcdocFor, looksLikeApp } from '../js/sandbox.js';
-import { createStore } from '../js/store.js';
-import { createApi, isValidEndpoint } from '../js/api.js';
-import { layoutWorld, moveWithin, nearestBooth, sortItems, PLAYER_R } from '../js/worldmap.js';
-import { LESSONS } from '../js/lesson.js';
+import { TOPICS, CATEGORIES, topicById } from '../shared/topics.js';
+import { SECTIONS, emptyPlan, normalizePlan, missingRequired, progress, buildAppPrompt, buildImagePrompts, buildFixPrompt, planRows } from '../shared/plan.js';
+import { extractHtml, srcdocFor, looksLikeApp } from '../shared/sandbox.js';
+import { createStore } from '../student/store.js';
+import { createApi, isValidEndpoint } from '../shared/api.js';
+import { layoutWorld, moveWithin, nearestBooth, sortItems, PLAYER_R } from '../world/worldmap.js';
+import { LESSONS } from '../teacher/lesson.js';
 
 test('주제 20개, 분야별 개수(모험4·액션4·창작4·추리3·생활5), 미리보기 항목 모두 있음', () => {
   assert.equal(TOPICS.length, 20);

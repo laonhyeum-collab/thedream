@@ -1,13 +1,13 @@
-// 교사용: 제출물 확인 · 입점 승인/수정 요청 · 부스 배정 · 일괄 인쇄 · 4차시 수업 타이머
-import { topicById, categoryById } from './topics.js';
-import { normalizePlan, planRows, progress, missingRequired } from './plan.js';
-import { loadConfig, saveConfig, createApi, isValidEndpoint } from './api.js';
-import { mountApp } from './sandbox.js';
-import { download, readFileText, safeName } from './store.js';
+// [교사 앱] 제출물 확인 · 입점 승인/수정 요청 · 부스 배정 · 일괄 인쇄 · 4차시 수업 타이머
+import { topicById, categoryById } from '../shared/topics.js';
+import { normalizePlan, planRows, progress, missingRequired } from '../shared/plan.js';
+import { loadConfig, saveConfig, createApi, isValidEndpoint } from '../shared/api.js';
+import { mountApp } from '../shared/sandbox.js';
+import { download, readFileText, safeName } from '../shared/files.js';
 import { LESSONS, TIMER_PRESETS } from './lesson.js';
-import { h, $, toast, copyText, fmtTime } from './ui.js';
+import { h, $, toast, copyText, fmtTime } from '../shared/ui.js';
 
-const KEY_STORE = 'myappmaker.teacherKey';
+const KEY_STORE = 'myappmaker.teacher.key';
 const LOCAL = 'myappmaker.teacher.local';
 const STATUS = {
   submitted: { label: '📨 확인 대기', cls: 'warn' },
@@ -15,7 +15,7 @@ const STATUS = {
   approved: { label: '🏪 입점', cls: 'ok' },
 };
 
-let cfg = loadConfig();
+let cfg = loadConfig('teacher');
 let teacherKey = (() => { try { return localStorage.getItem(KEY_STORE) || ''; } catch { return ''; } })();
 let api = createApi(cfg);
 let items = [];
@@ -309,11 +309,11 @@ function shareLinks() {
     if (cfg.classCode) u.searchParams.set('class', cfg.classCode);
     return u.toString();
   };
-  $('#studentLink').textContent = `학생 앱: ${mk('student.html')}`;
-  $('#studentLink').dataset.url = mk('student.html');
-  $('#worldLinkCode').textContent = `메타버스: ${mk('world.html')}`;
-  $('#worldLinkCode').dataset.url = mk('world.html');
-  $('#openWorld').href = mk('world.html');
+  $('#studentLink').textContent = `학생 앱: ${mk('../student/')}`;
+  $('#studentLink').dataset.url = mk('../student/');
+  $('#worldLinkCode').textContent = `메타버스: ${mk('../world/')}`;
+  $('#worldLinkCode').dataset.url = mk('../world/');
+  $('#openWorld').href = mk('../world/');
 }
 function renderSettings() {
   $('#cfgEndpoint').value = cfg.endpoint;
@@ -326,7 +326,7 @@ $('#cfgSave').onclick = async () => {
   if (endpoint && !isValidEndpoint(endpoint)) { $('#cfgResult').textContent = '⚠ https:// 로 시작하는 주소를 넣어 주세요'; return; }
   cfg = { endpoint, classCode: $('#cfgClass').value.trim() };
   teacherKey = $('#cfgKey').value.trim();
-  saveConfig(cfg);
+  saveConfig('teacher', cfg);
   try { localStorage.setItem(KEY_STORE, teacherKey); } catch { /* 저장 불가 */ }
   api = createApi(cfg);
   shareLinks();

@@ -2,25 +2,26 @@
 // - GET  ?action=...      : 읽기
 // - POST (text/plain JSON): 쓰기  — text/plain 이라 브라우저 사전 요청(CORS preflight)이 없습니다.
 
-const CFG_KEY = 'myappmaker.config';
+// 연결 설정은 앱마다 따로 저장합니다 (myappmaker.student.config / teacher / world) — 한 기기에서 서로 덮어쓰지 않게.
+const cfgKey = (app) => `myappmaker.${app}.config`;
 
-export function loadConfig(search = globalThis.location ? location.search : '') {
+export function loadConfig(app, search = globalThis.location ? location.search : '') {
   const base = (globalThis.window && window.MYAPP_CONFIG) || {};
   let saved = {};
-  try { saved = JSON.parse(localStorage.getItem(CFG_KEY) || '{}'); } catch { /* 없음 */ }
+  try { saved = JSON.parse(localStorage.getItem(cfgKey(app)) || '{}'); } catch { /* 없음 */ }
   const q = new URLSearchParams(search);
   const cfg = {
     endpoint: q.get('api') || saved.endpoint || base.endpoint || '',
     classCode: q.get('class') || saved.classCode || base.classCode || '',
   };
-  if (q.get('api') || q.get('class')) saveConfig(cfg);
+  if (q.get('api') || q.get('class')) saveConfig(app, cfg);
   return cfg;
 }
 
-export function saveConfig(cfg) {
+export function saveConfig(app, cfg) {
   try {
-    const old = JSON.parse(localStorage.getItem(CFG_KEY) || '{}');
-    localStorage.setItem(CFG_KEY, JSON.stringify({ ...old, endpoint: cfg.endpoint || '', classCode: cfg.classCode || '' }));
+    const old = JSON.parse(localStorage.getItem(cfgKey(app)) || '{}');
+    localStorage.setItem(cfgKey(app), JSON.stringify({ ...old, endpoint: cfg.endpoint || '', classCode: cfg.classCode || '' }));
   } catch { /* 저장 불가 */ }
 }
 

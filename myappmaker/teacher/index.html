@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
-  <link rel="stylesheet" href="css/common.css">
-  <link rel="stylesheet" href="css/teacher.css">
-  <script src="config.js"></script>
+  <link rel="stylesheet" href="../shared/common.css">
+  <link rel="stylesheet" href="teacher.css">
+  <script src="../shared/config.js"></script>
 </head>
 <body>
   <header class="t-top no-print">
@@ -51,7 +51,7 @@
         <div class="row">
           <button id="autoBooth" class="primary">🔢 빈 번호 자동 배정</button>
           <button id="exportWorld" class="sun">🌏 메타버스 파일 내려받기</button>
-          <a id="openWorld" class="btn mint" href="world.html" target="_blank" rel="noopener">🚪 메타버스 열기</a>
+          <a id="openWorld" class="btn mint" href="../world/" target="_blank" rel="noopener">🚪 메타버스 열기</a>
         </div>
         <p class="muted small">「메타버스 파일」은 인터넷 저장소 없이 교실 화면 한 대로 앱 월드를 열 때 써요 (메타버스 화면에서 파일 불러오기).</p>
       </div>
@@ -75,7 +75,7 @@
     <section id="tab-settings" class="tab-panel" hidden>
       <div class="card">
         <h2>⚙️ 우리 반 저장소 연결</h2>
-        <p class="small">구글 Apps Script로 만든 저장소 주소를 넣으면 학생들이 버튼 하나로 제출하고, 메타버스가 자동으로 부스를 열어요. 만드는 방법은 <a href="backend/README.md" target="_blank" rel="noopener">설치 안내</a>를 보세요. 저장소 없이 <b>제출 파일</b>만으로도 운영할 수 있어요.</p>
+        <p class="small">구글 Apps Script로 만든 저장소 주소를 넣으면 학생들이 버튼 하나로 제출하고, 메타버스가 자동으로 부스를 열어요. 만드는 방법은 <a href="https://github.com/laonhyeum-collab/thedream/blob/main/myappmaker/backend/README.md" target="_blank" rel="noopener">설치 안내</a>를 보세요. 저장소 없이 <b>제출 파일</b>만으로도 운영할 수 있어요.</p>
         <label class="field"><span>저장소 주소 (https://script.google.com/macros/s/…/exec)</span><input id="cfgEndpoint" type="url" placeholder="https://script.google.com/macros/s/..../exec"></label>
         <div class="row">
           <label class="field grow"><span>반 코드 (학생도 씀)</span><input id="cfgClass" type="text" placeholder="예) DREAM-5-2"></label>
@@ -103,6 +103,6 @@
   </div>
 
   <div id="printArea" class="print-only"></div>
-  <script type="module" src="js/teacher.js"></script>
+  <script type="module" src="teacher.js"></script>
 </body>
 </html>

@@ -31,7 +31,7 @@ async function newPage(viewport = { width: 1024, height: 768 }) {
 const snap = (page, name) => page.screenshot({ path: path.join(OUT, `${String(++shot).padStart(2, '0')}-${name}.png`) });
 const step = (s) => console.log(`• ${s}`);
 
-const fruit = fs.readFileSync(path.join(ROOT, 'samples/fruit-catch.html'), 'utf8');
+const fruit = fs.readFileSync(path.join(ROOT, 'world/samples/fruit-catch.html'), 'utf8');
 
 async function fillPlan(page, name, appName) {
   await page.click('#startBtn');
@@ -74,13 +74,13 @@ try {
   // ───── 1. 학생 (저장소 연결) ─────
   step('학생: 주제 → 기획서');
   const st = await newPage();
-  await st.goto(`${base}/student.html?${q}`);
+  await st.goto(`${base}/student/?${q}`);
   await snap(st, 'student-home');
   await fillPlan(st, '하늘', '다람이의 과일 바구니');
 
   step('학생: 새로고침해도 기획서가 남아 있음');
   await st.reload();
-  await st.goto(`${base}/student.html#plan`);
+  await st.goto(`${base}/student/#plan`);
   await st.waitForSelector('#plan:not([hidden])');
   assert.equal(await st.inputValue('[data-key="developer"]'), '하늘');
   assert.equal(await st.locator('#progressText').textContent() !== '0%', true);
@@ -124,7 +124,7 @@ try {
   // ───── 2. 교사 ─────
   step('교사: 연결 → 확인 → 입점 승인');
   const tc = await newPage({ width: 1280, height: 860 });
-  await tc.goto(`${base}/teacher.html?${q}`);
+  await tc.goto(`${base}/teacher/?${q}`);
   await tc.waitForSelector('#tab-settings:not([hidden])');
   await tc.fill('#cfgKey', 'WRONG');
   await tc.click('#cfgSave');
@@ -162,9 +162,9 @@ try {
 
   step('학생: 같은 태블릿을 다른 학생이 써도 덮어쓰지 않음');
   await st.click('#newTopicBtn');
-  await st.goto(`${base}/student.html?${q}#home`);
+  await st.goto(`${base}/student/?${q}#home`);
   await fillPlan(st, '구름', '구름이의 과일 비');
-  await st.goto(`${base}/student.html#myapp`);
+  await st.goto(`${base}/student/#myapp`);
   await st.fill('#appCode', fruit);
   await st.click('#runApp');
   await st.click('[data-go="submit"]');
@@ -177,7 +177,7 @@ try {
   // ───── 3. 메타버스 (저장소) ─────
   step('메타버스: 입장 → 걷기 → 부스 → 좋아요');
   const wd = await newPage();
-  await wd.goto(`${base}/world.html?${q}`);
+  await wd.goto(`${base}/world/?${q}`);
   await wd.waitForFunction(() => document.querySelector('#sourceInfo').textContent.includes('부스 1개'));
   await wd.fill('#nick', '바다');
   await wd.click('#avatarPick button:nth-child(5)');
@@ -202,7 +202,7 @@ try {
   // ───── 4. 체험용 샘플 월드 (저장소 없음) ─────
   step('메타버스: 샘플 부스');
   const demo = await newPage({ width: 820, height: 1180 });
-  await demo.goto(`${base}/world.html?demo=1`);
+  await demo.goto(`${base}/world/?demo=1`);
   await demo.click('#enterBtn');
   await demo.waitForSelector('#stage:not([hidden])');
   await snap(demo, 'world-demo-tablet');
@@ -215,9 +215,9 @@ try {
   // ───── 5. 파일 방식 (저장소 없이) ─────
   step('파일 방식: 학생 제출 파일 → 교사 넣기 → 메타버스 파일 → 월드');
   const fs2 = await newPage({ width: 390, height: 844 });   // 휴대폰 크기
-  await fs2.goto(`${base}/student.html`);
+  await fs2.goto(`${base}/student/`);
   await fillPlan(fs2, '별', '별이의 과일 잡기');
-  await fs2.goto(`${base}/student.html#myapp`);
+  await fs2.goto(`${base}/student/#myapp`);
   await fs2.fill('#appCode', fruit);
   await fs2.click('#runApp');
   await fs2.click('[data-go="submit"]');
@@ -230,7 +230,7 @@ try {
   assert.equal(JSON.parse(fs.readFileSync(subFile, 'utf8')).schema, 'myappmaker.submission/1');
 
   const tf = await newPage({ width: 1280, height: 860 });
-  await tf.goto(`${base}/teacher.html`);
+  await tf.goto(`${base}/teacher/`);
   await tf.click('[data-tab="students"]');
   await tf.setInputFiles('#importSubs', subFile);
   await tf.waitForSelector('.student >> text=별이의 과일 잡기');
@@ -243,7 +243,7 @@ try {
   await wdl.saveAs(worldFile);
 
   const wf = await newPage();
-  await wf.goto(`${base}/world.html`);
+  await wf.goto(`${base}/world/`);
   await wf.click('#lobby details summary');
   await wf.setInputFiles('#worldFile', worldFile);
   await wf.waitForFunction(() => document.querySelector('#sourceInfo').textContent.includes('메타버스 파일'));
