@@ -135,7 +135,7 @@ async function openDetail(id) {
       h('button', { class: 'ghost', onclick: closeDetail, 'aria-label': '닫기' }, '✕')),
     miss.length ? h('p', { class: 'pill warn' }, `비어 있는 ★ 항목: ${miss.map((m) => m.title).join(', ')}`) : '',
     plan && planSafety(plan).length ? h('p', { class: 'pill bad' }, `🚫 확인 필요: ${planSafety(plan).map((it) => `${it.n}번 「${it.words.join('」「')}」`).join(', ')}`) : '',
-    t && t.learn ? h('p', { class: 'pill ok' }, `📚 배움 요소: ${t.learn}`) : '',
+    t && t.learn ? h('p', { class: 'pill ok' }, `📚 교과 연계: ${(plan && plan.f.learnGoal) || `${t.curr} · ${t.learn}`}`) : '',
     h('div', { class: 'detail-grid' },
       h('div', {}, h('h3', {}, '🕹️ 앱 실행'), frame,
         x.appUrl ? h('p', { class: 'small' }, '공유 주소: ', h('a', { href: x.appUrl, target: '_blank', rel: 'noopener noreferrer' }, x.appUrl)) : ''),

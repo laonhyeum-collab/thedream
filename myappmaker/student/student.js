@@ -2,7 +2,7 @@
 import { topicById, categoryById } from '../shared/topics.js';
 import { recommend, surprise, ideaFromRec, checkText, EXAMPLE_CHIPS } from '../shared/recommend.js';
 import {
-  SECTIONS, PARTS, DIFFICULTY, topicView, planSafety, emptyPlan, normalizePlan, missingRequired, progress,
+  SECTIONS, PARTS, DIFFICULTY, topicView, planSafety, planWarnings, emptyPlan, normalizePlan, missingRequired, progress,
   buildAppPrompt, buildImagePrompts, buildAllPromptsText, buildFixPrompt, planRows,
 } from '../shared/plan.js';
 import { createStore } from './store.js';
@@ -130,7 +130,7 @@ function renderRecs() {
       h('span', { class: 'cat', style: `background:${c.color}` }, `${c.name} · ${base.name} 방식`),
       h('span', { class: 'name' }, rec.title),
       h('span', { class: 'sum' }, rec.summary),
-      h('span', { class: 'learn' }, `📚 ${rec.learn}`));
+      h('span', { class: 'learn' }, `📚 ${rec.curr} · ${rec.learn}`));
   }));
 }
 
@@ -176,7 +176,7 @@ function openPreview(rec) {
       h('span', { class: 'emo', 'aria-hidden': 'true' }, rec.emoji),
       h('div', {}, h('span', { class: 'pill', style: `background:${c.color};color:#fff` }, `${c.emoji} ${c.name} · ${t.name} 방식`), h('h2', { id: 'pvTitle' }, rec.title))),
     h('p', {}, rec.summary),
-    h('div', { class: 'learn-box' }, `📚 배움 요소: ${rec.learn}`),
+    h('div', { class: 'learn-box' }, `📚 교과 연계: ${rec.curr} · ${rec.learn}`),
     h('div', { class: 'pv-sec' }, h('h4', {}, `🕹️ 이런 방식으로 놀아요 (${t.name} 방식)`), h('ol', { class: 'pv-steps' }, ...t.steps.map((s) => h('li', {}, s)))),
     h('div', { class: 'pv-sec' }, h('h4', {}, '🧩 넣을 수 있는 게임 요소'), h('div', { class: 'chips' }, ...t.elements.map((e) => h('span', { class: 'pill' }, e)))),
     h('div', { class: 'pv-sec' }, h('h4', {}, '📱 예상 화면'),
@@ -201,6 +201,7 @@ function chooseIdea(rec) {
   if (!plan) plan = emptyPlan(rec.base);
   plan.topicId = rec.base;
   plan.idea = ideaFromRec(rec, lastQuery);
+  if (!plan.f.learnGoal.trim()) plan.f.learnGoal = `${rec.curr} · ${rec.learn}`;   // 배울 내용 미리 채우기 (고쳐도 됨)
   saveNow();
   closePreview();
   part = 1;
@@ -218,7 +219,7 @@ function renderPlan() {
   const c = categoryById(t.cat);
   $('#planTopic').replaceChildren(
     h('span', { class: 'emo', 'aria-hidden': 'true' }, t.emoji),
-    h('div', { class: 'grow' }, h('b', {}, t.name), h('div', { class: 'muted small' }, `${t.summary}`), h('div', { class: 'small learn-inline' }, `📚 배움 요소: ${t.learn} · ${c.name} · ${t.baseName} 방식`)),
+    h('div', { class: 'grow' }, h('b', {}, t.name), h('div', { class: 'muted small' }, `${t.summary}`), h('div', { class: 'small learn-inline' }, `📚 ${t.curr} · ${t.learn} · ${t.baseName} 방식`)),
     h('button', { class: 'ghost small', onclick: () => go('topics') }, '주제 바꾸기'));
   $('#partTabs').replaceChildren(...PARTS.filter((p) => p.id <= 4).map((p) => h('button', {
     class: 'tab', role: 'tab', type: 'button', 'aria-selected': String(p.id === part),
@@ -253,6 +254,7 @@ function inputFor(i, t) {
       h('div', { class: 'chips', role: 'group', 'aria-label': i.label, 'data-key': i.key }, ...opts.map((o) => {
         const on = i.multi ? v.includes(o) : v === o;
         return h('button', { type: 'button', class: 'chip', 'aria-pressed': String(on), onclick: (e) => {
+          if (i.multi && !on && i.max && v.length >= i.max) { toast(`${i.max}개까지만 골라요. 다른 것을 빼고 골라 주세요 🙂`); return; }
           if (i.multi) plan.f[i.key] = on ? v.filter((x) => x !== o) : [...v, o];
           else plan.f[i.key] = on ? '' : o;
           touch();
@@ -326,7 +328,7 @@ function printPlan() {
   const rows = planRows(plan);
   $('#printArea').replaceChildren(h('div', { class: 'print-sheet' },
     h('h1', {}, `📱 ${plan.f.appName || t.name} — 앱 기획서`),
-    h('p', {}, `개발자: ${plan.f.developer || '         '}   ${plan.f.classInfo ? `(${plan.f.classInfo})` : ''}   · MY APP MAKER · ${new Date().toLocaleDateString('ko-KR')}`),
+    h('p', {}, `개발자: ${plan.f.developer || '         '}  · MY APP MAKER · ${new Date().toLocaleDateString('ko-KR')}`),
     h('table', {}, h('tbody', {}, ...rows.map((r) => h('tr', {}, h('th', {}, r.n && r.n <= 15 ? `${r.n}. ${r.title}` : r.title), h('td', {}, r.value || ' ')))))));
   window.print();
 }
@@ -339,10 +341,13 @@ function renderPrompts() {
   box.replaceChildren(h('b', {}, '✏️ 아직 비어 있는 ★ 항목이 있어요. 채울수록 AI가 내 생각에 딱 맞게 만들어요: '),
     ...miss.map((m) => h('button', { class: 'chip', type: 'button', onclick: () => { part = m.n === 0 ? 1 : SECTIONS.find((s) => s.n === m.n).part; go(m.n === 0 ? 'topics' : 'plan'); } }, m.title)));
   const issues = planSafety(plan);
+  const warns = planWarnings(plan);
   const sbox = $('#safetyBox');
-  sbox.hidden = issues.length === 0;
+  sbox.hidden = issues.length + warns.length === 0;
+  sbox.className = `card ${issues.length ? 'bad-box' : 'warn-box'}`;
   sbox.replaceChildren(
-    h('b', {}, '🚫 초등학생 게임에 알맞지 않은 말이나 이미 있는 게임·캐릭터 이름이 있어요. 고친 뒤에 프롬프트를 복사할 수 있어요.'),
+    issues.length ? h('b', {}, '🚫 개인정보, 초등학생 게임에 알맞지 않은 말, 이미 있는 게임·캐릭터 이름이 있어요. 고친 뒤에 프롬프트를 복사할 수 있어요.') : '',
+    ...warns.map((w) => h('p', {}, `🔒 ${w.n}번 ${w.label}: ${w.text} `, h('button', { class: 'chip small', type: 'button', onclick: () => { part = 1; go('plan'); } }, '고치러 가기'))),
     h('ul', {}, ...issues.map((it) => h('li', {}, `${it.n}번 ${it.label}: 「${it.words.join('」, 「')}」 `,
       h('button', { class: 'chip small', type: 'button', onclick: () => { part = SECTIONS.find((x) => x.n === it.n).part; go('plan'); } }, '고치러 가기')))));
   $('#appPrompt').textContent = buildAppPrompt(plan);
@@ -457,7 +462,7 @@ function submissionPayload() {
   return {
     studentKey: plan.id,
     developer: plan.f.developer.trim(),
-    classInfo: plan.f.classInfo.trim(),
+    classInfo: '',   // 학년·반은 보내지 않음 (개인정보)
     appName: plan.f.appName.trim(),
     topicId: plan.topicId,
     plan: { ...plan, app: { ...appRest, html: '' } },
@@ -467,7 +472,9 @@ function submissionPayload() {
 }
 
 function canSubmit() {
-  if (!plan.f.developer.trim() || !plan.f.appName.trim()) { toast('기획서 1번에 개발자 이름과 앱 이름을 써요', 4000); return false; }
+  if (!plan.f.developer.trim() || !plan.f.appName.trim()) { toast('기획서 1번에 개발자 별명과 앱 이름을 써요', 4000); return false; }
+  const issues = planSafety(plan);
+  if (issues.length) { toast(`🚫 ${issues[0].n}번 ${issues[0].label}에 바꿔야 할 말(「${issues[0].words[0]}」)이 있어요. 고친 뒤에 보내요`, 5000); go('prompts'); return false; }
   if (!plan.app.html && !plan.app.url) { toast('4. 내 앱에 코드를 먼저 넣어요', 4000); return false; }
   const bad = submitChecks().filter((c) => !c.ok);
   if (bad.length && !confirm(`아직 확인하지 않은 것이 있어요:\n- ${bad.map((b) => b.text).join('\n- ')}\n\n그래도 보낼까요?`)) return false;

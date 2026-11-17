@@ -60,7 +60,7 @@
 .sec:last-child { border-bottom: 0; margin-bottom: 0; }
 .sec h3 .num { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); margin-right: 6px; font-size: 16px; }
 .sec h3 .req { color: var(--coral); font-size: 14px; margin-left: 6px; }
-.diff { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.diff { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .diff button { flex-direction: column; background: #fff; color: var(--ink); border: 2px solid var(--line); font-weight: 700; }
 .diff button small { font-weight: 400; color: var(--muted); font-size: 13px; }
 .diff button[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-soft); }

@@ -3,7 +3,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { recommend, surprise, checkText, ALL_RECS, THEMES, ideaFromRec } from '../shared/recommend.js';
 import { topicById } from '../shared/topics.js';
-import { emptyPlan, normalizePlan, topicView, planSafety, buildAppPrompt, planRows } from '../shared/plan.js';
+import { emptyPlan, normalizePlan, topicView, planSafety, planWarnings, buildAppPrompt, planRows, DIFFICULTY, SECTIONS, MAX_PICK } from '../shared/plan.js';
+import { TOPICS } from '../shared/topics.js';
 
 const titles = (q) => recommend(q).recs.map((r) => r.title);
 const kinds = (q) => recommend(q).notices.map((n) => n.kind);
@@ -12,7 +13,11 @@ const BRANDS = ['마인크래프트', '포켓몬', '피카츄', '마리오', '�
 test('모든 추천: 배움 요소가 있고, 기본 게임 방식이 있고, 걸러 낼 말·실제 게임 이름이 없음', () => {
   assert.ok(ALL_RECS.length >= 80);
   for (const r of ALL_RECS) {
-    assert.ok(r.learn && r.learn.length >= 4, `${r.title}: 배움 요소`);
+    assert.ok(r.learn && r.learn.length >= 6, `${r.title}: 배움 요소`);
+    assert.match(r.curr, /^(국어|수학|사회|과학|영어|도덕|실과|체육|음악|미술|바른 생활|슬기로운 생활|즐거운 생활) (1~2|3~4|5~6)학년$/, `${r.title}: 교과 연계`);
+    if (/^(바른|슬기로운|즐거운) 생활/.test(r.curr)) assert.match(r.curr, /1~2학년$/, `${r.title}: 통합교과는 1~2학년`);
+    if (/^(사회|과학|영어|도덕|체육|음악|미술)/.test(r.curr)) assert.doesNotMatch(r.curr, /1~2학년/, `${r.title}: 3학년부터 배우는 교과`);
+    if (/^실과/.test(r.curr)) assert.match(r.curr, /5~6학년$/, `${r.title}: 실과는 5~6학년`);
     assert.ok(topicById(r.base), `${r.title}: 기본 방식 ${r.base}`);
     const c = checkText(`${r.title} ${r.summary} ${r.learn}`);
     assert.deepEqual([c.violence, c.blocked, c.existing.length], [[], [], 0], `${r.title}`);
@@ -87,7 +92,7 @@ test('고른 주제가 기획서·프롬프트·인쇄에 들어감', () => {
   assert.equal(v.hint.character, '아기 티라노');
   const p = buildAppPrompt(plan);
   assert.match(p, /공룡 화석 발굴대/);
-  assert.match(p, /배움 요소: 공룡의 몸 구조와 이름/);
+  assert.match(p, /배울 내용\(교과 연계\): 과학 3~4학년 · 공룡의 몸 구조와 이름/);
   assert.match(p, /따라 하지 말고/);
   assert.match(planRows(plan)[0].value, /배움 요소/);
   // 저장·불러오기에서도 유지, 배움 요소 없는 주제는 버림
@@ -105,4 +110,59 @@ test('기획서 검사: 폭력·부적절·실제 게임 이름을 항목과 함
   assert.deepEqual(issues.map((i) => i.n), [1, 5]);
   assert.ok(issues[0].words.includes('포켓몬'));
   assert.ok(issues[1].words.includes('총으로'));
+});
+
+test('요청 1: 난이도는 쉬움·보통 두 단계, 예전 「도전」은 보통으로', () => {
+  assert.deepEqual(DIFFICULTY.map((d) => d.id), ['easy', 'normal']);
+  assert.equal(normalizePlan({ ...emptyPlan('fruit-bomb'), difficulty: 'hard' }).difficulty, 'normal');
+});
+
+test('요청 2: 기능·게임 요소는 3개까지, 규칙 칸은 짧게', () => {
+  const inputs = SECTIONS.flatMap((s) => s.inputs);
+  assert.equal(inputs.find((i) => i.key === 'features').max, MAX_PICK);
+  assert.equal(inputs.find((i) => i.key === 'elements').max, MAX_PICK);
+  for (const k of ['ruleStart', 'rulePlay', 'ruleWin', 'ruleLose', 'extra']) assert.ok(inputs.find((i) => i.key === k).max <= 80, k);
+  const p = emptyPlan('fruit-bomb');
+  p.f.features = ['이동하기', '고르기', '피하기', '점프하기', '조합하기'];
+  p.f.rulePlay = '가'.repeat(500);
+  const n = normalizePlan(JSON.parse(JSON.stringify(p)));
+  assert.equal(n.f.features.length, 3);
+  assert.equal(n.f.rulePlay.length, 80);
+  assert.match(buildAppPrompt(n), /더 늘리지 마/);
+});
+
+test('요청 3: 게임은 한 판(1단계)만 — 레벨·스테이지 없음', () => {
+  const opts = SECTIONS.flatMap((s) => s.inputs).find((i) => i.key === 'elements').options;
+  assert.ok(!opts.includes('레벨') && !opts.includes('스테이지'));
+  for (const t of TOPICS) {
+    assert.ok(!t.elements.some((e) => /레벨|스테이지/.test(e)), t.name);
+    assert.ok(!t.steps.some((s) => /다음 (단계|레벨|행성)/.test(s)), t.name);
+  }
+  assert.equal(normalizePlan({ ...emptyPlan('fruit-bomb'), f: { ...emptyPlan().f, elements: ['점수', '레벨', '스테이지'] } }).f.elements.join(), '점수');
+  assert.match(buildAppPrompt(emptyPlan('fruit-bomb')), /한 판\(1단계\)만/);
+});
+
+test('요청 4: 모든 게임은 초등 교과와 연결 — 기본 방식·추천 모두 교과 연계, 기획서에 배울 내용 필수', () => {
+  for (const t of TOPICS) assert.match(t.curr, /^(국어|수학|사회|과학|도덕|실과|체육|슬기로운 생활) (1~2|3~4|5~6)학년$/, t.name);
+  const sec4 = SECTIONS.find((s) => s.n === 4);
+  assert.ok(sec4.req && sec4.inputs.some((i) => i.key === 'learnGoal' && !i.optional));
+  const p = emptyPlan('fruit-bomb');
+  assert.match(buildAppPrompt(p), /초등학교 수업과 연결/);
+  assert.match(buildAppPrompt(p), /수학 1~2학년/);
+});
+
+test('요청 5: 개인정보는 받지 않음 — 학년·반 칸 없음, 개인정보가 있으면 막음', () => {
+  assert.ok(!SECTIONS.flatMap((s) => s.inputs).some((i) => i.key === 'classInfo'));
+  assert.equal(normalizePlan({ ...emptyPlan('fruit-bomb'), f: { ...emptyPlan().f, classInfo: '3학년 2반' } }).f.classInfo, '');
+  const cases = { '010-1234-5678': '전화번호', 'abc@naver.com': '이메일', '해솔초등학교': '학교 이름', '서울시 강남구': '주소', '101동 1203호': '주소', '3학년 2반': '학년·반', '2016년 3월 5일': '생일', '제 이름은 김민수': '진짜 이름' };
+  for (const [q, label] of Object.entries(cases)) assert.ok(checkText(q).privacy.includes(label), q);
+  for (const q of ['공룡 게임 3단계', '점수 100점', '초등학생 게임', '로켓 10번 발사']) assert.deepEqual(checkText(q).privacy, [], q);
+  const p = emptyPlan('fruit-bomb');
+  p.f.intro = '우리 해솔초등학교 친구들이 하는 게임';
+  assert.deepEqual(planSafety(p).map((i) => i.n), [2]);
+  p.f.developer = '김민수';
+  assert.equal(planWarnings(p).length, 1, '진짜 이름 같으면 알려 줌');
+  p.f.developer = '별빛코더';
+  assert.equal(planWarnings(p).length, 0);
+  assert.ok(recommend('제 이름은 박지호고 공룡이 좋아요').notices.some((n) => n.kind === 'privacy'));
 });

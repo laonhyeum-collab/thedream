@@ -67,6 +67,7 @@ async function fillPlan(page, name, appName) {
   await page.fill('[data-key="appName"]', appName);
   await page.fill('[data-key="intro"]', '하늘에서 떨어지는 과일을 바구니로 받는 게임');
   await page.fill('[data-key="goal"]', '30초 안에 100점 넘기기');
+  assert.match(await page.inputValue('[data-key="learnGoal"]'), /학년 · /, '배울 내용 미리 채움');
   await snap(page, 'plan-part1');
   await page.click('#nextPart');
   await page.fill('[data-key="ruleStart"]', '시작 버튼을 눌러요');
@@ -79,11 +80,15 @@ async function fillPlan(page, name, appName) {
   await page.fill('[data-key="place"]', '과수원');
   await page.click('#nextPart');
   for (const f of ['이동하기', '모으기(수집)', '피하기']) await page.click(`[data-key="features"] >> text="${f}"`);
+  await page.click('[data-key="features"] >> text="점프하기"');
+  assert.equal(await page.locator('[data-key="features"] [aria-pressed="true"]').count(), 3, '기능은 3개까지만');
+  assert.equal(await page.locator('[data-diff]').count(), 0, '난이도는 4번 묶음에');
   await page.click('[data-key="elements"] >> text="점수"');
   await page.click('[data-key="elements"] >> text="시간 제한"');
   await snap(page, 'plan-part3');
   await page.click('#nextPart');
   await page.fill('[data-key="extra"]', '황금 사과를 받으면 5초 동안 점수 2배');
+  assert.equal(await page.locator('[data-diff]').count(), 2, '난이도 두 단계');
   await page.click('[data-diff="normal"]');
   await page.waitForFunction(() => document.querySelector('#saveStatus').textContent.includes('저장 완료'), null, { timeout: 5000 });
 }
@@ -107,7 +112,7 @@ try {
   await st.click('[data-step="prompts"]');
   await st.waitForSelector('#prompts:not([hidden])');
   const prompt = await st.textContent('#appPrompt');
-  for (const s of ['다람이의 과일 바구니', '바다 쓰레기 청소부', '배움 요소: 해양 오염과 분리배출', '30초 안에 100점 넘기기', '황금 사과', '노란 모자를 쓴 다람쥐', 'HTML 파일 하나', '보통']) assert.ok(prompt.includes(s), `프롬프트에 "${s}"`);
+  for (const s of ['다람이의 과일 바구니', '바다 쓰레기 청소부', '과학 5~6학년 · 해양 오염과 분리배출', '한 판(1단계)만', '30초 안에 100점 넘기기', '황금 사과', '노란 모자를 쓴 다람쥐', 'HTML 파일 하나', '보통']) assert.ok(prompt.includes(s), `프롬프트에 "${s}"`);
   assert.equal(await st.isHidden('#missingBox'), true, '★ 항목 모두 채움');
   await st.click('#prompts details summary');
   assert.ok((await st.locator('.img-prompt').count()) >= 2, '이미지 프롬프트');
