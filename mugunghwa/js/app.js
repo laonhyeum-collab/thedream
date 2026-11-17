@@ -177,14 +177,6 @@ function setBanner() {
   }
 }
 
-/** 오른쪽 아래 카메라 창이 길을 가리지 않도록 비워 둘 높이(캔버스 픽셀) */
-function pipReserve() {
-  const pip = $('pip').getBoundingClientRect();
-  const sc = scene.getBoundingClientRect();
-  if (!pip.height || !sc.height) return 0;
-  return Math.max(0, sc.bottom - pip.top + 8) * (scene.height / sc.height);
-}
-
 function resizeScene() {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   const r = scene.getBoundingClientRect();
@@ -200,7 +192,8 @@ function releaseAwake() { try { wakeLock?.release(); } catch {} wakeLock = null;
 
 function beginPlay() {
   show('play');
-  moveCamTo($('pip'));
+  moveCamTo($('playCam'));
+  requestAnimationFrame(resizeScene);
   resizeScene();
   game = null;
   caughtFlash = [0, 0];
@@ -310,7 +303,6 @@ function frame(now) {
         game: game || (placeholder ||= new Game({ players: Number(settings.players) })),
         t,
         caughtFlash,
-        bottomReserve: pipReserve(),
       });
     }
   }

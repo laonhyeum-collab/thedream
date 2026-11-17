@@ -152,6 +152,12 @@ const bothVideo = makeVideo(path.join(OUT, 'both-move.y4m'), { leftMoves: true, 
   const log = await watch(page, 26, async (st) => {
     if (st.game?.phase === 'chant' && !shotChant && st.game.players[0].progress > 5) {
       shotChant = true; await page.screenshot({ path: path.join(OUT, '03-play-chant.png') });
+      const lay = await page.evaluate(() => {
+        const cam = document.getElementById('playCam').getBoundingClientRect();
+        const sc = document.getElementById('scene').getBoundingClientRect();
+        return { camCenter: (cam.left + cam.right) / 2, camRight: cam.right, sceneLeft: sc.left, vw: innerWidth };
+      });
+      check('가로 화면: 카메라는 가운데 크게, 놀이 마당은 오른쪽', lay.camRight <= lay.sceneLeft && lay.sceneLeft > lay.vw * 0.6, JSON.stringify(lay));
     }
     if (st.game?.phase === 'freeze' && !shotFreeze && st.game.players[0].caught > 0) {
       shotFreeze = true; await page.screenshot({ path: path.join(OUT, '04-play-caught.png') });
@@ -285,11 +291,12 @@ const bothVideo = makeVideo(path.join(OUT, 'both-move.y4m'), { leftMoves: true, 
   await page.waitForFunction(() => window.__mugunghwa.game?.phase === 'chant', null, { timeout: 15000 });
   await sleep(1200);
   await page.screenshot({ path: path.join(OUT, '09-play-tablet-portrait.png') });
-  const pipCoversLane = await page.evaluate(() => {
-    const pip = document.getElementById('pip').getBoundingClientRect();
-    return pip.top < document.getElementById('scene').getBoundingClientRect().bottom - pip.height - 20;
+  const lay = await page.evaluate(() => {
+    const cam = document.getElementById('playCam').getBoundingClientRect();
+    const sc = document.getElementById('scene').getBoundingClientRect();
+    return { camBottom: cam.bottom, sceneTop: sc.top, camW: cam.width };
   });
-  check('세로 화면에서도 카메라 창이 자기 자리(아래쪽)에 있음', !pipCoversLane);
+  check('세로 화면: 카메라는 위, 놀이 마당은 아래', lay.camBottom <= lay.sceneTop + 1 && lay.camW > 300, JSON.stringify(lay));
   await browser.close();
 }
 

@@ -67,9 +67,13 @@
   <!-- 놀이 -->
   <section id="play" class="screen" hidden>
     <div id="banner" class="banner" aria-live="polite"></div>
-    <canvas id="scene"></canvas>
-    <div class="cam pip" id="pip"></div>
-    <div id="bigText" class="big-text" hidden></div>
+    <div class="stage">
+      <div class="cam-area">
+        <div class="cam main-cam" id="playCam"></div>
+        <div id="bigText" class="big-text" hidden></div>
+      </div>
+      <canvas id="scene"></canvas>
+    </div>
     <button id="quitBtn" class="ghost quit">그만하기</button>
   </section>
 
