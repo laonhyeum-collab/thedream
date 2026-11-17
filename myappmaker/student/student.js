@@ -11,6 +11,8 @@ import { loadConfig, createApi } from '../shared/api.js';
 import { extractHtml, looksLikeApp, mountApp, isHttpUrl, MAX_APP_BYTES } from '../shared/sandbox.js';
 import { applyImages, findImagesBlock, imagesSize } from '../shared/images.js';
 import { processPicture } from '../shared/picture.js';
+import { avatarBuilder, avatarFromText } from '../shared/avatar.js';
+import { studentBoothPrompt, BOOTH_IMAGE_SLOT } from '../shared/worldart.js';
 import { h, $, toast, copyText } from '../shared/ui.js';
 
 const store = createStore();
@@ -521,7 +523,34 @@ function submitChecks() {
     { ok: (plan.app.checks || []).length >= 3, text: `테스트 체크리스트 3개 이상 확인 (${(plan.app.checks || []).length}개)` },
   ];
 }
+// 내 캐릭터 + 내 부스 건물 그림
+function renderMyBooth() {
+  if (!plan.avatar) plan.avatar = avatarFromText(plan.f.developer || plan.id);
+  $('#avatarBox').replaceChildren(avatarBuilder(h, plan.avatar, (a) => { plan.avatar = a; touch(); }));
+  const t = topicView(plan);
+  const prompt = studentBoothPrompt({ appName: plan.f.appName, topicName: t ? t.name : '', cat: t ? t.cat : '', summary: plan.f.intro || (t ? t.summary : ''), hero: plan.f.charLook || plan.f.charName });
+  const file = h('input', { type: 'file', accept: 'image/*', hidden: true, id: 'boothFile' });
+  file.onchange = async (e) => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    toast('🪄 부스 그림을 다듬는 중…');
+    try {
+      plan.boothImage = (await processPicture(f, BOOTH_IMAGE_SLOT, { maxChars: 190_000 })).dataUrl;
+      saveNow(); renderMyBooth(); toast('🏠 내 부스 그림을 넣었어요');
+    } catch (err) { toast(err.message, 4500); }
+  };
+  $('#boothSlot').replaceChildren(
+    h('b', {}, '🏠 내 부스 건물 ', h('span', { class: 'muted small' }, '(선택 · 1:1)')),
+    h('div', { class: 'pic-thumb' }, plan.boothImage ? h('img', { src: plan.boothImage, alt: '내 부스 그림' }) : '🏠'),
+    h('div', { class: 'row' },
+      h('button', { type: 'button', onclick: () => safeCopy(prompt, '📋 부스 그림 프롬프트를 복사했어요') }, '📋 프롬프트'),
+      h('label', { class: 'btn primary', for: 'boothFile' }, plan.boothImage ? '🔁 바꾸기' : '📷 그림 올리기'), file,
+      plan.boothImage ? h('button', { type: 'button', class: 'ghost', 'aria-label': '부스 그림 빼기', onclick: () => { plan.boothImage = ''; saveNow(); renderMyBooth(); } }, '✕') : ''),
+    h('span', { class: 'small muted' }, '하얀 배경은 앱이 지워요. 게임 내용이 보이게 지붕과 장식을 꾸며 달라고 해요.'));
+}
+
 function renderSubmit() {
+  renderMyBooth();
   $('#submitChecks').replaceChildren(...submitChecks().map((c) => h('li', { class: c.ok ? 'ok' : '' }, c.text)));
   const t = topicView(plan);
   $('#reviewFields').replaceChildren(...SECTIONS.find((s) => s.n === 15).inputs.map((i) => inputFor(i, t)));
@@ -539,7 +568,8 @@ function submissionPayload() {
     classInfo: '',   // 학년·반은 보내지 않음 (개인정보)
     appName: plan.f.appName.trim(),
     topicId: plan.topicId,
-    plan: { ...plan, app: { ...appRest, html: '', images: {} } },
+    plan: { ...plan, boothImage: '', app: { ...appRest, html: '', images: {} } },
+    boothImage: plan.boothImage || '',
     appHtml: html ? appliedHtml() : '',
     appUrl: plan.app.url || '',
   };

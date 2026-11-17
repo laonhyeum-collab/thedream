@@ -53,8 +53,8 @@ const CATS = {
 
 // 교사가 만드는 월드 그림 자리 (없으면 앱이 픽셀아트로 직접 그림)
 export const WORLD_ASSETS = [
-  { key: 'map', title: '🗺️ 월드 지도(바닥 배경)', ratio: '16:9', max: [1920, 1080], clear: false, required: true,
-    use: '월드 전체 바닥. 건물은 앱이 그 위에 올려요.' },
+  { key: 'map', title: '🗺️ 월드 지도', ratio: '16:9', max: [1920, 1080], clear: false, required: true,
+    use: '월드 전체 그림. 건물까지 그린 지도를 올리고 「문 자리 찍기」를 하면 그 그림 그대로 월드가 돼요.' },
   { key: 'hall', title: '🏫 선생님의 앱 건물', ratio: '1:1', max: [480, 480], clear: true, use: '지도 한가운데 큰 건물' },
   { key: 'booth', title: '🏠 기본 부스 건물', ratio: '1:1', max: [320, 320], clear: true, use: '학생이 부스 그림을 안 만들었을 때 쓰는 건물' },
   ...Object.entries(CATS).map(([id, c]) => ({ key: `booth_${id}`, title: `🏠 ${c.name} 분야 부스`, ratio: '1:1', max: [320, 320], clear: true, use: `${c.name} 분야 앱의 부스 (선택)`, cat: id })),
@@ -87,16 +87,51 @@ ${WHITE_BG}. ${NO_TEXT}. 정사각형 1:1.`,
 모습: ${c.look}. 가운데 둥근 문(문 위에 게임기 모양 장식), 지붕 위에 빈 간판 자리(글씨 없이).
 ${WHITE_BG}. ${NO_TEXT}. 정사각형 1:1.`;
   }
-  return WORLD_ASSETS.map((a) => ({ ...a, prompt: P[a.key] }));
+  return WORLD_ASSETS.map((a) => (a.key === 'map' ? { ...a, prompt: fullMapPrompt(s), groundPrompt: P.map } : { ...a, prompt: P[a.key] }));
+}
+
+// ★ 건물까지 다 그린 완성 지도 (추천 — 참고 화면과 같은 구성)
+export const MAP_THEMES = [
+  { n: 1, row: '위쪽 왼쪽', name: '보물섬 탐험', look: '야자수 옆 해적 오두막, 해적 깃발 문장, 앞에 보물 상자' },
+  { n: 2, row: '위쪽', name: '미로 탈출', look: '회색 바위 동굴 속 미궁 입구, 미로 무늬 문장' },
+  { n: 3, row: '위쪽 가운데', name: '우주 탐험', look: '눈 덮인 산 위의 우주 기지, 로켓 문장, 보라 수정' },
+  { n: 4, row: '위쪽 오른쪽', name: '펫 키우기', look: '큰 나무 위 트리하우스와 나무 계단, 발바닥 문장' },
+  { n: 5, row: '오른쪽 위', name: '요리왕', look: '빨강·흰 줄무늬 차양의 식당, 셰프 모자 문장' },
+  { n: 6, row: '왼쪽 가운데', name: '놀이공원', look: '관람차와 서커스 천막' },
+  { n: 7, row: '가운데 왼쪽', name: '낚시왕', look: '연못 위 나무 수상 오두막과 부두, 물고기 문장' },
+  { n: 8, row: '가운데 오른쪽', name: '정글 생존', look: '덩굴로 덮인 돌 유적 아치, 나뭇잎 문장' },
+  { n: 9, row: '오른쪽 가운데', name: '몬스터 연구소', look: '보라색 작은 성, 물약 플라스크 문장' },
+  { n: 10, row: '왼쪽 아래', name: '미니 게임', look: '해변의 작은 오락실, 게임기 문장, 파라솔' },
+  { n: 11, row: '아래 왼쪽', name: '크리에이터', look: '알록달록 차양의 공방과 이젤, 팔레트 문장' },
+  { n: 12, row: '오른쪽 아래', name: '방탈출 미스터리', look: '보라 바위 동굴과 빛나는 수정, 자물쇠 문장' },
+];
+
+export function fullMapPrompt(settings = DEFAULT_WORLD, { signs = false } = {}) {
+  const s = cleanWorldSettings(settings);
+  const school = s.schoolName || '○○초등학교';
+  const list = MAP_THEMES.map((t) => `${String(t.n).padStart(2, '0')}) ${t.row}: 「${t.name}」 — ${t.look}`).join('\n');
+  const signRule = signs
+    ? `각 건물 앞 간판에 「01 보물섬 탐험」처럼 번호와 이름을 한글로 또박또박 써 줘(그 밖의 글자는 넣지 마).`
+    : `각 건물 앞에 흰색 둥근 간판 판자를 두되 글자는 쓰지 말고 비워 둬(이름표는 앱이 달아요). ${NO_TEXT}`;
+  return `어린이 교육용 메타버스 게임 「${school} 앱 월드」의 마을 전체 지도를 한 장으로 그려 줘. 가로 16:9, ${PIXEL_STYLE}.
+전체: 바다 위의 큰 초록 섬 마을. 섬 가장자리는 절벽과 모래사장, 폭포 3~4개, 섬 안쪽에 강·연못·나무다리, 분홍 벚꽃나무와 둥근 나무 숲, 꽃밭, 가로등, 벤치, 왼쪽 아래 해변에 빨강·흰 등대.
+가운데: 위쪽에 학사모 문장과 깃발이 있는 보라색 지붕의 작은 성 「선생님의 앱」(앞에 큰 아치 문), 그 아래 동그란 돌바닥 광장과 노란 별이 솟은 분수, 맨 아래 가운데에 보라 깃발이 달린 입구 아치와 바다로 내려가는 돌계단.
+광장에서 구불구불한 흙길·돌길이 아래 건물 12채로 이어져. 건물마다 지붕 위에 동그란 아이콘 문장, 가운데에 빛나는 문(문 위 게임기 무늬):
+${list}
+${signRule}
+주의: 사람·동물 캐릭터는 그리지 마(캐릭터는 앱이 올려요). 화면 테두리·메뉴·버튼·로고 같은 화면 장식 없이 지도 그림만.`;
 }
 
 // 학교 이름을 그림에 직접 넣고 싶을 때 (이미지 AI가 한글을 틀리게 쓸 수 있어 추천하지 않음)
 export function mapWithSchoolNamePrompt(settings) {
   const s = cleanWorldSettings(settings);
   const school = s.schoolName || '○○초등학교';
-  return `${worldPrompts(s).find((a) => a.key === 'map').prompt.replace(NO_TEXT, '유명 게임·캐릭터를 따라 하지 말고 독창적으로')}
-추가: 맨 아래 입구 계단 위에 아치 현수막을 그리고, 현수막에 한글로 「${school}」이라고 또박또박 크게 써 줘. 다른 글자는 넣지 마.`;
+  return `${fullMapPrompt(s)}
+추가: 맨 아래 입구 아치의 현수막에만 한글로 「${school} 앱 월드」라고 또박또박 크게 써 줘. 다른 곳에는 글자를 넣지 마.`;
 }
+
+// 바닥만 있는 지도 (건물을 따로 만들어 올릴 때)
+export const groundMapPrompt = (settings) => worldPrompts(settings).find((a) => a.key === 'map').groundPrompt;
 
 // 학생 부스 건물 그림 프롬프트 (학생 앱 「5. 입점」에서 씀)
 export function studentBoothPrompt({ appName, topicName, cat, summary, hero }) {

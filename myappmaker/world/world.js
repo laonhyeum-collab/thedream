@@ -94,6 +94,7 @@ function rebuild(first) {
     // 그림 지도 + 문 자리가 있으면 그 그림 그대로, 없으면 앱이 그린 픽셀 섬
     state.world = illustrated ? layoutIllustrated(state.items, state.settings.hotspots, 1920, Math.round((1920 * map.height) / map.width)) : layoutWorld(state.items);
     if (!illustrated) state.ground = state.ground || buildGround(state.world);
+    canvasEl.dataset.mode = illustrated ? 'illustrated' : 'pixel';   // 시험·디버깅용 표시
     if (first) pos = { ...state.world.spawn }; else pos = moveWithin(state.world, pos, 0, 0);
   }
   const name = worldName(state.settings);

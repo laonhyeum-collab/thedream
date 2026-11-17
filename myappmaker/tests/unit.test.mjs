@@ -60,7 +60,7 @@ test('이미지 프롬프트: 배경 16:9, 캐릭터 흰 배경(앱이 지움), 
   assert.equal(list[0].id, 'background'); assert.match(list[0].text, /16:9/);
   assert.match(list[1].text, /하얀색 한 가지/); assert.match(list[1].text, /노란 모자/);
   assert.ok(list.some((x) => x.id === 'icon2' && x.slot.element === '코인'));
-  for (const x of list) { assert.match(x.text, /앱 월드와 같은 느낌/); assert.match(x.text, /글자/); assert.match(x.text, /유명 캐릭터/); }
+  for (const x of list) { assert.match(x.text, /앱 월드와 같은 그림체/); assert.match(x.text, /픽셀아트/); assert.match(x.text, /글자/); assert.match(x.text, /유명 캐릭터/); }
   assert.ok(!buildAppPrompt(p).includes('16:9'));
   assert.match(buildAppPrompt(p), /const IMAGES = \{ background: '', hero: '', icon1: '', icon2: '' \};/, '앱 프롬프트가 그림 자리 이름을 정해 줌');
 });

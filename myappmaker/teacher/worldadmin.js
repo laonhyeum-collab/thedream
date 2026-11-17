@@ -204,7 +204,8 @@ export function createWorldAdmin({ getApi, getKey }) {
         h('span', { class: 'small muted' }, a.use),
         thumb,
         h('div', { class: 'row' },
-          h('button', { type: 'button', onclick: () => copyText(a.prompt, `📋 ${a.title} 프롬프트를 복사했어요`) }, '📋 프롬프트'),
+          h('button', { type: 'button', onclick: () => copyText(a.prompt, `📋 ${a.title} 프롬프트를 복사했어요`) }, a.key === 'map' ? '📋 건물까지 그린 지도 (추천)' : '📋 프롬프트'),
+          a.key === 'map' ? h('button', { type: 'button', class: 'ghost', onclick: () => copyText(a.groundPrompt, '📋 바닥만 있는 지도 프롬프트를 복사했어요') }, '📋 바닥만') : '',
           h('label', { class: 'btn primary', for: `asset-${a.key}` }, has ? '🔁 바꾸기' : '📷 올리기'), file,
           has ? h('button', { type: 'button', class: 'ghost', 'aria-label': `${a.title} 빼기`, onclick: async () => { try { await saveAsset(a.key, null); renderAssets(); if (a.key === 'map') renderHotspots(); } catch (err) { toast(err.message); } } }, '✕') : ''));
     }));

@@ -2,7 +2,9 @@
 // 앱 화면, 인쇄용 기획서, 활동지가 모두 이 정의 하나를 같은 순서·같은 말로 씁니다.
 import { topicById, categoryById } from './topics.js';
 import { checkText, looksLikeRealName } from './recommend.js';
-import { cleanImages } from './images.js';
+import { cleanImages, MAX_IMAGE_CHARS } from './images.js';
+import { PIXEL_STYLE } from './worldart.js';
+import { cleanAvatar } from './avatar.js';
 
 export const SCHEMA = 'myappmaker.plan/1';
 
@@ -17,7 +19,7 @@ export const MAX_PICK = 3;
 
 // 그림은 모두 메타버스 앱 월드와 같은 느낌으로
 export const IMAGE_STYLE = '앱 월드 스타일';
-export const IMAGE_STYLE_DESC = '우리 반 메타버스 앱 월드와 같은 느낌: 밝은 파스텔 색, 둥글둥글하고 귀여운 2D 플랫 일러스트, 얇고 부드러운 외곽선, 연두색 잔디·모래색 길·하늘색 물 같은 맑은 색감, 그림자는 아주 옅게';
+export const IMAGE_STYLE_DESC = `우리 반 메타버스 앱 월드와 같은 그림체 — ${PIXEL_STYLE}`;
 
 // 기획서 15개 항목. part = 활동 묶음(①~④), req = 꼭 쓰기(★)
 export const SECTIONS = [
@@ -112,6 +114,8 @@ export function emptyPlan(topicId = null) {
     updatedAt: new Date().toISOString(),
     topicId,
     idea: null,          // 추천에서 고른 나만의 주제 (recommend.js ideaFromRec)
+    avatar: null,        // 앱 월드에서 내 부스 앞에 서 있을 픽셀 캐릭터 (avatar.js)
+    boothImage: '',      // 내 부스 건물 그림 (data URL, 선택)
     difficulty: 'easy',
     f,
     app: { html: '', url: '', images: {}, updatedAt: null },   // images: 그림 자리별 그림(data URL), 코드와 따로 보관
@@ -133,6 +137,8 @@ export function normalizePlan(raw) {
   }
   out.f.imageStyle = IMAGE_STYLE;
   out.app.images = cleanImages(out.app.images);
+  out.avatar = src.avatar && typeof src.avatar === 'object' ? cleanAvatar(src.avatar) : null;
+  out.boothImage = typeof src.boothImage === 'string' && src.boothImage.length <= MAX_IMAGE_CHARS && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(src.boothImage) ? src.boothImage : '';
   out.f.classInfo = '';                       // 학년·반은 받지 않음 (개인정보)
   if (out.difficulty === 'hard') out.difficulty = 'normal';   // 예전 3단계 난이도
   if (!DIFFICULTY.some((d) => d.id === out.difficulty)) out.difficulty = 'easy';
@@ -245,7 +251,7 @@ export function buildAppPrompt(plan) {
     line('화면 구성', screens),
     line('화면 이동 흐름', f.flow),
     line('대표 색상', f.colors),
-    line('그림 느낌', '밝은 파스텔 색의 둥글고 귀여운 2D 그림 (우리 반 메타버스 앱 월드와 어울리게)'),
+    line('그림 느낌', '16비트 레트로 게임 같은 밝은 픽셀아트 (우리 반 메타버스 앱 월드와 어울리게)'),
     line('글자 분위기', f.fontMood),
     line('버튼 모양', f.buttonShape),
     line('★ 나만의 특별 기능', f.extra),

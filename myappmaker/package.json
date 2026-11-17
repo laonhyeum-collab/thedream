@@ -7,9 +7,11 @@
     "start": "node tests/serve.mjs 8090",
     "test": "node --test tests/*.test.mjs",
     "e2e": "node tests/e2e.mjs",
-    "slides": "node slides/build.cjs"
+    "slides": "node slides/build.cjs",
+    "prompts-doc": "node docs/build-prompts-doc.mjs"
   },
   "devDependencies": {
+    "docx": "^9.5.1",
     "pptxgenjs": "^3.12.0"
   }
 }

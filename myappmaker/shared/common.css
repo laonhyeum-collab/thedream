@@ -87,6 +87,7 @@ input::placeholder, textarea::placeholder { color: #a3a6c2; }
   position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
   background: #2b2d42; color: #fff; padding: 12px 20px; border-radius: 14px; z-index: 1000;
   max-width: calc(100vw - 32px); box-shadow: var(--shadow); font-weight: 600;
+  pointer-events: none;   /* 알림이 아래 버튼·지도를 가리지 않게 */
 }
 .pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 4px 12px; font-size: 14px; font-weight: 700; background: var(--brand-soft); color: var(--brand); }
 .pill.ok { background: var(--mint-soft); color: #087f5b; }

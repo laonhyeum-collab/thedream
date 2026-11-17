@@ -185,9 +185,13 @@ try {
   assert.ok((await st.textContent('#fixPrompt')).includes('폭탄이 너무 많아요'));
   await snap(st, 'myapp');
 
-  step('학생: 입점 신청 (저장소)');
+  step('학생: 입점 신청 (저장소) — 내 캐릭터·내 부스 그림 함께');
   await st.click('[data-go="submit"]');
   await st.waitForSelector('#submit:not([hidden])');
+  await st.click('#avatarBox .avatar-opt[data-k="hair"][data-i="3"]');
+  await st.click('#avatarBox .avatar-opt[data-k="acc"][data-i="4"]');
+  await st.setInputFiles('#boothFile', toFile('booth.png', pics.hero));
+  await st.waitForSelector('#boothSlot img');
   assert.equal(await st.locator('#submitChecks li.ok').count(), 3);
   await st.click('#sendBtn');
   await st.waitForSelector('#statusBox.submitted');
@@ -195,6 +199,9 @@ try {
   assert.equal(gas.sheets.get('제출').data.length, 2);
   assert.ok([...gas.files.values()].some((f) => !f.trashed && f.content.includes("url(' + IMAGES.background") && /hero: 'data:image\/(webp|png)/.test(f.content)), '제출한 앱에 그림이 들어 있음');
   assert.ok(!gas.sheets.get('제출').data[1].join('').includes('data:image'), '기획서(시트)에는 그림을 넣지 않음');
+  const row1 = Object.fromEntries(gas.sheets.get('제출').data[0].map((k, i) => [k, gas.sheets.get('제출').data[1][i]]));
+  assert.deepEqual([JSON.parse(row1.planJson).avatar.hair, JSON.parse(row1.planJson).avatar.acc], [3, 4], '캐릭터가 함께 제출됨');
+  assert.ok(row1.boothFileId && gas.files.get(row1.boothFileId).content.startsWith('data:image/'), '부스 그림이 따로 저장됨');
 
   // ───── 2. 교사 ─────
   step('교사: 연결 → 확인 → 입점 승인');
@@ -229,6 +236,24 @@ try {
   assert.equal(await tc.textContent('#timerDisplay'), '05:00');
   await snap(tc, 'teacher-lesson');
 
+  step('교사: 월드 꾸미기 — 학교 이름·공지·선생님의 앱');
+  await tc.click('[data-tab="world"]');
+  await tc.waitForSelector('#worldAdmin input[placeholder="예) 해솔초등학교"]');
+  await tc.fill('#worldAdmin input[placeholder="예) 해솔초등학교"]', '해솔초등학교');
+  await tc.fill('#worldAdmin textarea[maxlength="300"]', '오늘은 앱 월드 오픈!');
+  await tc.click('#worldAdmin button:has-text("💾 저장") >> nth=0');
+  await tc.waitForFunction(() => document.querySelector('.toast') && document.querySelector('.toast').textContent.includes('저장했어요'));
+  await tc.waitForSelector('#worldAdmin input[placeholder="예) 구구단 마을"]');
+  await tc.fill('#worldAdmin input[placeholder="예) 구구단 마을"]', '구구단 마을');
+  await tc.fill('#worldAdmin textarea.code', '<!doctype html><html><body><h1 id="teacherApp">선생님 앱</h1><script>1</script></body></html>');
+  await tc.click('#worldAdmin button:has-text("🚀 올리기")');
+  await tc.waitForFunction(() => document.querySelector('.toast').textContent.includes('선생님의 앱을 올렸어요'));
+  const wconf = JSON.parse(gas.props.get('WORLD'));
+  assert.equal(wconf.settings.schoolName, '해솔초등학교');
+  assert.equal(wconf.teacherApp.title, '구구단 마을');
+  assert.equal(await tc.locator('#assetGrid .pic-slot').count(), 10, '월드 그림 자리 10개');
+  await snap(tc, 'teacher-world');
+
   step('학생: 선생님 피드백 확인');
   await st.click('#checkBtn');
   await st.waitForSelector('#statusBox.approved');
@@ -250,19 +275,21 @@ try {
   assert.equal(gas.sheets.get('제출').data.length, 3, '두 학생 모두 저장');
 
   // ───── 3. 메타버스 (저장소) ─────
-  step('메타버스: 입장 → 걷기 → 부스 → 좋아요');
+  step('메타버스: 학교 이름 → 내 캐릭터 → 입장 → 탐험 → 부스 → 좋아요 → 미션·공지·친구·선생님 앱');
   const wd = await newPage();
   await wd.goto(`${base}/world/?${q}`);
   await wd.waitForFunction(() => document.querySelector('#sourceInfo').textContent.includes('부스 1개'));
+  assert.match(await wd.textContent('#lobbyTitle'), /해솔초등학교/);
   await wd.fill('#nick', '바다');
-  await wd.click('#avatarPick button:nth-child(5)');
-  assert.equal(await wd.inputValue('#nick'), '바다', '아바타를 골라도 이름 유지');
+  await wd.click('#lobbyAvatar .avatar-opt[data-k="hair"][data-i="2"]');
+  assert.equal(await wd.inputValue('#nick'), '바다', '캐릭터를 골라도 이름 유지');
   await snap(wd, 'world-lobby');
   await wd.click('#enterBtn');
-  await wd.keyboard.down('ArrowDown'); await wd.waitForTimeout(700); await wd.keyboard.up('ArrowDown');
+  assert.equal(await wd.getAttribute('#map', 'data-mode'), 'pixel', '지도 그림이 없으면 픽셀 섬');
+  await wd.keyboard.down('ArrowUp'); await wd.waitForTimeout(600); await wd.keyboard.up('ArrowUp');
   await snap(wd, 'world-walk');
-  await wd.click('#listBtn');
-  await wd.click('.dir-item');
+  await wd.click('[data-side="explore"]');
+  await wd.click('.dir-item[data-booth]');
   await wd.waitForSelector('#appRoom:not([hidden])');
   await wd.frameLocator('#roomFrame').locator('#go').waitFor();
   await snap(wd, 'world-room');
@@ -270,9 +297,24 @@ try {
   await wd.waitForFunction(() => document.querySelector('#likeCount').textContent === '1');
   assert.equal(await wd.isDisabled('#likeBtn'), true, '좋아요는 한 번만');
   await wd.click('#closeRoom');
-  // 부스 문 앞으로 걸어가서 Space
-  await wd.keyboard.down('ArrowDown'); await wd.waitForTimeout(1500); await wd.keyboard.up('ArrowDown');
-  await snap(wd, 'world-near');
+  await wd.click('[data-side="missions"]');
+  assert.match(await wd.textContent('#panelBody'), /1\/3/, '미션 진행이 보임');
+  await wd.click('#closePanel');
+  await wd.click('[data-side="notice"]');
+  assert.match(await wd.textContent('#panelBody'), /오늘은 앱 월드 오픈!/);
+  await wd.click('#closePanel');
+  await wd.click('[data-nav="friends"]');
+  assert.equal(await wd.locator('#panelBody canvas.face').count(), 1, '친구 캐릭터');
+  await wd.click('#closePanel');
+  await wd.click('[data-side="explore"]');
+  await wd.click('.dir-item >> nth=0');
+  await wd.frameLocator('#roomFrame').locator('#teacherApp').waitFor();
+  await wd.click('#closeRoom');
+  await wd.click('[data-side="badges"]');
+  assert.ok((await wd.locator('.badge:not(.locked)').count()) >= 1, '선생님 앱을 해서 배지');
+  await wd.click('#closePanel');
+  await wd.click('[data-nav="map"]');
+  await snap(wd, 'world-map');
 
   // ───── 4. 체험용 샘플 월드 (저장소 없음) ─────
   step('메타버스: 샘플 부스');
@@ -281,8 +323,8 @@ try {
   await demo.click('#enterBtn');
   await demo.waitForSelector('#stage:not([hidden])');
   await snap(demo, 'world-demo-tablet');
-  await demo.click('#listBtn');
-  assert.equal(await demo.locator('.dir-item').count(), 3);
+  await demo.click('[data-side="explore"]');
+  assert.equal(await demo.locator('.dir-item').count(), 3, '선생님 앱 + 샘플 2');
   await demo.click('.dir-item >> text=동물 짝꿍 카드');
   await demo.frameLocator('#roomFrame').locator('#go').click();
   assert.equal(await demo.frameLocator('#roomFrame').locator('.card').count(), 16);
@@ -312,6 +354,26 @@ try {
   await tf.click('.student');
   await tf.frameLocator('#detail iframe').locator('#go').waitFor();
   await tf.click('#detail >> text=입점 승인');
+
+  step('교사(파일 방식): 지도 그림 올리고 문 자리 찍기');
+  await tf.click('[data-tab="world"]');
+  await tf.waitForSelector('#assetGrid [data-asset="map"]');
+  const mapPng = await tf.evaluate(() => { const c = document.createElement('canvas'); c.width = 1600; c.height = 900; const x = c.getContext('2d'); x.fillStyle = '#7CC95C'; x.fillRect(0, 0, 1600, 900); x.fillStyle = '#8E6BD8'; x.fillRect(700, 250, 200, 150); for (let i = 0; i < 12; i++) { x.fillStyle = '#E4572E'; x.fillRect(100 + (i % 6) * 250, 120 + Math.floor(i / 6) * 520, 90, 80); } return c.toDataURL('image/png'); });
+  await tf.setInputFiles('#asset-map', toFile('map.png', mapPng));
+  await tf.waitForSelector('.hs-stage img');
+  await tf.waitForFunction(() => { const i = document.querySelector('.hs-stage img'); return i.complete && i.naturalWidth > 0; });
+  await tf.evaluate(() => document.querySelector('.hs-stage').scrollIntoView({ block: 'end' }));
+  const clicks = [[800, 410], [800, 820], ...Array.from({ length: 12 }, (_, i) => [145 + (i % 6) * 250, 210 + Math.floor(i / 6) * 520])];
+  const keys = ['hall', 'start', ...Array.from({ length: 12 }, (_, i) => `b${i}`)];
+  for (const [i, [x, y]] of clicks.entries()) {
+    await tf.click(`[data-hs="${keys[i]}"]`);
+    const box = await tf.locator('.hs-stage img').boundingBox();
+    await tf.mouse.click(box.x + (x / 1600) * box.width, box.y + (y / 900) * box.height);
+  }
+  assert.match(await tf.textContent('#hotspotCard'), /학생 부스 12\/12/);
+  await tf.click('#hotspotCard button:has-text("💾 저장")');
+  await tf.waitForFunction(() => document.querySelector('.toast').textContent.includes('문 자리를 저장했어요'));
+  await snap(tf, 'teacher-hotspots');
   await tf.click('[data-tab="booths"]');
   const [wdl] = await Promise.all([tf.waitForEvent('download'), tf.click('#exportWorld')]);
   const worldFile = path.join(OUT, 'world.json');
@@ -323,8 +385,10 @@ try {
   await wf.setInputFiles('#worldFile', worldFile);
   await wf.waitForFunction(() => document.querySelector('#sourceInfo').textContent.includes('메타버스 파일'));
   await wf.click('#enterBtn');
-  await wf.click('#listBtn');
-  await wf.click('.dir-item');
+  assert.equal(await wf.getAttribute('#map', 'data-mode'), 'illustrated', '지도 그림 + 문 자리 = 그림 지도 모드');
+  await snap(wf, 'world-illustrated');
+  await wf.click('[data-side="explore"]');
+  await wf.click('.dir-item[data-booth]');
   await wf.frameLocator('#roomFrame').locator('#go').waitFor();
 
   step('첫 화면 허브');
