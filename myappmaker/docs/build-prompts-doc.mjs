@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import {
-  worldPrompts, fullMapPrompt, mapWithSchoolNamePrompt, studentBoothPrompt, MAP_THEMES, PIXEL_STYLE, NO_TEXT, STUDENT_BOOTHS,
+  CHIBI_LOOK, BUILDING_LOOK, BADGE_LOOK, worldPrompts, fullMapPrompt, mapWithSchoolNamePrompt, studentBoothPrompt, MAP_THEMES, PIXEL_STYLE, NO_TEXT, STUDENT_BOOTHS,
 } from '../shared/worldart.js';
 
 const require = createRequire(import.meta.url);
@@ -74,9 +74,15 @@ const children = [
   ], [2300, 2900, 3826]),
   gap(),
 
-  h1('2. 모든 그림에 공통으로 들어가는 말'),
-  p('그림체를 통일하려고 모든 프롬프트에 아래 두 문장이 들어 있어요. 직접 프롬프트를 고칠 때도 이 문장은 남겨 두세요.'),
+  h1('2. 모든 그림에 공통으로 들어가는 말 (참고 화면의 컨셉)'),
+  p('선생님이 정한 「MY APP META WORLD」 참고 화면과 같은 세계로 보이도록, 월드 그림과 학생 그림 프롬프트에 모두 같은 그림체 문장이 들어 있어요. 직접 프롬프트를 고칠 때도 이 문장은 남겨 두세요.'),
   promptBox(`그림체: ${PIXEL_STYLE}`),
+  gap(),
+  table(['그림', '참고 화면과 맞추는 모습'], [
+    ['건물(선생님·부스)', BUILDING_LOOK],
+    ['사람 캐릭터(학생 주인공)', CHIBI_LOOK],
+    ['아이콘', BADGE_LOOK],
+  ], [2400, 6626]),
   gap(),
   promptBox(`글자 규칙: ${NO_TEXT}`),
   gap(),
@@ -119,7 +125,7 @@ const children = [
 
   new Paragraph({ children: [new PageBreak()] }),
   h1('5. 학생이 만드는 그림 (참고)'),
-  p('학생 앱이 학생마다 기획서에 맞춰 프롬프트를 만들어 줘요. 모두 같은 픽셀아트 그림체라서 앱 월드와 어울려요.'),
+  p('학생 앱이 학생마다 기획서에 맞춰 프롬프트를 만들어 줘요. 모두 참고 화면과 같은 컨셉이에요: 게임 배경은 「앱 월드 안의 한 장소」, 주인공은 앱 월드 아이들과 같은 2등신 캐릭터, 아이콘은 건물 위 동그란 문장 모양, 부스는 앱 월드 건물과 같은 모습.'),
   bullet([b('게임 그림: '), '「4. 내 앱 → 🖼️ 내 그림 넣기」 — 배경(16:9), 주인공, 아이콘 최대 3개']),
   bullet([b('내 부스 건물: '), '「5. 입점 → 🏠 내 부스」 — 방식 B(또는 그림 없이)일 때 앱 월드의 내 부스로 보여요']),
   bullet([b('내 캐릭터: '), '그림 AI 없이 앱에서 머리·피부·옷·소품을 골라 만들어요']),
@@ -128,6 +134,7 @@ const children = [
   gap(),
 
   h1('6. 잘 만드는 요령'),
+  bullet([b('★ 지도 그림을 같이 올리기: '), '이미지 AI(Gemini 등)에 프롬프트와 함께 앱 월드 지도 그림(또는 참고 화면)을 올리면 그림체가 훨씬 똑같이 나와요. 학생 앱의 「🗺️ 앱 월드 지도 그림 받기」 버튼으로 받을 수 있어요(우리 반 저장소를 연결했을 때).']),
   bullet([b('한 대화창에서 이어서: '), '지도 → 건물 순서로 같은 대화창에서 만들면 그림체가 잘 맞아요. "앞 그림과 같은 그림체로"라고 덧붙여도 좋아요.']),
   bullet([b('마음에 안 들면: '), '"폭포를 하나 더", "건물을 더 크게", "글자는 빼고"처럼 고칠 점만 짧게 다시 말해요.']),
   bullet([b('하얀 배경: '), '건물·분수·아치는 "하얀 배경"으로 받으면 앱이 배경을 지워요. 그림자나 바닥이 같이 그려지면 깨끗하게 안 지워질 수 있어요.']),

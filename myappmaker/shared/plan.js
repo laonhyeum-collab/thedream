@@ -3,7 +3,7 @@
 import { topicById, categoryById } from './topics.js';
 import { checkText, looksLikeRealName } from './recommend.js';
 import { cleanImages, MAX_IMAGE_CHARS } from './images.js';
-import { PIXEL_STYLE } from './worldart.js';
+import { PIXEL_STYLE, CHIBI_LOOK, BADGE_LOOK, REF_HINT } from './worldart.js';
 import { cleanAvatar } from './avatar.js';
 
 export const SCHEMA = 'myappmaker.plan/1';
@@ -296,16 +296,16 @@ export function buildImagePrompts(plan) {
   const hero = [f.charName, f.charLook, f.charTrait].filter(filled).join(', ') || (t ? t.hint.character : '귀여운 주인공');
   const place = f.place.trim() || (t ? t.hint.place : '밝은 게임 배경');
   const colors = f.colors.length ? `대표 색상은 ${f.colors.join('·')}` : '밝고 선명한 색';
-  const common = `그림체: ${style}. ${colors}. 이미지 안에 글자·숫자·로고·워터마크를 넣지 마. 유명 캐릭터나 브랜드를 따라 하지 말고 독창적으로. 어린이 게임에 어울리게 밝고 친근하게.`;
+  const common = `그림체: ${style}. ${REF_HINT} ${colors}. 이미지 안에 글자·숫자·로고·워터마크를 넣지 마. 유명 캐릭터나 브랜드를 따라 하지 말고 독창적으로. 어린이 게임에 어울리게 밝고 친근하게.`;
   const keep = `주인공 모습(${hero})은 모든 그림에서 똑같은 색과 생김새로 유지해 줘.`;
   const white = '배경은 아무것도 없는 하얀색 한 가지로(무늬·그림자·바닥 없이), 그림이 가운데에 오게';
   return imageSlots(plan).map((sl) => ({
     id: sl.key, key: sl.key, title: `${sl.title} (${sl.ratio})`, slot: sl,
     text: sl.key === 'background'
-      ? `게임 「${f.appName || (t ? t.name : '나의 게임')}」의 배경 그림을 그려 줘. 장소: ${place}. 가로 16:9 비율, 캐릭터 없이 배경만. 위쪽과 가운데에 점수·버튼이 올라갈 빈 공간을 넉넉히 남겨 줘. ${common}`
+      ? `우리 반 메타버스 「앱 월드」 안의 한 장소처럼 보이는 게임 「${f.appName || (t ? t.name : '나의 게임')}」 배경을 그려 줘. 장소: ${place}. 앱 월드와 같은 쿼터뷰 픽셀아트로(블록 모양 땅·흙 절벽·맑은 물·둥근 나무·꽃이 앱 월드와 똑같은 느낌). 가로 16:9, 캐릭터 없이 배경만, 가운데와 위쪽은 게임이 펼쳐지도록 넓게 비워 둬. ${common}`
       : sl.key === 'hero'
-        ? `게임 주인공 캐릭터 한 명을 그려 줘: ${hero}. 정면을 보고 서 있는 전신, ${white}. 정사각형 1:1. ${keep} ${common}`
-        : `게임에 쓸 "${sl.element}" 아이콘 하나를 그려 줘. 단순하고 굵은 외곽선, 작게 줄여도 알아보기 쉽게, ${white}. 정사각형 1:1. ${common}`,
+        ? `앱 월드에 사는 아이들과 똑같은 ${CHIBI_LOOK}로 내 게임 주인공을 그려 줘: ${hero}. 살짝 비스듬히 정면을 보고 서 있는 전신 한 명, ${white}. 정사각형 1:1. ${keep} ${common}`
+        : `게임에 쓸 「${sl.element}」 아이콘: ${BADGE_LOOK}. 작게 줄여도 알아보기 쉽게 단순하게, 동그란 배지 바깥은 하얀색 한 가지로. 정사각형 1:1. ${common}`,
   }));
 }
 

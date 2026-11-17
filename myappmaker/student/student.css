@@ -112,6 +112,8 @@ details[open] > summary::before { content: "▾ "; }
 .avatar-opt.swatch { width: 28px; min-height: 28px; padding: 0; border-radius: 50%; }
 .avatar-opt[aria-pressed="true"] { border-color: #3B2F5C; box-shadow: 0 0 0 2px #FFD54F; }
 @media (max-width: 520px) { .avatar-builder { grid-template-columns: 1fr; } .avatar-stage { grid-auto-flow: column; } }
+.ref-tip { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #F3F1FF; border-radius: 12px; padding: 8px 12px; margin: 6px 0; font-size: 14px; }
+.ref-tip button, .ref-tip .btn { min-height: 38px; padding: 4px 12px; font-size: 14px; }
 .pic-warn { background: var(--sun-soft); border-radius: 12px; padding: 10px 12px; }
 
 /* 크게 보기 */

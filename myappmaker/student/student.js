@@ -355,6 +355,7 @@ function renderPrompts() {
     h('ul', {}, ...issues.map((it) => h('li', {}, `${it.n}번 ${it.label}: 「${it.words.join('」, 「')}」 `,
       h('button', { class: 'chip small', type: 'button', onclick: () => { part = SECTIONS.find((x) => x.n === it.n).part; go('plan'); } }, '고치러 가기')))));
   $('#appPrompt').textContent = buildAppPrompt(plan);
+  renderRefTips();
   $('#imagePrompts').replaceChildren(...buildImagePrompts(plan).map((p) => h('div', { class: 'img-prompt' },
     h('div', { class: 'row' }, h('b', { class: 'grow' }, p.title), h('button', { class: 'small', type: 'button', onclick: () => safeCopy(p.text, '📋 복사했어요') }, '📋 복사')),
     h('p', { class: 'small' }, p.text))));
@@ -428,6 +429,7 @@ function runApp() {
 }
 
 function renderPictures() {
+  renderRefTips();
   const slots = imageSlots(plan);
   const prompts = Object.fromEntries(buildImagePrompts(plan).map((p) => [p.key, p.text]));
   const imgs = plan.app.images || {};
@@ -523,6 +525,25 @@ function submitChecks() {
     { ok: (plan.app.checks || []).length >= 3, text: `테스트 체크리스트 3개 이상 확인 (${(plan.app.checks || []).length}개)` },
   ];
 }
+// 그림체 맞추기: 앱 월드 지도 그림을 받아 이미지 AI에 프롬프트와 함께 올려요
+function refTip() {
+  const box = h('div', { class: 'ref-tip' }, h('span', { class: 'grow' }, '🎨 ', h('b', {}, '앱 월드와 똑같은 그림체로 만들려면: '), '이미지 AI에 프롬프트와 함께 ', h('b', {}, '앱 월드 지도 그림'), '을 올려요.'));
+  if (api.enabled) {
+    box.append(h('button', { type: 'button', class: 'primary', onclick: async () => {
+      try {
+        const { data } = await api.asset('map');
+        const a = h('a', { href: data, download: `앱월드_지도.${data.startsWith('data:image/png') ? 'png' : 'jpg'}` });
+        document.body.append(a); a.click(); a.remove();
+        toast('🗺️ 지도 그림을 내려받았어요. 이미지 AI에 같이 올려요');
+      } catch { toast('선생님이 아직 지도 그림을 올리지 않았어요. 앱 월드 화면을 캡처해서 올려도 돼요', 5000); }
+    } }, '🗺️ 앱 월드 지도 그림 받기'));
+  } else {
+    box.append(h('a', { class: 'btn', href: '../world/', target: '_blank', rel: 'noopener' }, '🌏 앱 월드 열기'), h('span', { class: 'muted small' }, '(화면을 캡처해서 같이 올려도 돼요)'));
+  }
+  return box;
+}
+function renderRefTips() { document.querySelectorAll('[data-ref]').forEach((el) => el.replaceChildren(refTip())); }
+
 // 내 캐릭터 + 내 부스 건물 그림
 function renderMyBooth() {
   if (!plan.avatar) plan.avatar = avatarFromText(plan.f.developer || plan.id);
@@ -546,7 +567,8 @@ function renderMyBooth() {
       h('button', { type: 'button', onclick: () => safeCopy(prompt, '📋 부스 그림 프롬프트를 복사했어요') }, '📋 프롬프트'),
       h('label', { class: 'btn primary', for: 'boothFile' }, plan.boothImage ? '🔁 바꾸기' : '📷 그림 올리기'), file,
       plan.boothImage ? h('button', { type: 'button', class: 'ghost', 'aria-label': '부스 그림 빼기', onclick: () => { plan.boothImage = ''; saveNow(); renderMyBooth(); } }, '✕') : ''),
-    h('span', { class: 'small muted' }, '하얀 배경은 앱이 지워요. 게임 내용이 보이게 지붕과 장식을 꾸며 달라고 해요.'));
+    h('span', { class: 'small muted' }, '하얀 배경은 앱이 지워요. 게임 내용이 보이게 지붕과 장식을 꾸며 달라고 해요.'),
+    refTip());
 }
 
 function renderSubmit() {

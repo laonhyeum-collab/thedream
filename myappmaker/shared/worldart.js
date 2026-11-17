@@ -39,7 +39,23 @@ export function cleanWorldSettings(v) {
 export const worldName = (s) => (s && s.schoolName ? `${s.schoolName} ${s.title || DEFAULT_WORLD.title}` : (s && s.title) || DEFAULT_WORLD.title);
 
 // ---------- 그림체 (월드·학생 그림 모두 같은 말을 씀) ----------
-export const PIXEL_STYLE = '16비트 레트로 게임 같은 픽셀아트. 밝고 선명한 파스텔 색감, 또렷한 1픽셀 외곽선, 귀엽고 아기자기한 분위기, 위에서 비스듬히(약 45도) 내려다본 시점. 흐림·그라데이션·사진 같은 질감 없이 깔끔한 픽셀로';
+// 그림체의 기준 = 선생님이 보여 준 「MY APP META WORLD」 참고 화면. 월드 그림과 학생 그림이 모두 이 말을 써서 같은 세계처럼 보이게.
+export const PIXEL_STYLE = [
+  '16비트 레트로 RPG 게임 같은 픽셀아트',
+  '위에서 비스듬히(약 45도) 내려다본 쿼터뷰',
+  '진하고 선명한 색: 청록빛 맑은 물, 싱그러운 연두·초록 잔디와 둥근 나무, 분홍 벚꽃, 보라색 포인트, 따뜻한 노란 불빛',
+  '모든 물체에 어두운 남색 외곽선과 단계가 또렷한 픽셀 명암(부드러운 그라데이션·흐림·사진 질감 없이)',
+  '둥글둥글 귀엽고 꽃·화분·작은 소품이 많은 아기자기한 장식',
+  '땅은 윗면이 잔디이고 옆면이 갈색 흙 절벽인 블록 모양',
+].join(', ');
+// 앱 월드의 아이 캐릭터 모습 (참고 화면의 아이들)
+export const CHIBI_LOOK = '머리가 크고 몸이 작은 2등신의 귀여운 픽셀 캐릭터(단순한 점 눈, 발그레한 볼, 진한 외곽선, 밝은 옷 색)';
+// 앱 월드 건물의 공통 모습 (참고 화면의 부스 건물들)
+export const BUILDING_LOOK = '지붕 위에 흰 테두리가 있는 동그란 아이콘 문장(주제를 나타내는 그림 하나), 건물 앞에 흰색 둥근 간판(글씨 없이 비움), 가운데에 노랗게 빛나는 아치 문(문 위에 작은 게임기 무늬)';
+// 아이콘·문장 모양
+export const BADGE_LOOK = '흰 테두리가 있는 동그란 배지 안에 그림 하나(앱 월드 건물 지붕 위 문장과 같은 모양)';
+// 지도 그림을 함께 올렸을 때
+export const REF_HINT = '같이 올린 앱 월드 지도 그림이 있으면 그 그림의 그림체·색·외곽선·시점을 그대로 따라 해 줘.';
 export const NO_TEXT = '그림 안에 글자·숫자·로고·간판 글씨·워터마크를 절대 넣지 마(이름표는 앱이 따로 붙여요). 유명 게임·캐릭터를 따라 하지 말고 독창적으로';
 const WHITE_BG = '배경은 아무것도 없는 하얀색 한 가지로(바닥·그림자·풍경 없이), 건물 하나만 가운데에 꽉 차게';
 
@@ -77,14 +93,14 @@ export function worldPrompts(settings = DEFAULT_WORLD) {
 보라색 지붕의 작은 학교 겸 성: 양쪽에 뾰족한 탑, 가운데 지붕 위에 학사모 모양 장식과 작은 깃발, 커다란 아치 문(문 위에 게임기 모양 장식), 노란 불빛 창문, 앞에 짧은 돌계단.
 ${WHITE_BG}. ${NO_TEXT}. 정사각형 1:1.`,
     booth: `메타버스 마을에 놓을 작은 게임 부스 건물 한 채를 그려 줘. ${PIXEL_STYLE}.
-알록달록한 지붕의 아담한 가게, 가운데 둥근 문(문 위에 게임기 모양 장식), 양쪽에 작은 창문과 화분, 지붕 위에 빈 간판 자리(글씨 없이 비워 두기).
+작은 잔디 땅 조각(옆면 흙 절벽) 위의 알록달록한 지붕의 아담한 가게, 양쪽에 작은 창문과 화분. ${BUILDING_LOOK}.
 ${WHITE_BG}. ${NO_TEXT}. 정사각형 1:1.`,
     fountain: `마을 광장 한가운데 놓을 동그란 분수를 그려 줘. ${PIXEL_STYLE}. 돌로 된 2층 원형 분수, 맑은 하늘색 물이 솟고 꼭대기에 노란 별 장식, 둘레에 작은 꽃 화단. ${WHITE_BG.replace('건물', '분수')}. ${NO_TEXT}. 정사각형 1:1.`,
     arch: `마을 입구에 서 있는 큰 아치형 문을 그려 줘. ${PIXEL_STYLE}. 양쪽 돌기둥 위에 보라색 깃발, 위쪽에 가로로 긴 빈 현수막(나중에 「${school}」 이름을 앱이 써 넣을 자리라서 비워 두기), 현수막 가운데 위에 게임기 모양 장식, 기둥 아래 꽃 화분. ${WHITE_BG.replace('건물', '아치')}. ${NO_TEXT}. 가로 2:1.`,
   };
   for (const [id, c] of Object.entries(CATS)) {
     P[`booth_${id}`] = `메타버스 마을에 놓을 「${c.name}」 분야 게임 부스 건물 한 채를 그려 줘. ${PIXEL_STYLE}.
-모습: ${c.look}. 가운데 둥근 문(문 위에 게임기 모양 장식), 지붕 위에 빈 간판 자리(글씨 없이).
+모습: 작은 잔디 땅 조각(옆면 흙 절벽) 위의 ${c.look}. ${BUILDING_LOOK}.
 ${WHITE_BG}. ${NO_TEXT}. 정사각형 1:1.`;
   }
   return WORLD_ASSETS.map((a) => (a.key === 'map' ? { ...a, prompt: fullMapPrompt(s), groundPrompt: P.map } : { ...a, prompt: P[a.key] }));
@@ -136,9 +152,10 @@ export const groundMapPrompt = (settings) => worldPrompts(settings).find((a) => 
 // 학생 부스 건물 그림 프롬프트 (학생 앱 「5. 입점」에서 씀)
 export function studentBoothPrompt({ appName, topicName, cat, summary, hero }) {
   const c = CATS[cat] || CATS.life;
-  return `우리 반 메타버스 마을에 놓을 내 게임 부스 건물 한 채를 그려 줘. 게임 이름은 「${appName || topicName || '나의 게임'}」, 내용은 "${summary || topicName || ''}".
-${PIXEL_STYLE}.
-건물 모습: 게임 내용이 한눈에 보이도록 지붕과 장식을 꾸며 줘(예: 게임에 나오는 물건·${hero ? `주인공(${hero})` : '주인공'}의 상징을 지붕 장식으로). 기본은 ${c.look} 느낌. 가운데 둥근 문, 양쪽 작은 창문, 지붕 위 빈 간판 자리(글씨 없이 비워 두기).
+  return `우리 반 메타버스 「앱 월드」 지도 속 건물들과 똑같은 그림체·시점·크기감으로, 내 게임 부스 건물 한 채를 그려 줘. ${REF_HINT}
+게임 이름: 「${appName || topicName || '나의 게임'}」 / 게임 내용: "${summary || topicName || ''}"
+그림체: ${PIXEL_STYLE}.
+모습: 내 게임 주제가 한눈에 보이는 건물(${c.look} 느낌을 바탕으로, 게임에 나오는 물건과 ${hero ? `주인공(${hero})` : '주인공'}의 상징으로 꾸미기). 작은 잔디 땅 조각(옆면 흙 절벽) 위에 건물 한 채, 주변에 주제 소품 2~3개와 꽃. ${BUILDING_LOOK}.
 ${WHITE_BG}. ${NO_TEXT}. 정사각형 1:1.`;
 }
 
