@@ -1,0 +1,382 @@
+import { Game, CHANT, DIFFICULTY } from './game.js';
+import { MotionTracker, W, H, toLuma } from './motion.js';
+import { drawScene, PLAYER_LOOK } from './scene.js';
+import { sfx, voice } from './sound.js';
+
+const $ = (id) => document.getElementById(id);
+
+// ---------- 설정 (이 기기에만 기억) ----------
+const settings = { players: '1', difficulty: 'normal', voice: 'on' };
+try { Object.assign(settings, JSON.parse(localStorage.getItem('mugunghwa.settings') || '{}')); } catch {}
+function saveSettings() {
+  try { localStorage.setItem('mugunghwa.settings', JSON.stringify(settings)); } catch {}
+}
+
+document.querySelectorAll('.choice').forEach((fs) => {
+  const key = fs.dataset.setting;
+  const sync = () => fs.querySelectorAll('button').forEach((b) =>
+    b.setAttribute('aria-pressed', String(b.dataset.value === settings[key])));
+  fs.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    settings[key] = b.dataset.value;
+    saveSettings();
+    sync();
+    sfx.unlock();
+    sfx.tick();
+  });
+  sync();
+});
+
+// ---------- 화면 전환 ----------
+let screen = 'home';
+function show(id) {
+  screen = id;
+  document.querySelectorAll('.screen').forEach((s) => { s.hidden = s.id !== id; });
+}
+
+// ---------- 카메라 ----------
+const video = $('video');
+const overlay = $('camOverlay');
+const small = document.createElement('canvas');
+small.width = W; small.height = H;
+const smallCtx = small.getContext('2d', { willReadFrequently: true });
+let stream = null;
+let tracker = new MotionTracker(1);
+let luma = new Uint8Array(W * H);
+let lastVideoTime = -1;
+let lastProcess = 0;
+
+async function startCamera() {
+  if (!window.isSecureContext) throw Object.assign(new Error('insecure'), { name: 'InsecureError' });
+  if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error('nocam'), { name: 'NotFoundError' });
+  stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+    audio: false,
+  });
+  video.srcObject = stream;
+  await video.play().catch(() => {});
+}
+
+function stopCamera() {
+  if (stream) stream.getTracks().forEach((t) => t.stop());
+  stream = null;
+  video.srcObject = null;
+  tracker.prev = null;
+}
+
+/** 새 카메라 장면이 들어왔을 때만 움직임을 잽니다 (영상은 메모리에서 바로 덮어씀) */
+function processCamera(now) {
+  if (!stream || video.readyState < 2) return;
+  if (video.currentTime === lastVideoTime) return;
+  lastVideoTime = video.currentTime;
+  const dt = lastProcess ? Math.min(0.2, (now - lastProcess) / 1000) : 1 / 30;
+  lastProcess = now;
+  smallCtx.drawImage(video, 0, 0, W, H);
+  toLuma(smallCtx.getImageData(0, 0, W, H).data, luma);
+  tracker.push(luma, dt);
+}
+
+/** 카메라 위에 구역 나눔과 '움직임 막대'를 그림 */
+function drawOverlay() {
+  const r = overlay.getBoundingClientRect();
+  if (!r.width) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const cw = Math.round(r.width * dpr), ch = Math.round(r.height * dpr);
+  if (overlay.width !== cw || overlay.height !== ch) { overlay.width = cw; overlay.height = ch; }
+  const c = overlay.getContext('2d');
+  c.clearRect(0, 0, cw, ch);
+  const n = tracker.players;
+  const freeze = game?.phase === 'freeze';
+  tracker.zones.forEach(([a, b], i) => {
+    const x0 = a * cw, x1 = b * cw;
+    const look = PLAYER_LOOK[i];
+    // 이름표
+    const fs = Math.max(12, ch * 0.09);
+    c.font = `900 ${fs}px system-ui, sans-serif`;
+    c.textAlign = 'center';
+    c.textBaseline = 'top';
+    c.lineWidth = fs * 0.2;
+    c.strokeStyle = look.dark;
+    c.fillStyle = '#fff';
+    const label = n === 2 ? look.name : '나';
+    c.strokeText(label, (x0 + x1) / 2, ch * 0.04);
+    c.fillText(label, (x0 + x1) / 2, ch * 0.04);
+    // 움직임 막대
+    const e = tracker.effort[i];
+    const bw = Math.max(8, cw * 0.035);
+    const bx = n === 2 ? (i === 0 ? x0 + bw * 0.6 : x1 - bw * 1.6) : x1 - bw * 1.6;
+    const by = ch * 0.2, bh = ch * 0.7;
+    c.fillStyle = 'rgba(0,0,0,0.35)';
+    c.fillRect(bx, by, bw, bh);
+    c.fillStyle = freeze && game && e > game.cfg.catchLevel ? '#ef4444' : look.color;
+    c.fillRect(bx, by + bh * (1 - e), bw, bh * e);
+  });
+  if (n === 2) {
+    c.fillStyle = 'rgba(255,255,255,0.55)';
+    c.fillRect(0.45 * cw, 0, 0.1 * cw, ch);
+  }
+  if (freeze) {
+    c.strokeStyle = '#ef4444';
+    c.lineWidth = Math.max(4, cw * 0.02);
+    c.strokeRect(0, 0, cw, ch);
+  }
+}
+
+function moveCamTo(container) {
+  container.append(video, overlay);
+  video.play().catch(() => {});
+}
+
+// ---------- 놀이 ----------
+const scene = $('scene');
+const sceneCtx = scene.getContext('2d');
+const banner = $('banner');
+const bigText = $('bigText');
+let game = null;
+let calibUntil = 0;
+let caughtFlash = [0, 0];
+let lastCount = 0;
+let resultTimer = 0;
+let wakeLock = null;
+let placeholder = null; // 가만히 재는 동안 보여 줄 빈 마당
+
+function setBig(text, pop = true) {
+  if (!text) { bigText.hidden = true; bigText.textContent = ''; return; }
+  bigText.hidden = false;
+  if (bigText.textContent !== text) {
+    const span = document.createElement('span');
+    span.textContent = text;
+    bigText.replaceChildren(span);
+    if (pop) { bigText.classList.remove('pop'); void bigText.offsetWidth; bigText.classList.add('pop'); }
+  }
+}
+
+function setBanner() {
+  if (!game) {
+    banner.className = 'banner count';
+    banner.textContent = '가만히~';
+    return;
+  }
+  if (game.phase === 'chant') {
+    banner.className = 'banner';
+    let k = 0;
+    const done = game.chantProgress;
+    banner.replaceChildren(...CHANT.map((ch) => {
+      const span = document.createElement('span');
+      span.textContent = ch;
+      if (ch !== ' ') { span.className = k < done ? 'on' : 'off'; k++; }
+      return span;
+    }));
+  } else if (game.phase === 'freeze') {
+    banner.className = 'banner freeze';
+    banner.textContent = '얼음! 꼼짝 마!';
+  } else if (game.phase === 'countdown') {
+    banner.className = 'banner count';
+    banner.textContent = '준비~';
+  }
+}
+
+/** 오른쪽 아래 카메라 창이 길을 가리지 않도록 비워 둘 높이(캔버스 픽셀) */
+function pipReserve() {
+  const pip = $('pip').getBoundingClientRect();
+  const sc = scene.getBoundingClientRect();
+  if (!pip.height || !sc.height) return 0;
+  return Math.max(0, sc.bottom - pip.top + 8) * (scene.height / sc.height);
+}
+
+function resizeScene() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const r = scene.getBoundingClientRect();
+  scene.width = Math.max(1, Math.round(r.width * dpr));
+  scene.height = Math.max(1, Math.round(r.height * dpr));
+}
+window.addEventListener('resize', resizeScene);
+
+async function keepAwake() {
+  try { wakeLock = await navigator.wakeLock?.request('screen'); } catch {}
+}
+function releaseAwake() { try { wakeLock?.release(); } catch {} wakeLock = null; }
+
+function beginPlay() {
+  show('play');
+  moveCamTo($('pip'));
+  resizeScene();
+  game = null;
+  caughtFlash = [0, 0];
+  lastCount = 0;
+  placeholder = null;
+  calibUntil = performance.now() + 2500;
+  tracker.startCalibration();
+  setBig('가만히 멈춰요!\n술래가 살펴봐요 👀');
+  setBanner();
+  voice.say('가만히 멈춰 봐');
+  keepAwake();
+}
+
+function handleEvents(events) {
+  for (const ev of events) {
+    if (ev.type === 'phase' && ev.phase === 'chant') {
+      setBig('');
+      sfx.go();
+      voice.chant(ev.length);
+    } else if (ev.type === 'phase' && ev.phase === 'freeze') {
+      sfx.freeze();
+      voice.say('얼음!', { rate: 1.2, pitch: 1.3 });
+    } else if (ev.type === 'caught') {
+      caughtFlash[ev.player] = 1.6;
+      sfx.caught();
+      const who = game.players.length === 2 ? PLAYER_LOOK[ev.player].name : '';
+      setBig(`${who ? who + ' ' : ''}움직였다!\n뒤로 ↩`);
+      voice.say(`${who ? who + ', ' : ''}움직였다!`, { rate: 1.2 });
+    } else if (ev.type === 'win') {
+      sfx.win();
+      const two = game.players.length === 2;
+      setBig(two ? `${PLAYER_LOOK[ev.player].name} 도착! 🎉` : '도착! 🎉');
+      voice.say(two ? `${PLAYER_LOOK[ev.player].name} 승리!` : '도착! 잘했어!');
+      resultTimer = 2.2;
+    }
+  }
+}
+
+function showResult() {
+  releaseAwake();
+  const two = game.players.length === 2;
+  const sec = game.elapsed.toFixed(1);
+  const d = DIFFICULTY[game.difficulty].label;
+  if (two) {
+    const w = game.winner;
+    $('resultEmoji').textContent = w === 0 ? '🐰' : '🐻';
+    $('resultTitle').textContent = `${PLAYER_LOOK[w].name} 이겼어요!`;
+    const caught = game.players.map((p, i) => `${PLAYER_LOOK[i].name} ${p.caught}번`).join(', ');
+    $('resultText').textContent = `${sec}초 만에 도착! (술래에게 걸린 횟수: ${caught})`;
+  } else {
+    const key = `mugunghwa.best.${game.difficulty}`;
+    let best = null;
+    try { best = parseFloat(localStorage.getItem(key)); } catch {}
+    const isBest = !best || game.elapsed < best;
+    if (isBest) { try { localStorage.setItem(key, String(game.elapsed)); } catch {} }
+    $('resultEmoji').textContent = isBest ? '🏆' : '🎉';
+    $('resultTitle').textContent = isBest ? '새 기록이에요!' : '도착했어요!';
+    $('resultText').textContent =
+      `[${d}] ${sec}초 걸렸고, 술래에게 ${game.players[0].caught}번 걸렸어요.` +
+      (best && !isBest ? ` (최고 기록 ${best.toFixed(1)}초)` : '');
+  }
+  show('result');
+}
+
+function stopPlay() {
+  voice.stop();
+  releaseAwake();
+  game = null;
+  calibUntil = 0;
+  setBig('');
+}
+
+// ---------- 한 프레임마다 ----------
+let last = performance.now();
+let t = 0;
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  t += dt;
+  processCamera(now);
+
+  if (screen === 'play') {
+    if (!game && calibUntil && now >= calibUntil) {
+      tracker.finishCalibration();
+      calibUntil = 0;
+      game = new Game({ players: Number(settings.players), difficulty: settings.difficulty });
+      setBig('3');
+      sfx.tick();
+      lastCount = 3;
+    }
+    if (game) {
+      if (!document.hidden) handleEvents(game.update(dt, tracker.effort));
+      if (game.phase === 'countdown') {
+        const left = Math.ceil(game.phaseLength - game.phaseTime);
+        if (left !== lastCount && left > 0) { lastCount = left; setBig(String(left)); sfx.tick(); }
+      }
+      caughtFlash = caughtFlash.map((v) => Math.max(0, v - dt));
+      if (bigText.textContent.includes('움직였다') && caughtFlash.every((v) => v === 0)) setBig('');
+      if (game.phase === 'end') {
+        resultTimer -= dt;
+        if (resultTimer <= 0) showResult();
+      }
+    }
+    setBanner();
+    if (game || calibUntil) {
+      drawScene(sceneCtx, scene.width, scene.height, {
+        game: game || (placeholder ||= new Game({ players: Number(settings.players) })),
+        t,
+        caughtFlash,
+        bottomReserve: pipReserve(),
+      });
+    }
+  }
+  if (screen === 'setup' || screen === 'play') drawOverlay();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ---------- 버튼 ----------
+$('startBtn').addEventListener('click', async () => {
+  sfx.unlock();
+  voice.enabled = settings.voice === 'on';
+  voice.unlock();
+  tracker = new MotionTracker(Number(settings.players));
+  const two = settings.players === '2';
+  $('setupTitle').textContent = two ? '1P는 왼쪽, 2P는 오른쪽에 서요' : '카메라 앞에 서 보세요';
+  $('setupHint').textContent = two
+    ? '화면 가운데 하얀 줄을 넘지 않게! 몸을 흔들면 막대가 올라가요.'
+    : '온몸이 보이게 조금 떨어져 서요. 몸을 흔들면 막대가 올라가요.';
+  try {
+    moveCamTo($('setupCam'));
+    show('setup');
+    await startCamera();
+  } catch (err) {
+    stopCamera();
+    const msg = {
+      NotAllowedError: '카메라 사용을 허락해야 술래가 볼 수 있어요. 주소창 옆 카메라 아이콘이나 기기 설정에서 허락해 주세요.',
+      NotFoundError: '이 기기에서 카메라를 찾지 못했어요. 카메라가 있는 노트북이나 태블릿에서 해 주세요.',
+      NotReadableError: '다른 앱이 카메라를 쓰고 있어요. 그 앱을 닫고 다시 해 주세요.',
+      InsecureError: '안전한 주소(https)에서 열어야 카메라를 쓸 수 있어요.',
+    }[err.name] || '카메라를 켜는 중에 문제가 생겼어요. 다시 해 볼까요?';
+    $('errorText').textContent = msg;
+    show('error');
+  }
+});
+
+$('readyBtn').addEventListener('click', () => { sfx.unlock(); beginPlay(); });
+$('backBtn').addEventListener('click', () => { stopCamera(); show('home'); });
+$('quitBtn').addEventListener('click', () => { stopPlay(); stopCamera(); show('home'); });
+$('againBtn').addEventListener('click', () => { if (stream) beginPlay(); else $('startBtn').click(); });
+$('homeBtn').addEventListener('click', () => { stopPlay(); stopCamera(); show('home'); });
+$('errorBtn').addEventListener('click', () => show('home'));
+
+// 다른 앱으로 갔다 오면 술래 목소리 멈춤
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) voice.stop();
+  else if (screen === 'play') keepAwake();
+});
+
+// ---------- 홈 화면에 설치 ----------
+let installEvent = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installEvent = e;
+  $('installBtn').hidden = false;
+});
+$('installBtn').addEventListener('click', async () => {
+  if (!installEvent) return;
+  installEvent.prompt();
+  await installEvent.userChoice.catch(() => {});
+  installEvent = null;
+  $('installBtn').hidden = true;
+});
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+// 시험용으로 상태를 들여다볼 수 있게 (영상은 들어 있지 않음)
+window.__mugunghwa = { get game() { return game; }, get tracker() { return tracker; }, get screen() { return screen; } };

@@ -1,0 +1,11 @@
+{
+  "name": "mugunghwa",
+  "private": true,
+  "type": "module",
+  "description": "카메라가 술래인 몸놀이 '무궁화 꽃이 피었습니다'",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test tests/*.test.js",
+    "e2e": "node tests/e2e.mjs"
+  }
+}

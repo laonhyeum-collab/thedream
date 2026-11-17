@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- 이 앱은 자기 파일 말고는 아무 곳에도 연결하지 않습니다 (카메라 영상도 밖으로 못 나감) -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>무궁화 꽃이 피었습니다</title>
+  <meta name="description" content="카메라가 술래! 아이들과 함께하는 몸놀이">
+  <meta name="theme-color" content="#ff8fb1">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="무궁화">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 처음 화면 -->
+  <section id="home" class="screen">
+    <div class="card">
+      <div class="logo" aria-hidden="true"><img src="icons/icon-192.png" alt=""></div>
+      <h1>무궁화 꽃이<br>피었습니다</h1>
+      <p class="lead">카메라가 술래예요! 노래하는 동안 <b>제자리 달리기</b>·<b>팔 흔들기</b>로 앞으로,<br>"얼음!" 하면 <b>꼼짝 마!</b></p>
+
+      <fieldset class="choice" data-setting="players">
+        <legend>누구랑 할까요?</legend>
+        <button type="button" data-value="1">🙋 혼자</button>
+        <button type="button" data-value="2">👫 둘이서</button>
+      </fieldset>
+
+      <fieldset class="choice" data-setting="difficulty">
+        <legend>술래 눈치</legend>
+        <button type="button" data-value="easy">😊 너그러움</button>
+        <button type="button" data-value="normal">🙂 보통</button>
+        <button type="button" data-value="hawk">🦅 매의 눈</button>
+      </fieldset>
+
+      <fieldset class="choice" data-setting="voice">
+        <legend>술래 목소리</legend>
+        <button type="button" data-value="on">🔊 켜기</button>
+        <button type="button" data-value="off">🔇 끄기</button>
+      </fieldset>
+
+      <button id="startBtn" class="big">놀이 시작!</button>
+      <p class="privacy">🔒 카메라 영상은 이 기기 안에서 움직임만 재고 바로 잊어요.<br>저장하지도, 어디에 보내지도 않아요.</p>
+      <button id="installBtn" class="link" hidden>📲 홈 화면에 앱 설치하기</button>
+    </div>
+  </section>
+
+  <!-- 자리 잡기 -->
+  <section id="setup" class="screen" hidden>
+    <h2 id="setupTitle">카메라 앞에 서 보세요</h2>
+    <div class="cam big-cam" id="setupCam">
+      <video id="video" playsinline muted autoplay></video>
+      <canvas id="camOverlay"></canvas>
+    </div>
+    <p id="setupHint" class="hint"></p>
+    <div class="row">
+      <button id="backBtn" class="ghost">← 처음으로</button>
+      <button id="readyBtn" class="big">준비됐어요!</button>
+    </div>
+  </section>
+
+  <!-- 놀이 -->
+  <section id="play" class="screen" hidden>
+    <div id="banner" class="banner" aria-live="polite"></div>
+    <canvas id="scene"></canvas>
+    <div class="cam pip" id="pip"></div>
+    <div id="bigText" class="big-text" hidden></div>
+    <button id="quitBtn" class="ghost quit">그만하기</button>
+  </section>
+
+  <!-- 결과 -->
+  <section id="result" class="screen" hidden>
+    <div class="card">
+      <div id="resultEmoji" class="result-emoji">🎉</div>
+      <h2 id="resultTitle"></h2>
+      <p id="resultText" class="lead"></p>
+      <div class="row">
+        <button id="againBtn" class="big">한 번 더!</button>
+        <button id="homeBtn" class="ghost">처음으로</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 카메라 문제 -->
+  <section id="error" class="screen" hidden>
+    <div class="card">
+      <div class="result-emoji">📷</div>
+      <h2>카메라를 켤 수 없어요</h2>
+      <p id="errorText" class="lead"></p>
+      <button id="errorBtn" class="big">처음으로</button>
+    </div>
+  </section>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
