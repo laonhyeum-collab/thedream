@@ -109,6 +109,7 @@ function go(screen) {
     updatePlayUI();
   }
   state.screen = screen;
+  $('#toast').hidden = true;
   for (const s of $$('.screen')) s.hidden = s.id !== screen;
   if (screen === 'themes') renderThemes();
   if (screen === 'library') renderLibrary();
