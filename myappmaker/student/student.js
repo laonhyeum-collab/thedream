@@ -1,7 +1,8 @@
 // [학생 앱] 주제 → 기획서 → 프롬프트 → 내 앱 → 입점
-import { TOPICS, CATEGORIES, topicById, categoryById } from '../shared/topics.js';
+import { topicById, categoryById } from '../shared/topics.js';
+import { recommend, surprise, ideaFromRec, checkText, EXAMPLE_CHIPS } from '../shared/recommend.js';
 import {
-  SECTIONS, PARTS, DIFFICULTY, emptyPlan, normalizePlan, missingRequired, progress,
+  SECTIONS, PARTS, DIFFICULTY, topicView, planSafety, emptyPlan, normalizePlan, missingRequired, progress,
   buildAppPrompt, buildImagePrompts, buildAllPromptsText, buildFixPrompt, planRows,
 } from '../shared/plan.js';
 import { createStore } from './store.js';
@@ -15,7 +16,8 @@ const cfg = loadConfig('student');
 const api = createApi(cfg);
 let plan = store.load();
 let part = 1;
-let catFilter = 'all';
+let lastQuery = '';
+let lastResult = null;
 let dirty = false;
 
 // ---------- 저장 ----------
@@ -78,8 +80,8 @@ document.addEventListener('click', (e) => {
 function renderHome() {
   const has = plan && plan.topicId;
   $('#continueBtn').hidden = !has;
-  $('#startBtn').textContent = has ? '🎯 다른 주제 보기' : '🚀 시작하기';
-  const t = has ? topicById(plan.topicId) : null;
+  $('#startBtn').textContent = has ? '🎯 다른 주제 추천받기' : '🚀 시작하기';
+  const t = has ? topicView(plan) : null;
   $('#resumeInfo').textContent = has
     ? `${t.emoji} ${plan.f.appName || t.name} — 기획서 ${progress(plan)}% · 마지막 저장 ${new Date(plan.updatedAt).toLocaleString('ko-KR')}`
     : '';
@@ -88,23 +90,71 @@ function renderHome() {
 $('#startBtn').onclick = () => go('topics');
 $('#continueBtn').onclick = () => go(plan.app.html || plan.app.url ? 'myapp' : 'plan');
 
-// ---------- 1. 주제 ----------
+// ---------- 1. 주제 추천 ----------
 function renderTopics() {
-  const filter = $('#catFilter');
-  filter.replaceChildren(
-    chip('전체', catFilter === 'all', () => { catFilter = 'all'; renderTopics(); }),
-    ...CATEGORIES.map((c) => chip(`${c.emoji} ${c.name}`, catFilter === c.id, () => { catFilter = c.id; renderTopics(); })),
-  );
-  const list = TOPICS.filter((t) => catFilter === 'all' || t.cat === catFilter);
-  $('#topicGrid').replaceChildren(...list.map((t) => {
-    const c = categoryById(t.cat);
-    const b = h('button', { class: `topic-card${plan && plan.topicId === t.id ? ' selected' : ''}`, type: 'button', 'data-topic': t.id, onclick: () => openPreview(t) },
-      h('span', { class: 'emo', 'aria-hidden': 'true' }, t.emoji),
-      h('span', { class: 'cat', style: `background:${c.color}` }, c.name),
-      h('span', { class: 'name' }, t.name),
-      h('span', { class: 'sum' }, t.summary));
-    return b;
+  $('#wish').value = lastQuery;
+  $('#exampleChips').replaceChildren(...EXAMPLE_CHIPS.map((c) => chip(c, false, () => {
+    const word = c.split(' ').slice(1).join(' ');
+    const w = $('#wish');
+    w.value = w.value.trim() ? `${w.value.trim()} ${word}` : word;
+    w.focus();
+  })));
+  renderRecs();
+}
+
+function ask() {
+  lastQuery = $('#wish').value.trim();
+  if (!lastQuery) { toast('좋아하는 것을 한 가지라도 써 볼까요? 예) 공룡, 요리, 달리기'); $('#wish').focus(); return; }
+  lastResult = recommend(lastQuery);
+  renderRecs();
+}
+$('#askBtn').onclick = ask;
+$('#wish').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } });
+$('#surpriseBtn').onclick = () => {
+  lastResult = { notices: [{ kind: 'empty', text: '🎲 이런 주제는 어때요? 마음에 드는 게 없으면 다시 눌러 봐요.' }], recs: surprise(6) };
+  renderRecs();
+};
+
+function renderRecs() {
+  const r = lastResult;
+  const notices = r ? [...r.notices] : [];
+  if (r && !r.recs.length && !r.notices.some((n) => n.kind === 'blocked')) {
+    notices.push({ kind: 'empty', text: '🤔 어떤 게임인지 조금 더 알려 줄래요? 좋아하는 동물·장소·놀이를 넣어 보세요. (예: 바다, 로봇, 요리, 달리기)' });
+  }
+  $('#notices').replaceChildren(...notices.map((n) => h('div', { class: `notice-item ${n.kind}`, role: 'status' }, n.text)));
+  $('#recGrid').replaceChildren(...(r ? r.recs : []).map((rec) => {
+    const base = topicById(rec.base);
+    const c = categoryById(base.cat);
+    return h('button', { class: `topic-card${plan && plan.idea && plan.idea.id === rec.id ? ' selected' : ''}`, type: 'button', 'data-rec': rec.id, onclick: () => openPreview(rec) },
+      h('span', { class: 'emo', 'aria-hidden': 'true' }, rec.emoji),
+      h('span', { class: 'cat', style: `background:${c.color}` }, `${c.name} · ${base.name} 방식`),
+      h('span', { class: 'name' }, rec.title),
+      h('span', { class: 'sum' }, rec.summary),
+      h('span', { class: 'learn' }, `📚 ${rec.learn}`));
   }));
+}
+
+// 말로 하기 (브라우저가 지원할 때만)
+const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (Speech) {
+  const mic = $('#micBtn');
+  mic.hidden = false;
+  let rec = null;
+  mic.onclick = () => {
+    if (rec) { rec.stop(); return; }
+    rec = new Speech();
+    rec.lang = 'ko-KR';
+    rec.interimResults = false;
+    rec.onresult = (e) => {
+      const said = Array.from(e.results).map((x) => x[0].transcript).join(' ');
+      const w = $('#wish');
+      w.value = `${w.value.trim()} ${said}`.trim();
+    };
+    rec.onerror = () => toast('잘 듣지 못했어요. 글로 써 줄래요?');
+    rec.onend = () => { rec = null; mic.classList.remove('on'); if ($('#wish').value.trim()) ask(); };
+    mic.classList.add('on');
+    rec.start();
+  };
 }
 
 function chip(label, on, onclick) {
@@ -118,23 +168,23 @@ function phone(label, [emo, txt, btn], c) {
     h('span', { class: 'txt' }, `${txt}  ${btn}`));
 }
 
-function openPreview(t) {
+function openPreview(rec) {
+  const t = topicById(rec.base);
   const c = categoryById(t.cat);
-  const body = $('#previewBody');
-  body.replaceChildren(
+  $('#previewBody').replaceChildren(
     h('div', { class: 'pv-head' },
-      h('span', { class: 'emo', 'aria-hidden': 'true' }, t.emoji),
-      h('div', {}, h('span', { class: 'pill', style: `background:${c.color};color:#fff` }, `${c.emoji} ${c.name}`), h('h2', { id: 'pvTitle' }, t.name))),
-    h('p', {}, t.intro),
-    h('div', { class: 'pv-sec' }, h('h4', {}, '🎯 게임 목표'), h('p', {}, t.goal)),
-    h('div', { class: 'pv-sec' }, h('h4', {}, '🕹️ 진행 방법'), h('ol', { class: 'pv-steps' }, ...t.steps.map((s) => h('li', {}, s)))),
-    h('div', { class: 'pv-sec' }, h('h4', {}, '🧩 주요 게임 요소'), h('div', { class: 'chips' }, ...t.elements.map((e) => h('span', { class: 'pill' }, e)))),
+      h('span', { class: 'emo', 'aria-hidden': 'true' }, rec.emoji),
+      h('div', {}, h('span', { class: 'pill', style: `background:${c.color};color:#fff` }, `${c.emoji} ${c.name} · ${t.name} 방식`), h('h2', { id: 'pvTitle' }, rec.title))),
+    h('p', {}, rec.summary),
+    h('div', { class: 'learn-box' }, `📚 배움 요소: ${rec.learn}`),
+    h('div', { class: 'pv-sec' }, h('h4', {}, `🕹️ 이런 방식으로 놀아요 (${t.name} 방식)`), h('ol', { class: 'pv-steps' }, ...t.steps.map((s) => h('li', {}, s)))),
+    h('div', { class: 'pv-sec' }, h('h4', {}, '🧩 넣을 수 있는 게임 요소'), h('div', { class: 'chips' }, ...t.elements.map((e) => h('span', { class: 'pill' }, e)))),
     h('div', { class: 'pv-sec' }, h('h4', {}, '📱 예상 화면'),
-      h('div', { class: 'phones' }, phone('시작 화면', t.screens.start, c.color), phone('게임 화면', t.screens.play, c.color), phone('결과 화면', t.screens.end, c.color)),
-      h('p', { class: 'example-note' }, '※ 실제 게임 화면이 아니라 구성 예시예요. 내 아이디어로 바꿔도 돼요!')),
+      h('div', { class: 'phones' }, phone('시작 화면', [rec.emoji, rec.title, '▶ 시작'], c.color), phone('게임 화면', [rec.themeEmoji || t.screens.play[0], ...t.screens.play.slice(1)], c.color), phone('결과 화면', t.screens.end, c.color)),
+      h('p', { class: 'example-note' }, '※ 실제 게임 화면이 아니라 구성 예시예요. 규칙과 모습은 내 기획서대로 바꿔요!')),
     h('div', { class: 'row' },
-      h('button', { class: 'primary big grow', id: 'chooseTopic', onclick: () => chooseTopic(t) }, '✨ 이 주제로 기획 시작하기'),
-      h('button', { class: 'ghost', onclick: closePreview }, '다른 주제 보기')),
+      h('button', { class: 'primary big grow', id: 'chooseTopic', onclick: () => chooseIdea(rec) }, '✨ 이 주제로 기획 시작하기'),
+      h('button', { class: 'ghost', onclick: closePreview }, '다른 추천 보기')),
   );
   $('#preview').hidden = false;
   $('#previewBody').scrollTop = 0;
@@ -144,12 +194,13 @@ function closePreview() { $('#preview').hidden = true; }
 $('#preview').addEventListener('click', (e) => { if (e.target.id === 'preview') closePreview(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#preview').hidden) closePreview(); });
 
-function chooseTopic(t) {
-  if (plan && plan.topicId && plan.topicId !== t.id && progress(plan) > 0) {
-    if (!confirm(`주제를 「${t.name}」(으)로 바꿀까요?\n지금까지 쓴 기획서 내용은 그대로 남아요.`)) return;
+function chooseIdea(rec) {
+  if (plan && plan.idea && plan.idea.id !== rec.id && progress(plan) > 0) {
+    if (!confirm(`주제를 「${rec.title}」(으)로 바꿀까요?\n지금까지 쓴 기획서 내용은 그대로 남아요.`)) return;
   }
-  if (!plan) plan = emptyPlan(t.id);
-  plan.topicId = t.id;
+  if (!plan) plan = emptyPlan(rec.base);
+  plan.topicId = rec.base;
+  plan.idea = ideaFromRec(rec, lastQuery);
   saveNow();
   closePreview();
   part = 1;
@@ -163,11 +214,11 @@ function partDone(p) {
 }
 
 function renderPlan() {
-  const t = topicById(plan.topicId);
+  const t = topicView(plan);
   const c = categoryById(t.cat);
   $('#planTopic').replaceChildren(
     h('span', { class: 'emo', 'aria-hidden': 'true' }, t.emoji),
-    h('div', { class: 'grow' }, h('b', {}, t.name), h('div', { class: 'muted small' }, `${c.name} · ${t.summary}`)),
+    h('div', { class: 'grow' }, h('b', {}, t.name), h('div', { class: 'muted small' }, `${t.summary}`), h('div', { class: 'small learn-inline' }, `📚 배움 요소: ${t.learn} · ${c.name} · ${t.baseName} 방식`)),
     h('button', { class: 'ghost small', onclick: () => go('topics') }, '주제 바꾸기'));
   $('#partTabs').replaceChildren(...PARTS.filter((p) => p.id <= 4).map((p) => h('button', {
     class: 'tab', role: 'tab', type: 'button', 'aria-selected': String(p.id === part),
@@ -240,7 +291,7 @@ function updateProgress() {
 $('#saveBtn').onclick = () => { saveNow(); if (store.status === 'saved') toast('💾 저장했어요'); };
 $('#exportBtn').onclick = () => {
   saveNow();
-  download(`기획서_${safeName(plan.f.developer)}_${safeName(plan.f.appName || topicById(plan.topicId).name)}.json`, JSON.stringify(plan, null, 2));
+  download(`기획서_${safeName(plan.f.developer)}_${safeName(plan.f.appName || topicView(plan).name)}.json`, JSON.stringify(plan, null, 2));
   toast('⬇️ 백업 파일을 내려받았어요');
 };
 $('#importFile').onchange = async (e) => {
@@ -271,7 +322,7 @@ function startNew() {
 // 인쇄·PDF
 $('#printBtn').onclick = () => { saveNow(); printPlan(); };
 function printPlan() {
-  const t = topicById(plan.topicId);
+  const t = topicView(plan);
   const rows = planRows(plan);
   $('#printArea').replaceChildren(h('div', { class: 'print-sheet' },
     h('h1', {}, `📱 ${plan.f.appName || t.name} — 앱 기획서`),
@@ -287,18 +338,36 @@ function renderPrompts() {
   box.hidden = miss.length === 0;
   box.replaceChildren(h('b', {}, '✏️ 아직 비어 있는 ★ 항목이 있어요. 채울수록 AI가 내 생각에 딱 맞게 만들어요: '),
     ...miss.map((m) => h('button', { class: 'chip', type: 'button', onclick: () => { part = m.n === 0 ? 1 : SECTIONS.find((s) => s.n === m.n).part; go(m.n === 0 ? 'topics' : 'plan'); } }, m.title)));
+  const issues = planSafety(plan);
+  const sbox = $('#safetyBox');
+  sbox.hidden = issues.length === 0;
+  sbox.replaceChildren(
+    h('b', {}, '🚫 초등학생 게임에 알맞지 않은 말이나 이미 있는 게임·캐릭터 이름이 있어요. 고친 뒤에 프롬프트를 복사할 수 있어요.'),
+    h('ul', {}, ...issues.map((it) => h('li', {}, `${it.n}번 ${it.label}: 「${it.words.join('」, 「')}」 `,
+      h('button', { class: 'chip small', type: 'button', onclick: () => { part = SECTIONS.find((x) => x.n === it.n).part; go('plan'); } }, '고치러 가기')))));
   $('#appPrompt').textContent = buildAppPrompt(plan);
   $('#imagePrompts').replaceChildren(...buildImagePrompts(plan).map((p) => h('div', { class: 'img-prompt' },
-    h('div', { class: 'row' }, h('b', { class: 'grow' }, p.title), h('button', { class: 'small', type: 'button', onclick: () => copyText(p.text) }, '📋 복사')),
+    h('div', { class: 'row' }, h('b', { class: 'grow' }, p.title), h('button', { class: 'small', type: 'button', onclick: () => safeCopy(p.text, '📋 복사했어요') }, '📋 복사')),
     h('p', { class: 'small' }, p.text))));
 }
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-copy]');
   if (!b) return;
-  if (b.dataset.copy === 'app') copyText(buildAppPrompt(plan), '📋 앱 제작 프롬프트를 복사했어요');
-  if (b.dataset.copy === 'fix') copyText($('#fixPrompt').textContent, '📋 고쳐 줘 프롬프트를 복사했어요');
+  if (b.dataset.copy === 'app') safeCopy(buildAppPrompt(plan), '📋 앱 제작 프롬프트를 복사했어요');
+  if (b.dataset.copy === 'fix') {
+    const c = checkText(`${$('#fixProblem').value} ${$('#fixWant').value}`);
+    if (c.violence.length || c.blocked.length || c.existing.length) { toast('🚫 고쳐 줘 내용에 알맞지 않은 말이나 이미 있는 게임 이름이 있어요. 바꿔서 써 줘요', 4500); return; }
+    safeCopy($('#fixPrompt').textContent, '📋 고쳐 줘 프롬프트를 복사했어요');
+  }
 });
-$('#copyAll').onclick = () => copyText(buildAllPromptsText(plan), '📋 프롬프트 전체를 복사했어요');
+$('#copyAll').onclick = () => safeCopy(buildAllPromptsText(plan), '📋 프롬프트 전체를 복사했어요');
+
+// 기획서에 알맞지 않은 말이 있으면 복사하지 않음
+function safeCopy(text, done) {
+  const issues = planSafety(plan);
+  if (issues.length) { toast(`🚫 ${issues[0].n}번 ${issues[0].label}에 바꿔야 할 말(「${issues[0].words[0]}」)이 있어요`, 4500); go('prompts'); return; }
+  copyText(text, done);
+}
 
 // ---------- 4. 내 앱 ----------
 const TEST_ITEMS = SECTIONS.find((s) => s.n === 14).inputs[0].options;
@@ -375,7 +444,7 @@ function submitChecks() {
 }
 function renderSubmit() {
   $('#submitChecks').replaceChildren(...submitChecks().map((c) => h('li', { class: c.ok ? 'ok' : '' }, c.text)));
-  const t = topicById(plan.topicId);
+  const t = topicView(plan);
   $('#reviewFields').replaceChildren(...SECTIONS.find((s) => s.n === 15).inputs.map((i) => inputFor(i, t)));
   $('#sendOnline').hidden = !api.enabled;
   $('#sendOffline').hidden = api.enabled;

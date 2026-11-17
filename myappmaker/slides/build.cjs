@@ -93,7 +93,7 @@ section('시작');
 {
   const s = slide('CONTENT');
   s.addText('4차시 뒤, 한 사람이 앱 하나를 앱 월드에 열어요', { placeholder: 'title' });
-  const stats = [['20명', '학생 1인 1앱'], ['4차시', '40분 × 4 = 160분'], ['20개', '5분야 게임 주제'], ['15개', '앱 기획서 항목']];
+  const stats = [['20명', '학생 1인 1앱'], ['4차시', '40분 × 4 = 160분'], ['84개', '배움이 있는 추천 주제'], ['15개', '앱 기획서 항목']];
   stats.forEach(([n, l], i) => {
     const x = 0.6 + i * 3.08;
     card(s, x, 1.55, 2.85, 2.1, C.background2, `숫자 ${l}`);
@@ -146,7 +146,7 @@ section('시작');
   const s = slide('CONTENT');
   s.addText('만드는 순서는 다섯 걸음', { placeholder: 'title' });
   const steps = [
-    ['주제 고르기', '20개 주제 미리보기 후 선택'],
+    ['주제 추천받기', '하고 싶은 걸 말하면 추천'],
     ['기획서 쓰기', '목표·규칙·캐릭터, 칩으로 빠르게'],
     ['프롬프트 받기', '기획서가 AI 설명서로 자동 변환'],
     ['앱 만들고 시험', '코드 붙여 넣기 → 실행 → 고쳐 줘'],
@@ -179,23 +179,23 @@ section('학생 앱');
 }
 {
   const s = slide('CONTENT');
-  s.addText('20개 주제를 먼저 들여다보고 골라요', { placeholder: 'title' });
-  const cats = [
-    ['모험', '2F9E6E', '보물섬 탐험대 · 미로 탈출 · 우주 탐험 · 정글 생존'],
-    ['액션', 'E8590C', '과일 폭탄 잡기 · 펭귄 레이싱 · 몬스터 잡기 · 버블 팡팡'],
-    ['창작', 'AE3EC9', '펫 키우기 · 패션 디자이너 · 방 꾸미기 · 몬스터 연구소'],
-    ['추리', '1C7ED6', '탐정의 비밀 사건 · 기억력 카드 · 방탈출'],
-    ['생활', 'E0A100', '꼬마 요리왕 · 놀이공원 · 동물 카페 · 낚시왕 · 마법 상점'],
+  s.addText('하고 싶은 게임을 말하면 주제를 추천해요', { placeholder: 'title' });
+  const rules = [
+    ['🔁', '이미 있는 게임·캐릭터', '그대로 만들지 않고, 좋아한 점만 살려 나만의 주제로 바꿔요', 'FFF6D6'],
+    ['🕊️', '무섭거나 다치게 하는 것', '빼고 구하고·지키고·피하는 평화로운 주제로 바꿔요', 'FFEAEA'],
+    ['🚫', '학교에 알맞지 않은 것', '도박·성인 내용 등은 추천하지 않아요', 'FFEAEA'],
+    ['📚', '배움 요소가 없는 것', '모든 추천에 배움 요소가 붙어 있어요', 'E3F9F1'],
   ];
-  cats.forEach(([n, col, list], i) => {
-    const y = 1.5 + i * 1.02;
-    s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 0.6, y, w: 1.1, h: 0.8, rectRadius: 0.4, fill: { color: col }, line: { color: col, width: 0 }, objectName: `분야 ${n}` });
-    text(s, n, { x: 0.6, y, w: 1.1, h: 0.8, fontSize: 17, bold: true, color: C.background1, align: 'center', valign: 'middle' });
-    text(s, list, { x: 1.9, y, w: 4.3, h: 0.8, fontSize: 14, valign: 'middle' });
+  text(s, '예) “마인크래프트처럼 블록으로 집 짓는 게임” → 블록 마을 건축가 (📚 도형과 넓이)', { x: 0.6, y: 1.45, w: 5.7, h: 0.75, fontSize: 15, bold: true, color: C.accent1 });
+  rules.forEach(([e, t, d, fill], i) => {
+    const y = 2.35 + i * 1.05;
+    card(s, 0.6, y, 5.7, 0.9, fill, t);
+    text(s, `${e} ${t}`, { x: 0.8, y: y + 0.08, w: 5.3, h: 0.38, fontSize: 15, bold: true });
+    text(s, d, { x: 0.8, y: y + 0.46, w: 5.3, h: 0.4, fontSize: 13, color: '4A4D66' });
   });
-  screen(s, 'student-preview.png', 6.6, 1.5, 6.1, 1.6, '주제 미리보기 화면');
-  text(s, '미리보기: 소개 · 목표 · 진행 3단계 · 게임 요소 · 예상 화면 3종 (구성 예시)', { x: 6.6, y: 5.55, w: 6.1, h: 0.6, fontSize: 14, color: '6B6F8A' });
-  s.addNotes('주제를 누르면 바로 선택되지 않고 미리보기가 먼저 열립니다. 예상 화면은 실제 게임이 아니라 구성 예시라고 표시됩니다.');
+  screen(s, 'student-recommend.png', 6.6, 1.5, 6.1, 1.6, '주제 추천 화면');
+  text(s, '28가지 관심 분야 · 84개 추천 주제 · 🎤 말로 해도 돼요', { x: 6.6, y: 5.55, w: 6.1, h: 0.5, fontSize: 14, color: '6B6F8A' });
+  s.addNotes('학생이 좋아하는 것이나 만들고 싶은 게임을 쓰거나 말하면, 그에 맞는 주제를 추천합니다. 이미 있는 게임·유명 캐릭터, 초등학생에게 알맞지 않은 폭력, 학교에 맞지 않는 내용은 추천하지 않고, 모든 추천에는 배움 요소가 붙어 있습니다. 기획서에 실제 게임 이름이나 폭력적인 말이 들어가면 프롬프트 복사가 막히고 고칠 곳을 알려 줍니다.');
 }
 {
   const s = slide('CONTENT');

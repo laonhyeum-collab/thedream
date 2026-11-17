@@ -1,6 +1,7 @@
 // 학생 앱 기획서: 데이터 구조 · 입력 항목(15개) · 프롬프트 만들기
 // 앱 화면, 인쇄용 기획서, 활동지가 모두 이 정의 하나를 같은 순서·같은 말로 씁니다.
 import { topicById, categoryById } from './topics.js';
+import { checkText } from './recommend.js';
 
 export const SCHEMA = 'myappmaker.plan/1';
 
@@ -104,6 +105,7 @@ export function emptyPlan(topicId = null) {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     topicId,
+    idea: null,          // 추천에서 고른 나만의 주제 (recommend.js ideaFromRec)
     difficulty: 'easy',
     f,
     app: { html: '', url: '', updatedAt: null },
@@ -125,8 +127,43 @@ export function normalizePlan(raw) {
   }
   if (!DIFFICULTY.some((d) => d.id === out.difficulty)) out.difficulty = 'easy';
   if (out.topicId && !topicById(out.topicId)) out.topicId = null;
+  out.idea = cleanIdea(src.idea);
   out.id = typeof src.id === 'string' && src.id ? src.id.slice(0, 60) : base.id;
   return out;
+}
+
+function cleanIdea(v) {
+  if (!v || typeof v !== 'object') return null;
+  const keys = ['query', 'id', 'themeId', 'title', 'emoji', 'summary', 'learn', 'hero', 'place'];
+  const o = {};
+  for (const k of keys) o[k] = typeof v[k] === 'string' ? v[k].slice(0, 200) : '';
+  return o.title && o.learn ? o : null;   // 배움 요소가 없는 주제는 받지 않음
+}
+
+// 기획서에서 보여 줄 주제: 기본 게임 방식(topics.js) + 학생이 고른 나만의 주제
+export function topicView(plan) {
+  const base = plan && topicById(plan.topicId);
+  if (!base) return null;
+  const idea = plan.idea;
+  if (!idea) return { ...base, baseName: base.name };
+  return {
+    ...base, baseName: base.name, name: idea.title, emoji: idea.emoji || base.emoji, summary: idea.summary, intro: idea.summary,
+    goal: idea.summary, learn: idea.learn, hint: { character: idea.hero || base.hint.character, place: idea.place || base.hint.place },
+  };
+}
+
+// 기획서 글에 초등학생에게 알맞지 않은 말, 이미 있는 게임 이름이 있는지 확인
+export function planSafety(plan) {
+  const issues = [];
+  for (const i of ALL_INPUTS) {
+    const v = plan.f[i.key];
+    const text = Array.isArray(v) ? v.join(' ') : v;
+    if (!filled(text)) continue;
+    const c = checkText(text);
+    const words = [...c.violence, ...c.blocked, ...c.existing.map((e) => e.label)];
+    if (words.length) issues.push({ n: i.section.n, label: i.short || i.label, words });
+  }
+  return issues;
 }
 
 const filled = (v) => (Array.isArray(v) ? v.length > 0 : String(v || '').trim().length > 0);
@@ -164,7 +201,7 @@ const DIFF_GUIDE = {
 
 // 7-1. 앱 제작 프롬프트 (ChatGPT·Claude·Gemini 등에 붙여 넣기)
 export function buildAppPrompt(plan) {
-  const t = topicById(plan.topicId);
+  const t = topicView(plan);
   const f = plan.f;
   const name = f.appName.trim() || (t ? t.name : '나의 게임');
   const features = [...f.features, ...(filled(f.featuresMore) ? [f.featuresMore.trim()] : [])];
@@ -174,7 +211,8 @@ export function buildAppPrompt(plan) {
     `아래 "앱 기획서"를 그대로 반영해서, 태블릿과 스마트폰에서 바로 실행되는 게임 앱을 만들어 줘. (앱 이름: 「${name}」)`,
     ``,
     `## 앱 기획서`,
-    line('주제', t ? `${t.name} (${categoryById(t.cat).name}) — ${t.summary}` : ''),
+    line('주제', t ? `${t.name} — ${t.summary} (게임 방식: ${t.baseName}, ${categoryById(t.cat).name})` : ''),
+    line('★ 배움 요소', t ? t.learn : ''),
     line('앱 이름', name),
     line('개발자', f.developer),
     line('앱 소개', f.intro),
@@ -206,6 +244,8 @@ export function buildAppPrompt(plan) {
     `5. 그림 파일 없이도 바로 보이도록 캐릭터와 물건은 이모지·CSS·Canvas 도형으로 그려 줘. 나중에 그림으로 바꿀 수 있게 코드 맨 위에 \`const IMAGES = { background: '', hero: '', ... }\` 처럼 그림 주소를 넣는 곳을 만들고, 주소를 넣으면 그 그림이 쓰이게 해 줘.`,
     `6. alert() 대신 화면 안의 메시지 상자를 쓰고, 기록 저장(localStorage)은 try/catch로 감싸서 저장이 막혀도 게임이 멈추지 않게 해 줘.`,
     `7. 화면 글자는 모두 쉬운 한국어로, 게임 방법 안내를 시작 화면에 넣어 줘. 무섭거나 폭력적인 표현은 빼 줘.`,
+    t ? `8. 배움 요소(${t.learn})가 게임 규칙 안에 자연스럽게 들어가게 해 줘. 퀴즈 화면만 따로 붙이지 말고, 놀이를 하면서 배우게.` : null,
+    `9. 이미 있는 게임이나 유명 캐릭터의 이름·모습·음악을 따라 하지 말고 모두 새로 만들어 줘.`,
     ``,
     `## 이렇게 답해 줘`,
     `- 먼저 완성된 HTML 코드 전체를 코드 블록 하나로 보여 줘(중간에 생략하지 마).`,
@@ -215,7 +255,7 @@ export function buildAppPrompt(plan) {
 
 // 7-2. Gemini 이미지 생성 프롬프트 (앱 프롬프트와 따로)
 export function buildImagePrompts(plan) {
-  const t = topicById(plan.topicId);
+  const t = topicView(plan);
   const f = plan.f;
   const style = f.imageStyle || '파스텔 카툰';
   const hero = [f.charName, f.charLook, f.charTrait].filter(filled).join(', ') || (t ? t.hint.character : '귀여운 주인공');
@@ -250,8 +290,8 @@ export function buildFixPrompt(plan, problem, want) {
 
 // 학생 화면에 보여 줄 텍스트(인쇄·교사 미리보기 공용)
 export function planRows(plan) {
-  const t = topicById(plan.topicId);
-  const rows = [{ n: 0, title: '선택한 주제', value: t ? `${t.emoji} ${t.name} (${categoryById(t.cat).name})` : '—' }];
+  const t = topicView(plan);
+  const rows = [{ n: 0, title: '선택한 주제', value: t ? `${t.emoji} ${t.name} (${t.baseName} 방식 · ${categoryById(t.cat).name})\n배움 요소: ${t.learn}` : '—' }];
   for (const s of SECTIONS) {
     const parts = s.inputs.map((i) => {
       const v = plan.f[i.key];
