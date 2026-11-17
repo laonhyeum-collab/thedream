@@ -35,6 +35,10 @@ jobs:
           npm test
           npm run build
 
+      - name: MY APP MAKER 테스트
+        working-directory: myappmaker
+        run: npm test
+
       - name: 배포할 파일 모으기
         run: |
           mkdir -p _site
@@ -42,6 +46,8 @@ jobs:
           cp -r pixel-magic-lab/dist _site/pixel-magic-lab
           cp -r mugunghwa _site/mugunghwa
           rm -rf _site/mugunghwa/tests _site/mugunghwa/tools _site/mugunghwa/package.json
+          mkdir -p _site/myappmaker
+          cp -r myappmaker/index.html myappmaker/student myappmaker/teacher myappmaker/world myappmaker/shared _site/myappmaker/
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v5

@@ -1,0 +1,459 @@
+// [학생 앱] 주제 → 기획서 → 프롬프트 → 내 앱 → 입점
+import { TOPICS, CATEGORIES, topicById, categoryById } from '../shared/topics.js';
+import {
+  SECTIONS, PARTS, DIFFICULTY, emptyPlan, normalizePlan, missingRequired, progress,
+  buildAppPrompt, buildImagePrompts, buildAllPromptsText, buildFixPrompt, planRows,
+} from '../shared/plan.js';
+import { createStore } from './store.js';
+import { download, readFileText, safeName } from '../shared/files.js';
+import { loadConfig, createApi } from '../shared/api.js';
+import { extractHtml, looksLikeApp, mountApp, isHttpUrl, MAX_APP_BYTES } from '../shared/sandbox.js';
+import { h, $, toast, copyText } from '../shared/ui.js';
+
+const store = createStore();
+const cfg = loadConfig('student');
+const api = createApi(cfg);
+let plan = store.load();
+let part = 1;
+let catFilter = 'all';
+let dirty = false;
+
+// ---------- 저장 ----------
+const statusEl = $('#saveStatus');
+store.onStatus((s, detail) => {
+  const map = { saving: ['저장 중…', ''], saved: ['✔ 저장 완료', 'ok'], fail: ['⚠ 저장 실패', 'bad'], idle: ['저장 준비', ''] };
+  const [text, cls] = map[s] || map.idle;
+  statusEl.textContent = s === 'saved' ? `${text} ${new Date(detail).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}` : text;
+  statusEl.className = `pill ${cls}`;
+  if (s === 'fail') toast(detail, 5000);
+});
+if (!store.available) store.save(emptyPlan());   // 상태만 "실패"로 알리기
+
+let saveTimer = null;
+function touch() {
+  dirty = true;
+  statusEl.textContent = '✏️ 쓰는 중';
+  statusEl.className = 'pill warn';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveNow, 800);          // 입력이 멈추면 곧바로 임시 저장
+}
+function saveNow() {
+  clearTimeout(saveTimer);
+  if (!plan) return;
+  store.save(plan);
+  dirty = false;
+  updateProgress();
+  refreshTabDots();
+}
+setInterval(() => { if (dirty) saveNow(); }, 15000);   // 혹시 놓친 것도 15초마다
+window.addEventListener('pagehide', () => { if (dirty) saveNow(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && dirty) saveNow(); });
+
+// ---------- 화면 이동 ----------
+const SCREENS = ['home', 'topics', 'plan', 'prompts', 'myapp', 'submit'];
+function go(name) { if (location.hash !== `#${name}`) location.hash = name; else route(); }
+function route() {
+  let name = location.hash.slice(1) || 'home';
+  if (!SCREENS.includes(name)) name = 'home';
+  if (['plan', 'prompts', 'myapp', 'submit'].includes(name) && !(plan && plan.topicId)) {
+    if (name !== 'topics') { toast('먼저 주제를 골라요 🎯'); name = 'topics'; history.replaceState(null, '', '#topics'); }
+  }
+  for (const s of SCREENS) $(`#${s}`).hidden = s !== name;
+  const idx = SCREENS.indexOf(name);
+  document.querySelectorAll('.steps a').forEach((a) => {
+    const i = SCREENS.indexOf(a.dataset.step);
+    a.classList.toggle('on', i === idx);
+    a.classList.toggle('done', i < idx);
+  });
+  ({ home: renderHome, topics: renderTopics, plan: renderPlan, prompts: renderPrompts, myapp: renderMyApp, submit: renderSubmit })[name]();
+  window.scrollTo({ top: 0 });
+}
+window.addEventListener('hashchange', route);
+document.addEventListener('click', (e) => {
+  const g = e.target.closest('[data-go]');
+  if (g) { e.preventDefault(); if (dirty) saveNow(); go(g.dataset.go); }
+});
+
+// ---------- 첫 화면 ----------
+function renderHome() {
+  const has = plan && plan.topicId;
+  $('#continueBtn').hidden = !has;
+  $('#startBtn').textContent = has ? '🎯 다른 주제 보기' : '🚀 시작하기';
+  const t = has ? topicById(plan.topicId) : null;
+  $('#resumeInfo').textContent = has
+    ? `${t.emoji} ${plan.f.appName || t.name} — 기획서 ${progress(plan)}% · 마지막 저장 ${new Date(plan.updatedAt).toLocaleString('ko-KR')}`
+    : '';
+  $('#classInfo').textContent = api.enabled ? `🏫 우리 반 저장소에 연결됨 (반 코드 ${cfg.classCode})` : '';
+}
+$('#startBtn').onclick = () => go('topics');
+$('#continueBtn').onclick = () => go(plan.app.html || plan.app.url ? 'myapp' : 'plan');
+
+// ---------- 1. 주제 ----------
+function renderTopics() {
+  const filter = $('#catFilter');
+  filter.replaceChildren(
+    chip('전체', catFilter === 'all', () => { catFilter = 'all'; renderTopics(); }),
+    ...CATEGORIES.map((c) => chip(`${c.emoji} ${c.name}`, catFilter === c.id, () => { catFilter = c.id; renderTopics(); })),
+  );
+  const list = TOPICS.filter((t) => catFilter === 'all' || t.cat === catFilter);
+  $('#topicGrid').replaceChildren(...list.map((t) => {
+    const c = categoryById(t.cat);
+    const b = h('button', { class: `topic-card${plan && plan.topicId === t.id ? ' selected' : ''}`, type: 'button', 'data-topic': t.id, onclick: () => openPreview(t) },
+      h('span', { class: 'emo', 'aria-hidden': 'true' }, t.emoji),
+      h('span', { class: 'cat', style: `background:${c.color}` }, c.name),
+      h('span', { class: 'name' }, t.name),
+      h('span', { class: 'sum' }, t.summary));
+    return b;
+  }));
+}
+
+function chip(label, on, onclick) {
+  return h('button', { type: 'button', class: 'chip', 'aria-pressed': String(!!on), onclick }, label);
+}
+
+function phone(label, [emo, txt, btn], c) {
+  return h('div', { class: 'phone', style: `--c1:${c}22;--c2:${c}55` },
+    h('span', { class: 'lbl' }, label),
+    h('span', { class: 'big-emo', 'aria-hidden': 'true' }, emo),
+    h('span', { class: 'txt' }, `${txt}  ${btn}`));
+}
+
+function openPreview(t) {
+  const c = categoryById(t.cat);
+  const body = $('#previewBody');
+  body.replaceChildren(
+    h('div', { class: 'pv-head' },
+      h('span', { class: 'emo', 'aria-hidden': 'true' }, t.emoji),
+      h('div', {}, h('span', { class: 'pill', style: `background:${c.color};color:#fff` }, `${c.emoji} ${c.name}`), h('h2', { id: 'pvTitle' }, t.name))),
+    h('p', {}, t.intro),
+    h('div', { class: 'pv-sec' }, h('h4', {}, '🎯 게임 목표'), h('p', {}, t.goal)),
+    h('div', { class: 'pv-sec' }, h('h4', {}, '🕹️ 진행 방법'), h('ol', { class: 'pv-steps' }, ...t.steps.map((s) => h('li', {}, s)))),
+    h('div', { class: 'pv-sec' }, h('h4', {}, '🧩 주요 게임 요소'), h('div', { class: 'chips' }, ...t.elements.map((e) => h('span', { class: 'pill' }, e)))),
+    h('div', { class: 'pv-sec' }, h('h4', {}, '📱 예상 화면'),
+      h('div', { class: 'phones' }, phone('시작 화면', t.screens.start, c.color), phone('게임 화면', t.screens.play, c.color), phone('결과 화면', t.screens.end, c.color)),
+      h('p', { class: 'example-note' }, '※ 실제 게임 화면이 아니라 구성 예시예요. 내 아이디어로 바꿔도 돼요!')),
+    h('div', { class: 'row' },
+      h('button', { class: 'primary big grow', id: 'chooseTopic', onclick: () => chooseTopic(t) }, '✨ 이 주제로 기획 시작하기'),
+      h('button', { class: 'ghost', onclick: closePreview }, '다른 주제 보기')),
+  );
+  $('#preview').hidden = false;
+  $('#previewBody').scrollTop = 0;
+  $('#chooseTopic').focus({ preventScroll: true });
+}
+function closePreview() { $('#preview').hidden = true; }
+$('#preview').addEventListener('click', (e) => { if (e.target.id === 'preview') closePreview(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#preview').hidden) closePreview(); });
+
+function chooseTopic(t) {
+  if (plan && plan.topicId && plan.topicId !== t.id && progress(plan) > 0) {
+    if (!confirm(`주제를 「${t.name}」(으)로 바꿀까요?\n지금까지 쓴 기획서 내용은 그대로 남아요.`)) return;
+  }
+  if (!plan) plan = emptyPlan(t.id);
+  plan.topicId = t.id;
+  saveNow();
+  closePreview();
+  part = 1;
+  go('plan');
+}
+
+// ---------- 2. 기획서 ----------
+function partDone(p) {
+  const miss = new Set(missingRequired(plan).map((m) => m.n));
+  return SECTIONS.filter((s) => s.part === p && s.req).every((s) => !miss.has(s.n));
+}
+
+function renderPlan() {
+  const t = topicById(plan.topicId);
+  const c = categoryById(t.cat);
+  $('#planTopic').replaceChildren(
+    h('span', { class: 'emo', 'aria-hidden': 'true' }, t.emoji),
+    h('div', { class: 'grow' }, h('b', {}, t.name), h('div', { class: 'muted small' }, `${c.name} · ${t.summary}`)),
+    h('button', { class: 'ghost small', onclick: () => go('topics') }, '주제 바꾸기'));
+  $('#partTabs').replaceChildren(...PARTS.filter((p) => p.id <= 4).map((p) => h('button', {
+    class: 'tab', role: 'tab', type: 'button', 'aria-selected': String(p.id === part),
+    onclick: () => { part = p.id; renderPlan(); },
+  }, h('span', { class: `dot${partDone(p.id) ? ' ok' : ''}`, 'aria-hidden': 'true' }), ` ${p.title}`)));
+  renderForm($('#planForm'), part, t);
+  $('#prevPart').hidden = part === 1;
+  $('#nextPart').textContent = part === 4 ? '3. 프롬프트 받기 ▶' : '다음 ▶';
+  updateProgress();
+}
+$('#prevPart').onclick = () => { part = Math.max(1, part - 1); renderPlan(); window.scrollTo({ top: 0 }); };
+$('#nextPart').onclick = () => {
+  saveNow();
+  if (part === 4) { go('prompts'); return; }
+  part += 1; renderPlan(); window.scrollTo({ top: 0 });
+};
+
+function renderForm(form, p, t) {
+  const secs = SECTIONS.filter((s) => s.part === p);
+  const nodes = secs.map((s) => h('div', { class: 'sec', 'data-sec': s.n },
+    h('h3', {}, h('span', { class: 'num' }, String(s.n)), s.title, s.req ? h('span', { class: 'req' }, '★ 꼭 쓰기') : ''),
+    ...s.inputs.map((i) => inputFor(i, t)),
+    s.n === 13 ? difficultyPicker() : ''));
+  form.replaceChildren(...nodes);
+}
+
+function inputFor(i, t) {
+  const v = plan.f[i.key];
+  if (i.type === 'chips') {
+    const opts = i.options;
+    return h('div', { class: 'field' }, h('span', { class: 'small muted' }, i.label),
+      h('div', { class: 'chips', role: 'group', 'aria-label': i.label, 'data-key': i.key }, ...opts.map((o) => {
+        const on = i.multi ? v.includes(o) : v === o;
+        return h('button', { type: 'button', class: 'chip', 'aria-pressed': String(on), onclick: (e) => {
+          if (i.multi) plan.f[i.key] = on ? v.filter((x) => x !== o) : [...v, o];
+          else plan.f[i.key] = on ? '' : o;
+          touch();
+          const box = e.target.closest('.field');
+          box.replaceWith(inputFor(i, t));
+        } }, o);
+      })));
+  }
+  const attrs = { 'data-key': i.key, placeholder: i.ph ? i.ph(t) : '', maxlength: i.max || 2000, oninput: (e) => { plan.f[i.key] = e.target.value; touch(); } };
+  const el = i.type === 'area' ? h('textarea', { ...attrs, rows: 3 }) : h('input', { ...attrs, type: 'text' });
+  el.value = v;
+  return h('label', { class: 'field' }, h('span', {}, i.label), el);
+}
+
+function difficultyPicker() {
+  return h('div', { class: 'field' }, h('span', { class: 'small muted' }, '앱 난이도 (AI에게 얼마나 크게 만들어 달라고 할까요?)'),
+    h('div', { class: 'diff', role: 'group' }, ...DIFFICULTY.map((d) => h('button', {
+      type: 'button', 'aria-pressed': String(plan.difficulty === d.id), 'data-diff': d.id,
+      onclick: () => { plan.difficulty = d.id; touch(); renderPlan(); },
+    }, d.label, h('small', {}, d.desc)))));
+}
+
+function refreshTabDots() {
+  if (!plan || !plan.topicId || $('#plan').hidden) return;
+  document.querySelectorAll('#partTabs .tab').forEach((tab, i) => tab.querySelector('.dot').classList.toggle('ok', partDone(i + 1)));
+}
+
+function updateProgress() {
+  if (!plan) return;
+  const p = progress(plan);
+  $('#progressBar').style.width = `${p}%`;
+  $('#progressText').textContent = `${p}%`;
+}
+
+// 저장 도구
+$('#saveBtn').onclick = () => { saveNow(); if (store.status === 'saved') toast('💾 저장했어요'); };
+$('#exportBtn').onclick = () => {
+  saveNow();
+  download(`기획서_${safeName(plan.f.developer)}_${safeName(plan.f.appName || topicById(plan.topicId).name)}.json`, JSON.stringify(plan, null, 2));
+  toast('⬇️ 백업 파일을 내려받았어요');
+};
+$('#importFile').onchange = async (e) => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const next = normalizePlan(JSON.parse(await readFileText(file)));
+    if (plan && progress(plan) > 0 && !confirm('지금 기획서를 불러온 파일로 바꿀까요?\n(지금 내용은 "이전 기획서"로 보관돼요)')) return;
+    if (plan) store.archiveAndClear(plan);
+    plan = next;
+    saveNow();
+    toast('⬆️ 기획서를 불러왔어요');
+    part = 1;
+    go(plan.topicId ? 'plan' : 'topics');
+  } catch (err) { toast(`불러오지 못했어요: ${err.message}`, 4000); }
+};
+$('#newBtn').onclick = startNew;
+$('#newTopicBtn').onclick = startNew;
+function startNew() {
+  if (plan && progress(plan) > 0 && !confirm('새 기획서를 시작할까요?\n지금 기획서는 이 기기에 "이전 기획서"로 보관되지만, 백업 파일을 먼저 내려받아 두면 더 안전해요.')) return;
+  store.archiveAndClear(plan);
+  plan = null;
+  part = 1;
+  go('topics');
+}
+
+// 인쇄·PDF
+$('#printBtn').onclick = () => { saveNow(); printPlan(); };
+function printPlan() {
+  const t = topicById(plan.topicId);
+  const rows = planRows(plan);
+  $('#printArea').replaceChildren(h('div', { class: 'print-sheet' },
+    h('h1', {}, `📱 ${plan.f.appName || t.name} — 앱 기획서`),
+    h('p', {}, `개발자: ${plan.f.developer || '         '}   ${plan.f.classInfo ? `(${plan.f.classInfo})` : ''}   · MY APP MAKER · ${new Date().toLocaleDateString('ko-KR')}`),
+    h('table', {}, h('tbody', {}, ...rows.map((r) => h('tr', {}, h('th', {}, r.n && r.n <= 15 ? `${r.n}. ${r.title}` : r.title), h('td', {}, r.value || ' ')))))));
+  window.print();
+}
+
+// ---------- 3. 프롬프트 ----------
+function renderPrompts() {
+  const miss = missingRequired(plan);
+  const box = $('#missingBox');
+  box.hidden = miss.length === 0;
+  box.replaceChildren(h('b', {}, '✏️ 아직 비어 있는 ★ 항목이 있어요. 채울수록 AI가 내 생각에 딱 맞게 만들어요: '),
+    ...miss.map((m) => h('button', { class: 'chip', type: 'button', onclick: () => { part = m.n === 0 ? 1 : SECTIONS.find((s) => s.n === m.n).part; go(m.n === 0 ? 'topics' : 'plan'); } }, m.title)));
+  $('#appPrompt').textContent = buildAppPrompt(plan);
+  $('#imagePrompts').replaceChildren(...buildImagePrompts(plan).map((p) => h('div', { class: 'img-prompt' },
+    h('div', { class: 'row' }, h('b', { class: 'grow' }, p.title), h('button', { class: 'small', type: 'button', onclick: () => copyText(p.text) }, '📋 복사')),
+    h('p', { class: 'small' }, p.text))));
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-copy]');
+  if (!b) return;
+  if (b.dataset.copy === 'app') copyText(buildAppPrompt(plan), '📋 앱 제작 프롬프트를 복사했어요');
+  if (b.dataset.copy === 'fix') copyText($('#fixPrompt').textContent, '📋 고쳐 줘 프롬프트를 복사했어요');
+});
+$('#copyAll').onclick = () => copyText(buildAllPromptsText(plan), '📋 프롬프트 전체를 복사했어요');
+
+// ---------- 4. 내 앱 ----------
+const TEST_ITEMS = SECTIONS.find((s) => s.n === 14).inputs[0].options;
+function renderMyApp() {
+  $('#appCode').value = plan.app.html || '';
+  $('#appUrl').value = plan.app.url || '';
+  renderAppInfo();
+  if (plan.app.html || plan.app.url) mountApp($('#appFrame'), plan.app);
+  else $('#appFrame').srcdoc = '<p style="font-family:sans-serif;color:#888;text-align:center;margin-top:40%">코드를 붙여 넣고 ▶ 실행해 보기를 눌러요</p>';
+  renderChecks();
+  renderFix();
+}
+function renderAppInfo() {
+  const n = (plan.app.html || '').length;
+  $('#appInfo').textContent = n ? `코드 ${n.toLocaleString()}자 저장됨${plan.app.updatedAt ? ` · ${new Date(plan.app.updatedAt).toLocaleTimeString('ko-KR')}` : ''}` : (plan.app.url ? '공유 주소로 저장됨' : '');
+}
+function renderChecks() {
+  const checked = plan.app.checks || [];
+  const want = plan.f.tests.length ? plan.f.tests : TEST_ITEMS;
+  $('#testChecks').replaceChildren(...want.map((o) => chip(`${checked.includes(o) ? '✅' : '⬜'} ${o}`, checked.includes(o), () => {
+    plan.app.checks = checked.includes(o) ? checked.filter((x) => x !== o) : [...checked, o];
+    touch(); renderChecks();
+  })));
+}
+function renderFix() { $('#fixPrompt').textContent = buildFixPrompt(plan, $('#fixProblem').value, $('#fixWant').value); }
+$('#fixProblem').oninput = renderFix;
+$('#fixWant').oninput = renderFix;
+
+function setAppHtml(raw) {
+  const html = extractHtml(raw);
+  if (!html) { toast('붙여 넣은 코드가 없어요'); return false; }
+  if (html.length > MAX_APP_BYTES) { toast(`코드가 너무 길어요 (${MAX_APP_BYTES.toLocaleString()}자까지)`, 4000); return false; }
+  if (!looksLikeApp(html)) { toast('HTML 코드가 아닌 것 같아요. AI가 준 코드 블록 전체를 복사했는지 확인해요', 4500); return false; }
+  plan.app.html = html;
+  plan.app.updatedAt = new Date().toISOString();
+  $('#appCode').value = html;
+  saveNow();
+  mountApp($('#appFrame'), { html });
+  renderAppInfo();
+  return true;
+}
+$('#runApp').onclick = () => { if (setAppHtml($('#appCode').value)) toast('▶ 실행했어요! 버튼과 규칙이 잘 되는지 시험해 봐요'); };
+$('#appFile').onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try { if (setAppHtml(await readFileText(f, MAX_APP_BYTES))) toast('📄 파일을 넣었어요'); } catch (err) { toast(err.message); }
+};
+$('#clearApp').onclick = () => {
+  if (!plan.app.html || !confirm('붙여 넣은 앱 코드를 지울까요?')) return;
+  plan.app.html = ''; $('#appCode').value = ''; saveNow(); renderMyApp();
+};
+$('#appUrl').onchange = (e) => {
+  const u = e.target.value.trim();
+  if (u && !isHttpUrl(u)) { toast('https:// 로 시작하는 주소를 넣어요'); return; }
+  plan.app.url = u; saveNow();
+  if (!plan.app.html && u) mountApp($('#appFrame'), { url: u });
+  renderAppInfo();
+};
+$('#fullApp').onclick = () => {
+  const f = $('#appFrame');
+  f.classList.add('fullscreen-app');
+  const close = h('button', { class: 'close-full primary', onclick: () => { f.classList.remove('fullscreen-app'); close.remove(); } }, '✕ 닫기');
+  document.body.appendChild(close);
+};
+
+// ---------- 5. 입점 ----------
+function submitChecks() {
+  const miss = missingRequired(plan);
+  return [
+    { ok: miss.length === 0, text: miss.length ? `★ 기획서 항목 채우기 (남은 것: ${miss.map((m) => m.title).join(', ')})` : '★ 기획서 꼭 쓰기 항목 완성' },
+    { ok: !!(plan.app.html || plan.app.url), text: '내 앱 코드(또는 공유 주소) 넣기' },
+    { ok: (plan.app.checks || []).length >= 3, text: `테스트 체크리스트 3개 이상 확인 (${(plan.app.checks || []).length}개)` },
+  ];
+}
+function renderSubmit() {
+  $('#submitChecks').replaceChildren(...submitChecks().map((c) => h('li', { class: c.ok ? 'ok' : '' }, c.text)));
+  const t = topicById(plan.topicId);
+  $('#reviewFields').replaceChildren(...SECTIONS.find((s) => s.n === 15).inputs.map((i) => inputFor(i, t)));
+  $('#sendOnline').hidden = !api.enabled;
+  $('#sendOffline').hidden = api.enabled;
+  if (plan.submit.status) showStatus(plan.submit);
+  if (api.enabled) refreshStatus(true);
+}
+
+function submissionPayload() {
+  const { html, ...appRest } = plan.app;
+  return {
+    studentKey: plan.id,
+    developer: plan.f.developer.trim(),
+    classInfo: plan.f.classInfo.trim(),
+    appName: plan.f.appName.trim(),
+    topicId: plan.topicId,
+    plan: { ...plan, app: { ...appRest, html: '' } },
+    appHtml: html || '',
+    appUrl: plan.app.url || '',
+  };
+}
+
+function canSubmit() {
+  if (!plan.f.developer.trim() || !plan.f.appName.trim()) { toast('기획서 1번에 개발자 이름과 앱 이름을 써요', 4000); return false; }
+  if (!plan.app.html && !plan.app.url) { toast('4. 내 앱에 코드를 먼저 넣어요', 4000); return false; }
+  const bad = submitChecks().filter((c) => !c.ok);
+  if (bad.length && !confirm(`아직 확인하지 않은 것이 있어요:\n- ${bad.map((b) => b.text).join('\n- ')}\n\n그래도 보낼까요?`)) return false;
+  return true;
+}
+
+$('#sendBtn').onclick = async () => {
+  saveNow();
+  if (!canSubmit()) return;
+  const btn = $('#sendBtn');
+  btn.disabled = true; btn.textContent = '보내는 중…';
+  try {
+    const r = await api.submit(submissionPayload());
+    plan.submit = { ...plan.submit, at: new Date().toISOString(), status: r.status, id: r.id };
+    saveNow();
+    showStatus(plan.submit);
+    toast('🚀 선생님께 보냈어요!');
+  } catch (e) {
+    toast(`보내지 못했어요: ${e.message}. 「제출 파일 내려받기」로 내도 돼요`, 6000);
+  } finally { btn.disabled = false; btn.textContent = '🚀 선생님께 보내기'; }
+};
+$('#checkBtn').onclick = () => refreshStatus(false);
+async function refreshStatus(quiet) {
+  try {
+    const r = await api.mine(plan.id);
+    if (!r.found) { if (!quiet) toast('아직 보낸 적이 없어요'); return; }
+    plan.submit = { ...plan.submit, status: r.status, feedback: r.feedback || '', booth: r.booth, likes: r.likes, id: r.id };
+    store.save(plan);
+    showStatus(plan.submit);
+  } catch (e) { if (!quiet) toast(e.message); }
+}
+function showStatus(s) {
+  const box = $('#statusBox');
+  const label = { submitted: '📨 보냈어요 — 선생님이 확인하는 중이에요', approved: `🎉 입점 완료! ${s.booth ? `${s.booth}번 부스` : ''}에서 친구들이 놀 수 있어요`, needs_fix: '🔧 선생님이 고쳐 보자고 했어요' }[s.status] || '';
+  box.hidden = !label;
+  box.className = `status-box ${s.status || ''}`;
+  box.replaceChildren(h('b', {}, label),
+    s.feedback ? h('p', {}, `💬 선생님 말씀: ${s.feedback}`) : '',
+    s.likes ? h('p', { class: 'small' }, `👍 좋아요 ${s.likes}개`) : '');
+}
+
+$('#fileSubmitBtn').onclick = () => {
+  saveNow();
+  if (!canSubmit()) return;
+  const sub = { schema: 'myappmaker.submission/1', submittedAt: new Date().toISOString(), studentKey: plan.id, plan };
+  download(`제출_${safeName(plan.f.developer)}_${safeName(plan.f.appName)}.json`, JSON.stringify(sub));
+  plan.submit = { ...plan.submit, at: sub.submittedAt, status: plan.submit.status || 'submitted' };
+  saveNow();
+  toast('📦 제출 파일을 내려받았어요. 선생님이 알려 준 곳에 올려요', 5000);
+};
+
+if (api.enabled) {
+  const u = new URL('../world/', location.href);
+  u.searchParams.set('api', cfg.endpoint); u.searchParams.set('class', cfg.classCode);
+  $('#worldLink').href = u.toString();
+}
+
+route();

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MY APP MAKER · 교사</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#2b2d42">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
+  <link rel="stylesheet" href="../shared/common.css">
+  <link rel="stylesheet" href="teacher.css">
+  <script src="../shared/config.js"></script>
+</head>
+<body>
+  <header class="t-top no-print">
+    <div class="wrap row">
+      <span class="title-font logo">🧑‍🏫 MY APP MAKER 교사용</span>
+      <nav class="t-tabs grow" role="tablist">
+        <button role="tab" data-tab="students" aria-selected="true">📋 학생 현황</button>
+        <button role="tab" data-tab="booths">🗺️ 부스 배치</button>
+        <button role="tab" data-tab="lesson">⏱️ 4차시 수업</button>
+        <button role="tab" data-tab="settings">⚙️ 연결 설정</button>
+      </nav>
+      <span id="connPill" class="pill">연결 안 됨</span>
+    </div>
+  </header>
+
+  <main class="wrap no-print">
+    <!-- 학생 현황 -->
+    <section id="tab-students" class="tab-panel">
+      <div id="stats" class="stats"></div>
+      <div class="card row toolbar">
+        <div id="statusFilter" class="chips grow" role="group" aria-label="상태로 보기"></div>
+        <button id="refreshBtn" class="primary">🔄 새로고침</button>
+        <label class="btn" for="importSubs">📁 제출 파일 넣기</label>
+        <input id="importSubs" type="file" accept=".json,application/json" multiple hidden>
+        <button id="printAllBtn">🖨️ 기획서 모두 인쇄</button>
+        <button id="exportAllBtn">⬇️ 전체 백업</button>
+      </div>
+      <p id="listInfo" class="muted small"></p>
+      <div id="studentList" class="student-list"></div>
+    </section>
+
+    <!-- 부스 배치 -->
+    <section id="tab-booths" class="tab-panel" hidden>
+      <div class="card">
+        <h2>🗺️ 메타버스 부스 배치</h2>
+        <p class="muted small">입점 승인한 앱만 메타버스에 나타나요. 부스 번호가 없는 앱은 「빈 번호 자동 배정」으로 채울 수 있어요.</p>
+        <div class="row">
+          <button id="autoBooth" class="primary">🔢 빈 번호 자동 배정</button>
+          <button id="exportWorld" class="sun">🌏 메타버스 파일 내려받기</button>
+          <a id="openWorld" class="btn mint" href="../world/" target="_blank" rel="noopener">🚪 메타버스 열기</a>
+        </div>
+        <p class="muted small">「메타버스 파일」은 인터넷 저장소 없이 교실 화면 한 대로 앱 월드를 열 때 써요 (메타버스 화면에서 파일 불러오기).</p>
+      </div>
+      <div id="boothMap" class="booth-map"></div>
+    </section>
+
+    <!-- 4차시 수업 -->
+    <section id="tab-lesson" class="tab-panel" hidden>
+      <div class="card timer-card">
+        <div class="row">
+          <h2 class="grow">⏱️ 활동 타이머</h2>
+          <div id="timerPresets" class="chips"></div>
+        </div>
+        <div id="timerDisplay" class="timer" aria-live="polite">00:00</div>
+        <div class="row"><button id="timerStart" class="primary big">▶ 시작</button><button id="timerReset" class="ghost">↺ 다시</button><button id="timerFull" class="ghost">⛶ 크게</button></div>
+      </div>
+      <div id="lessonPlan" class="lesson-grid"></div>
+    </section>
+
+    <!-- 연결 설정 -->
+    <section id="tab-settings" class="tab-panel" hidden>
+      <div class="card">
+        <h2>⚙️ 우리 반 저장소 연결</h2>
+        <p class="small">구글 Apps Script로 만든 저장소 주소를 넣으면 학생들이 버튼 하나로 제출하고, 메타버스가 자동으로 부스를 열어요. 만드는 방법은 <a href="https://github.com/laonhyeum-collab/thedream/blob/main/myappmaker/backend/README.md" target="_blank" rel="noopener">설치 안내</a>를 보세요. 저장소 없이 <b>제출 파일</b>만으로도 운영할 수 있어요.</p>
+        <label class="field"><span>저장소 주소 (https://script.google.com/macros/s/…/exec)</span><input id="cfgEndpoint" type="url" placeholder="https://script.google.com/macros/s/..../exec"></label>
+        <div class="row">
+          <label class="field grow"><span>반 코드 (학생도 씀)</span><input id="cfgClass" type="text" placeholder="예) DREAM-5-2"></label>
+          <label class="field grow"><span>교사 열쇠 (이 기기에만 저장)</span><input id="cfgKey" type="password" autocomplete="off"></label>
+        </div>
+        <div class="row"><button id="cfgSave" class="primary">💾 저장하고 연결 시험</button><span id="cfgResult" class="small"></span></div>
+      </div>
+      <div class="card">
+        <h3>🔗 학생에게 나눠 줄 주소</h3>
+        <p class="muted small">이 주소로 열면 반 저장소가 자동으로 연결돼요. 클래스룸·패들렛 등에 올려 주세요. (교사 열쇠는 들어 있지 않아요)</p>
+        <div class="link-row"><code id="studentLink"></code><button data-copylink="studentLink">📋 복사</button></div>
+        <div class="link-row"><code id="worldLinkCode"></code><button data-copylink="worldLinkCode">📋 복사</button></div>
+      </div>
+      <div class="card">
+        <h3>🧹 이 기기의 파일 제출 데이터</h3>
+        <p class="muted small">「제출 파일 넣기」로 받은 데이터는 이 브라우저에만 있어요.</p>
+        <button id="clearLocal" class="danger">🗑️ 파일 제출 데이터 모두 지우기</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- 학생 상세 -->
+  <div id="detail" class="modal no-print" hidden role="dialog" aria-modal="true" aria-labelledby="dtTitle">
+    <div class="sheet wide" id="detailBody"></div>
+  </div>
+
+  <div id="printArea" class="print-only"></div>
+  <script type="module" src="teacher.js"></script>
+</body>
+</html>

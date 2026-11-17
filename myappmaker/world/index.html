@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>우리 반 앱 월드</title>
+  <meta name="description" content="친구들이 만든 게임 앱이 부스로 열리는 메타버스 앱 월드">
+  <meta name="theme-color" content="#8fd694">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
+  <link rel="stylesheet" href="../shared/common.css">
+  <link rel="stylesheet" href="world.css">
+  <script src="../shared/config.js"></script>
+</head>
+<body class="world">
+  <!-- 입장 -->
+  <section id="lobby" class="lobby">
+    <div class="card lobby-card">
+      <h1>🌏 우리 반 앱 월드</h1>
+      <p class="muted">친구들이 만든 게임 앱이 부스로 열려 있어요. 걸어 다니며 부스에 들어가 놀아 봐요!</p>
+      <label class="field"><span>내 이름(별명)</span><input id="nick" type="text" maxlength="10" placeholder="예) 하늘"></label>
+      <div class="field"><span class="small muted">내 아바타</span><div id="avatarPick" class="avatar-pick" role="group" aria-label="아바타 고르기"></div></div>
+      <button id="enterBtn" class="primary big">🚪 입장하기</button>
+      <p id="sourceInfo" class="small muted"></p>
+      <details class="small">
+        <summary>📁 선생님: 메타버스 파일로 열기</summary>
+        <p class="muted">교사 앱의 「메타버스 파일 내려받기」로 받은 파일을 넣으면 인터넷 저장소 없이 이 기기에서 앱 월드를 열어요.</p>
+        <label class="btn" for="worldFile">📁 파일 불러오기</label>
+        <input id="worldFile" type="file" accept=".json,application/json" hidden>
+      </details>
+    </div>
+  </section>
+
+  <!-- 월드 -->
+  <section id="stage" class="stage" hidden>
+    <canvas id="map" aria-label="앱 월드 지도. 방향키나 화면을 눌러 움직여요. 부스 목록 버튼으로도 앱을 열 수 있어요."></canvas>
+    <div class="hud top-left">
+      <span class="pill" id="worldTitle">🌏 우리 반 앱 월드</span>
+      <span class="pill" id="boothCount"></span>
+    </div>
+    <div class="hud top-right">
+      <button id="listBtn" class="primary">📋 부스 목록</button>
+      <button id="exitBtn" class="ghost" aria-label="나가기">🚪</button>
+    </div>
+    <div id="joystick" class="joystick" aria-hidden="true"><div class="knob"></div></div>
+    <div id="enterHint" class="enter-hint" hidden>
+      <span id="enterText"></span>
+      <button id="enterBooth" class="sun big">들어가기 ▶</button>
+    </div>
+    <p class="help small">⌨️ 방향키·WASD로 움직이고 <b>Space</b>로 들어가요 · 📱 화면을 누르거나 끌어서 움직여요</p>
+  </section>
+
+  <!-- 부스 안 (앱 실행) -->
+  <div id="appRoom" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="roomTitle">
+    <div class="sheet wide room">
+      <div class="row room-head">
+        <span id="roomEmoji" class="room-emoji"></span>
+        <div class="grow">
+          <h2 id="roomTitle"></h2>
+          <p id="roomMeta" class="muted small"></p>
+        </div>
+        <button id="likeBtn" class="sun">👍 <span id="likeCount">0</span></button>
+        <a id="newTab" class="btn ghost" target="_blank" rel="noopener noreferrer" hidden>↗ 새 창</a>
+        <button id="closeRoom" class="primary">✕ 나가기</button>
+      </div>
+      <p id="roomIntro" class="room-intro"></p>
+      <iframe id="roomFrame" class="app-frame room-frame" title="친구가 만든 앱"></iframe>
+    </div>
+  </div>
+
+  <!-- 부스 목록 -->
+  <div id="directory" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="dirTitle">
+    <div class="sheet">
+      <div class="row"><h2 id="dirTitle" class="grow">📋 부스 목록</h2><button id="closeDir" class="ghost">✕</button></div>
+      <div id="dirList" class="dir-list"></div>
+    </div>
+  </div>
+
+  <script type="module" src="world.js"></script>
+</body>
+</html>
