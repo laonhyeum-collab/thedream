@@ -30,6 +30,7 @@ function tone(freq, start, dur, type = 'sine', gain = 0.15, endFreq = freq) {
 
 export const sfx = {
   unlock() { audio(); },
+  step() { tone(988, 0, 0.07, 'sine', 0.05); },
   tick() { tone(660, 0, 0.12, 'triangle', 0.12); },
   go() { tone(523, 0, 0.12, 'triangle'); tone(784, 0.1, 0.18, 'triangle'); },
   freeze() { tone(196, 0, 0.25, 'square', 0.08); },
