@@ -28,7 +28,7 @@ function fullPlan() {
   const p = emptyPlan('fruit-bomb');
   Object.assign(p.f, {
     developer: '하늘', appName: '과일 비', intro: '과일 받기', goal: '100점', ruleStart: '버튼', rulePlay: '끌기', ruleWin: '100점', ruleLose: '폭탄 3번',
-    charName: '다람', charLook: '노란 모자', charTrait: '빠름', place: '과수원', features: ['이동하기', '피하기'], featuresMore: '무적 아이템', extra: '황금 사과',
+    charName: '다람', charLook: '노란 모자', charTrait: '빠름', place: '과수원', features: ['이동하기', '피하기'], featuresMore: '무적 아이템', extra: '황금 사과', learnGoal: '수학 1~2학년 · 덧셈하기',
     elements: ['점수', '코인'], colors: ['노랑'],
   });
   return p;
@@ -40,8 +40,10 @@ test('꼭 쓰기 항목 확인: 빈 기획서 → 주제 포함 모두 부족, �
   assert.equal(progress(empty), 0);
   const p = fullPlan();
   assert.deepEqual(missingRequired(p), []);
-  p.f.featuresMore = '';
-  assert.deepEqual(missingRequired(p).map((m) => m.n), [7], '기능 3개 미만');
+  p.f.featuresMore = ''; p.f.features = ['이동하기'];
+  assert.deepEqual(missingRequired(p).map((m) => m.n), [7], '기능 2개 미만');
+  const q = fullPlan(); q.f.learnGoal = '';
+  assert.deepEqual(missingRequired(q).map((m) => m.n), [4], '배울 내용은 꼭 쓰기');
   assert.ok(progress(fullPlan()) > 50);
 });
 
@@ -52,14 +54,15 @@ test('앱 제작 프롬프트에 기획서 내용과 필수 조건이 들어감'
   assert.ok(buildAppPrompt(emptyPlan()).length > 200, '빈 기획서도 오류 없이');
 });
 
-test('이미지 프롬프트: 배경 16:9, 캐릭터 투명, 글자·유명 캐릭터 금지, 스타일 반영, 앱 프롬프트와 분리', () => {
-  const p = fullPlan(); p.f.imageStyle = '픽셀 아트';
+test('이미지 프롬프트: 배경 16:9, 캐릭터 흰 배경(앱이 지움), 글자·유명 캐릭터 금지, 스타일 반영, 앱 프롬프트와 분리', () => {
+  const p = fullPlan();
   const list = buildImagePrompts(p);
   assert.equal(list[0].id, 'background'); assert.match(list[0].text, /16:9/);
-  assert.match(list[1].text, /투명/); assert.match(list[1].text, /노란 모자/);
-  assert.ok(list.some((x) => x.id === 'icon-코인'));
-  for (const x of list) { assert.match(x.text, /픽셀 아트/); assert.match(x.text, /글자/); assert.match(x.text, /유명 캐릭터/); }
+  assert.match(list[1].text, /하얀색 한 가지/); assert.match(list[1].text, /노란 모자/);
+  assert.ok(list.some((x) => x.id === 'icon2' && x.slot.element === '코인'));
+  for (const x of list) { assert.match(x.text, /앱 월드와 같은 느낌/); assert.match(x.text, /글자/); assert.match(x.text, /유명 캐릭터/); }
   assert.ok(!buildAppPrompt(p).includes('16:9'));
+  assert.match(buildAppPrompt(p), /const IMAGES = \{ background: '', hero: '', icon1: '', icon2: '' \};/, '앱 프롬프트가 그림 자리 이름을 정해 줌');
 });
 
 test('고쳐 줘 프롬프트', () => {
@@ -82,7 +85,7 @@ test('인쇄 표: 주제 + 15개 항목 + 난이도', () => {
   const rows = planRows(fullPlan());
   assert.equal(rows.length, 17);
   assert.match(rows.find((r) => r.n === 6).value, /모습: 노란 모자/);
-  assert.equal(rows.find((r) => r.n === 4).value, '100점');
+  assert.match(rows.find((r) => r.n === 4).value, /목표: 100점\n배울 내용: 수학 1~2학년/);
 });
 
 test('저장소: 저장·불러오기·실패 상태·기록 보관', () => {

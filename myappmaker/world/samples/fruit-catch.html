@@ -39,6 +39,9 @@ const IMAGES = { background: '', hero: '' }; // 그림 주소를 넣으면 바�
 const FRUITS = ['🍎', '🍌', '🍇', '🍓', '🍊', '🍉'];
 const game = document.getElementById('game');
 const basket = document.getElementById('basket');
+// 그림 자리에 그림이 있으면 그 그림을, 없으면 이모지를 써요
+if (IMAGES.background) game.style.background = 'center / cover no-repeat url(' + IMAGES.background + ')';
+if (IMAGES.hero) basket.innerHTML = '<img src="' + IMAGES.hero + '" alt="" style="width:84px;height:84px;object-fit:contain;display:block">';
 let items = [], score = 0, life = 3, time = 30, bx = 0.5, running = false, lastSpawn = 0, timer = null, best = 0;
 try { best = Number(localStorage.getItem('fruit-best')) || 0; } catch (e) {}
 function W() { return game.clientWidth; } function H() { return game.clientHeight; }

@@ -67,6 +67,7 @@ async function fillPlan(page, name, appName) {
   await page.fill('[data-key="appName"]', appName);
   await page.fill('[data-key="intro"]', '하늘에서 떨어지는 과일을 바구니로 받는 게임');
   await page.fill('[data-key="goal"]', '30초 안에 100점 넘기기');
+  assert.match(await page.inputValue('[data-key="learnGoal"]'), /학년 · /, '배울 내용 미리 채움');
   await snap(page, 'plan-part1');
   await page.click('#nextPart');
   await page.fill('[data-key="ruleStart"]', '시작 버튼을 눌러요');
@@ -79,11 +80,15 @@ async function fillPlan(page, name, appName) {
   await page.fill('[data-key="place"]', '과수원');
   await page.click('#nextPart');
   for (const f of ['이동하기', '모으기(수집)', '피하기']) await page.click(`[data-key="features"] >> text="${f}"`);
+  await page.click('[data-key="features"] >> text="점프하기"');
+  assert.equal(await page.locator('[data-key="features"] [aria-pressed="true"]').count(), 3, '기능은 3개까지만');
+  assert.equal(await page.locator('[data-diff]').count(), 0, '난이도는 4번 묶음에');
   await page.click('[data-key="elements"] >> text="점수"');
   await page.click('[data-key="elements"] >> text="시간 제한"');
   await snap(page, 'plan-part3');
   await page.click('#nextPart');
   await page.fill('[data-key="extra"]', '황금 사과를 받으면 5초 동안 점수 2배');
+  assert.equal(await page.locator('[data-diff]').count(), 2, '난이도 두 단계');
   await page.click('[data-diff="normal"]');
   await page.waitForFunction(() => document.querySelector('#saveStatus').textContent.includes('저장 완료'), null, { timeout: 5000 });
 }
@@ -107,7 +112,7 @@ try {
   await st.click('[data-step="prompts"]');
   await st.waitForSelector('#prompts:not([hidden])');
   const prompt = await st.textContent('#appPrompt');
-  for (const s of ['다람이의 과일 바구니', '바다 쓰레기 청소부', '배움 요소: 해양 오염과 분리배출', '30초 안에 100점 넘기기', '황금 사과', '노란 모자를 쓴 다람쥐', 'HTML 파일 하나', '보통']) assert.ok(prompt.includes(s), `프롬프트에 "${s}"`);
+  for (const s of ['다람이의 과일 바구니', '바다 쓰레기 청소부', '과학 5~6학년 · 해양 오염과 분리배출', '한 판(1단계)만', '30초 안에 100점 넘기기', '황금 사과', '노란 모자를 쓴 다람쥐', 'HTML 파일 하나', '보통']) assert.ok(prompt.includes(s), `프롬프트에 "${s}"`);
   assert.equal(await st.isHidden('#missingBox'), true, '★ 항목 모두 채움');
   await st.click('#prompts details summary');
   assert.ok((await st.locator('.img-prompt').count()) >= 2, '이미지 프롬프트');
@@ -142,6 +147,39 @@ try {
   await st.click('#runApp');
   await frame.locator('#go').click();
   await frame.locator('#start[hidden]').waitFor({ state: 'attached' });
+  step('학생: 내 그림 올리기 → 하얀 배경 지우고 게임에 들어감');
+  const pics = await st.evaluate(() => {
+    const mk = (w, h, draw, type) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); return c.toDataURL(type); };
+    return {
+      hero: mk(600, 600, (x, w, h) => { x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.fillStyle = '#e8590c'; x.beginPath(); x.arc(300, 300, 180, 0, 7); x.fill(); x.fillStyle = '#fff'; x.fillRect(280, 280, 40, 40); }, 'image/png'),
+      bg: mk(1200, 1200, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#bfe9ff'); g.addColorStop(1, '#8fd694'); x.fillStyle = g; x.fillRect(0, 0, w, h); }, 'image/png'),
+    };
+  });
+  const toFile = (name, dataUrl) => ({ name, mimeType: 'image/png', buffer: Buffer.from(dataUrl.split(',')[1], 'base64') });
+  await st.waitForSelector('#picStatus >> text=그림 자리를 찾았어요');
+  await st.setInputFiles('#pic-hero', toFile('hero.png', pics.hero));
+  await st.waitForSelector('[data-pic="hero"].done img');
+  await st.setInputFiles('#pic-background', toFile('bg.png', pics.bg));
+  await st.waitForSelector('[data-pic="background"].done img');
+  const heroInfo = await frame.locator('#basket img').evaluate((img) => new Promise((ok) => {
+    const go = () => { const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; const x = c.getContext('2d'); x.drawImage(img, 0, 0);
+      const a = (px, py) => x.getImageData(px, py, 1, 1).data[3];
+      ok({ w: c.width, h: c.height, corner: a(0, 0), ring: a(c.width / 2 | 0, 4), middle: a(c.width / 2 | 0, c.height / 2 | 0), src: img.src.slice(0, 16) }); };
+    if (img.complete) go(); else img.onload = go;
+  }));
+  assert.ok(heroInfo.w <= 320 && heroInfo.w === heroInfo.h, `주인공 정사각형으로 줄임 ${heroInfo.w}`);
+  assert.equal(heroInfo.corner, 0, '하얀 배경은 투명하게');
+  assert.equal(heroInfo.middle, 255, '그림 안쪽 흰색은 그대로');
+  assert.match(await frame.locator('#game').evaluate((g) => g.style.background), /data:image\/jpeg/, '배경 그림이 게임에 들어감');
+  const bgDims = await st.locator('[data-pic="background"] img').evaluate((i) => [i.naturalWidth, i.naturalHeight]);
+  assert.deepEqual(bgDims, [960, 540], '배경은 16:9로 잘라 줄임');
+  await snap(st, 'pictures');
+  // 코드를 다시 붙여 넣어도 그림은 남음
+  await st.fill('#appCode', fruit);
+  await st.click('#runApp');
+  await frame.locator('#basket img').waitFor({ state: 'attached' });
+  await st.reload();
+  await st.waitForSelector('[data-pic="hero"].done img');
   for (const c of ['시작 버튼', '점수', '타이머']) await st.click(`#testChecks >> text=${c}`);
   await st.fill('#fixProblem', '폭탄이 너무 많아요');
   assert.ok((await st.textContent('#fixPrompt')).includes('폭탄이 너무 많아요'));
@@ -155,6 +193,8 @@ try {
   await st.waitForSelector('#statusBox.submitted');
   await snap(st, 'submitted');
   assert.equal(gas.sheets.get('제출').data.length, 2);
+  assert.ok([...gas.files.values()].some((f) => !f.trashed && f.content.includes("url(' + IMAGES.background") && /hero: 'data:image\/(webp|png)/.test(f.content)), '제출한 앱에 그림이 들어 있음');
+  assert.ok(!gas.sheets.get('제출').data[1].join('').includes('data:image'), '기획서(시트)에는 그림을 넣지 않음');
 
   // ───── 2. 교사 ─────
   step('교사: 연결 → 확인 → 입점 승인');

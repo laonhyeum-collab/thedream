@@ -3,6 +3,7 @@ import { topicById, categoryById } from '../shared/topics.js';
 import { normalizePlan, planRows, progress, missingRequired, topicView, planSafety } from '../shared/plan.js';
 import { loadConfig, saveConfig, createApi, isValidEndpoint } from '../shared/api.js';
 import { mountApp } from '../shared/sandbox.js';
+import { applyImages } from '../shared/images.js';
 import { download, readFileText, safeName } from '../shared/files.js';
 import { LESSONS, TIMER_PRESETS } from './lesson.js';
 import { h, $, toast, copyText, fmtTime } from '../shared/ui.js';
@@ -34,7 +35,7 @@ function fromSubmission(sub) {
     id: `file_${(sub.studentKey || plan.id).slice(-20)}`, source: 'file',
     developer: plan.f.developer, classInfo: plan.f.classInfo, appName: plan.f.appName, topicId: plan.topicId,
     status: 'submitted', feedback: '', booth: null, appUrl: plan.app.url, hasHtml: !!plan.app.html, htmlSize: plan.app.html.length,
-    submittedAt: sub.submittedAt || plan.updatedAt, likes: 0, plan: { ...plan, app: { ...plan.app, html: '' } }, html: plan.app.html,
+    submittedAt: sub.submittedAt || plan.updatedAt, likes: 0, plan: { ...plan, app: { ...plan.app, html: '', images: {} } }, html: applyImages(plan.app.html, plan.app.images),
   };
 }
 
@@ -135,7 +136,7 @@ async function openDetail(id) {
       h('button', { class: 'ghost', onclick: closeDetail, 'aria-label': '닫기' }, '✕')),
     miss.length ? h('p', { class: 'pill warn' }, `비어 있는 ★ 항목: ${miss.map((m) => m.title).join(', ')}`) : '',
     plan && planSafety(plan).length ? h('p', { class: 'pill bad' }, `🚫 확인 필요: ${planSafety(plan).map((it) => `${it.n}번 「${it.words.join('」「')}」`).join(', ')}`) : '',
-    t && t.learn ? h('p', { class: 'pill ok' }, `📚 배움 요소: ${t.learn}`) : '',
+    t && t.learn ? h('p', { class: 'pill ok' }, `📚 교과 연계: ${(plan && plan.f.learnGoal) || `${t.curr} · ${t.learn}`}`) : '',
     h('div', { class: 'detail-grid' },
       h('div', {}, h('h3', {}, '🕹️ 앱 실행'), frame,
         x.appUrl ? h('p', { class: 'small' }, '공유 주소: ', h('a', { href: x.appUrl, target: '_blank', rel: 'noopener noreferrer' }, x.appUrl)) : ''),

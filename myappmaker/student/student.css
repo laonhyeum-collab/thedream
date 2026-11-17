@@ -60,7 +60,7 @@
 .sec:last-child { border-bottom: 0; margin-bottom: 0; }
 .sec h3 .num { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); margin-right: 6px; font-size: 16px; }
 .sec h3 .req { color: var(--coral); font-size: 14px; margin-left: 6px; }
-.diff { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.diff { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .diff button { flex-direction: column; background: #fff; color: var(--ink); border: 2px solid var(--line); font-weight: 700; }
 .diff button small { font-weight: 400; color: var(--muted); font-size: 13px; }
 .diff button[aria-pressed="true"] { border-color: var(--brand); background: var(--brand-soft); }
@@ -88,6 +88,19 @@ details[open] > summary::before { content: "▾ "; }
 .status-box.approved { background: var(--mint-soft); }
 .status-box.needs_fix { background: var(--coral-soft); }
 .nav-buttons { margin-top: 4px; }
+/* 내 그림 넣기 */
+.pic-steps { margin: 0 0 8px; padding-left: 20px; }
+.pic-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+.pic-slot { border: 2px solid var(--line); border-radius: 16px; padding: 12px; display: grid; gap: 8px; background: #fff; }
+.pic-slot.done { border-color: var(--mint); }
+.pic-thumb { height: 120px; border-radius: 12px; display: grid; place-items: center; font-size: 40px; color: var(--muted);
+  background-color: #f3f3fb; background-image: linear-gradient(45deg, #e6e6f2 25%, transparent 25%, transparent 75%, #e6e6f2 75%), linear-gradient(45deg, #e6e6f2 25%, transparent 25%, transparent 75%, #e6e6f2 75%);
+  background-size: 16px 16px; background-position: 0 0, 8px 8px; overflow: hidden; }
+.pic-thumb img { max-width: 100%; max-height: 120px; object-fit: contain; }
+.pic-slot .row { gap: 6px; }
+.pic-slot button, .pic-slot .btn { min-height: 40px; padding: 4px 10px; font-size: 14px; }
+.pic-clear { font-size: 13px; display: flex; gap: 6px; align-items: center; }
+.pic-warn { background: var(--sun-soft); border-radius: 12px; padding: 10px 12px; }
 
 /* 크게 보기 */
 .fullscreen-app { position: fixed !important; inset: 0; width: 100vw !important; height: 100vh !important; z-index: 900; border-radius: 0 !important; }

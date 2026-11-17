@@ -2,13 +2,15 @@
 import { topicById, categoryById } from '../shared/topics.js';
 import { recommend, surprise, ideaFromRec, checkText, EXAMPLE_CHIPS } from '../shared/recommend.js';
 import {
-  SECTIONS, PARTS, DIFFICULTY, topicView, planSafety, emptyPlan, normalizePlan, missingRequired, progress,
-  buildAppPrompt, buildImagePrompts, buildAllPromptsText, buildFixPrompt, planRows,
+  SECTIONS, PARTS, DIFFICULTY, topicView, planSafety, planWarnings, emptyPlan, normalizePlan, missingRequired, progress,
+  buildAppPrompt, buildImagePrompts, imageSlots, buildAllPromptsText, buildFixPrompt, planRows,
 } from '../shared/plan.js';
 import { createStore } from './store.js';
 import { download, readFileText, safeName } from '../shared/files.js';
 import { loadConfig, createApi } from '../shared/api.js';
 import { extractHtml, looksLikeApp, mountApp, isHttpUrl, MAX_APP_BYTES } from '../shared/sandbox.js';
+import { applyImages, findImagesBlock, imagesSize } from '../shared/images.js';
+import { processPicture } from './picture.js';
 import { h, $, toast, copyText } from '../shared/ui.js';
 
 const store = createStore();
@@ -130,7 +132,7 @@ function renderRecs() {
       h('span', { class: 'cat', style: `background:${c.color}` }, `${c.name} · ${base.name} 방식`),
       h('span', { class: 'name' }, rec.title),
       h('span', { class: 'sum' }, rec.summary),
-      h('span', { class: 'learn' }, `📚 ${rec.learn}`));
+      h('span', { class: 'learn' }, `📚 ${rec.curr} · ${rec.learn}`));
   }));
 }
 
@@ -176,7 +178,7 @@ function openPreview(rec) {
       h('span', { class: 'emo', 'aria-hidden': 'true' }, rec.emoji),
       h('div', {}, h('span', { class: 'pill', style: `background:${c.color};color:#fff` }, `${c.emoji} ${c.name} · ${t.name} 방식`), h('h2', { id: 'pvTitle' }, rec.title))),
     h('p', {}, rec.summary),
-    h('div', { class: 'learn-box' }, `📚 배움 요소: ${rec.learn}`),
+    h('div', { class: 'learn-box' }, `📚 교과 연계: ${rec.curr} · ${rec.learn}`),
     h('div', { class: 'pv-sec' }, h('h4', {}, `🕹️ 이런 방식으로 놀아요 (${t.name} 방식)`), h('ol', { class: 'pv-steps' }, ...t.steps.map((s) => h('li', {}, s)))),
     h('div', { class: 'pv-sec' }, h('h4', {}, '🧩 넣을 수 있는 게임 요소'), h('div', { class: 'chips' }, ...t.elements.map((e) => h('span', { class: 'pill' }, e)))),
     h('div', { class: 'pv-sec' }, h('h4', {}, '📱 예상 화면'),
@@ -201,6 +203,7 @@ function chooseIdea(rec) {
   if (!plan) plan = emptyPlan(rec.base);
   plan.topicId = rec.base;
   plan.idea = ideaFromRec(rec, lastQuery);
+  if (!plan.f.learnGoal.trim()) plan.f.learnGoal = `${rec.curr} · ${rec.learn}`;   // 배울 내용 미리 채우기 (고쳐도 됨)
   saveNow();
   closePreview();
   part = 1;
@@ -218,7 +221,7 @@ function renderPlan() {
   const c = categoryById(t.cat);
   $('#planTopic').replaceChildren(
     h('span', { class: 'emo', 'aria-hidden': 'true' }, t.emoji),
-    h('div', { class: 'grow' }, h('b', {}, t.name), h('div', { class: 'muted small' }, `${t.summary}`), h('div', { class: 'small learn-inline' }, `📚 배움 요소: ${t.learn} · ${c.name} · ${t.baseName} 방식`)),
+    h('div', { class: 'grow' }, h('b', {}, t.name), h('div', { class: 'muted small' }, `${t.summary}`), h('div', { class: 'small learn-inline' }, `📚 ${t.curr} · ${t.learn} · ${t.baseName} 방식`)),
     h('button', { class: 'ghost small', onclick: () => go('topics') }, '주제 바꾸기'));
   $('#partTabs').replaceChildren(...PARTS.filter((p) => p.id <= 4).map((p) => h('button', {
     class: 'tab', role: 'tab', type: 'button', 'aria-selected': String(p.id === part),
@@ -253,6 +256,7 @@ function inputFor(i, t) {
       h('div', { class: 'chips', role: 'group', 'aria-label': i.label, 'data-key': i.key }, ...opts.map((o) => {
         const on = i.multi ? v.includes(o) : v === o;
         return h('button', { type: 'button', class: 'chip', 'aria-pressed': String(on), onclick: (e) => {
+          if (i.multi && !on && i.max && v.length >= i.max) { toast(`${i.max}개까지만 골라요. 다른 것을 빼고 골라 주세요 🙂`); return; }
           if (i.multi) plan.f[i.key] = on ? v.filter((x) => x !== o) : [...v, o];
           else plan.f[i.key] = on ? '' : o;
           touch();
@@ -326,7 +330,7 @@ function printPlan() {
   const rows = planRows(plan);
   $('#printArea').replaceChildren(h('div', { class: 'print-sheet' },
     h('h1', {}, `📱 ${plan.f.appName || t.name} — 앱 기획서`),
-    h('p', {}, `개발자: ${plan.f.developer || '         '}   ${plan.f.classInfo ? `(${plan.f.classInfo})` : ''}   · MY APP MAKER · ${new Date().toLocaleDateString('ko-KR')}`),
+    h('p', {}, `개발자: ${plan.f.developer || '         '}  · MY APP MAKER · ${new Date().toLocaleDateString('ko-KR')}`),
     h('table', {}, h('tbody', {}, ...rows.map((r) => h('tr', {}, h('th', {}, r.n && r.n <= 15 ? `${r.n}. ${r.title}` : r.title), h('td', {}, r.value || ' ')))))));
   window.print();
 }
@@ -339,10 +343,13 @@ function renderPrompts() {
   box.replaceChildren(h('b', {}, '✏️ 아직 비어 있는 ★ 항목이 있어요. 채울수록 AI가 내 생각에 딱 맞게 만들어요: '),
     ...miss.map((m) => h('button', { class: 'chip', type: 'button', onclick: () => { part = m.n === 0 ? 1 : SECTIONS.find((s) => s.n === m.n).part; go(m.n === 0 ? 'topics' : 'plan'); } }, m.title)));
   const issues = planSafety(plan);
+  const warns = planWarnings(plan);
   const sbox = $('#safetyBox');
-  sbox.hidden = issues.length === 0;
+  sbox.hidden = issues.length + warns.length === 0;
+  sbox.className = `card ${issues.length ? 'bad-box' : 'warn-box'}`;
   sbox.replaceChildren(
-    h('b', {}, '🚫 초등학생 게임에 알맞지 않은 말이나 이미 있는 게임·캐릭터 이름이 있어요. 고친 뒤에 프롬프트를 복사할 수 있어요.'),
+    issues.length ? h('b', {}, '🚫 개인정보, 초등학생 게임에 알맞지 않은 말, 이미 있는 게임·캐릭터 이름이 있어요. 고친 뒤에 프롬프트를 복사할 수 있어요.') : '',
+    ...warns.map((w) => h('p', {}, `🔒 ${w.n}번 ${w.label}: ${w.text} `, h('button', { class: 'chip small', type: 'button', onclick: () => { part = 1; go('plan'); } }, '고치러 가기'))),
     h('ul', {}, ...issues.map((it) => h('li', {}, `${it.n}번 ${it.label}: 「${it.words.join('」, 「')}」 `,
       h('button', { class: 'chip small', type: 'button', onclick: () => { part = SECTIONS.find((x) => x.n === it.n).part; go('plan'); } }, '고치러 가기')))));
   $('#appPrompt').textContent = buildAppPrompt(plan);
@@ -375,10 +382,11 @@ function renderMyApp() {
   $('#appCode').value = plan.app.html || '';
   $('#appUrl').value = plan.app.url || '';
   renderAppInfo();
-  if (plan.app.html || plan.app.url) mountApp($('#appFrame'), plan.app);
+  if (plan.app.html || plan.app.url) runApp();
   else $('#appFrame').srcdoc = '<p style="font-family:sans-serif;color:#888;text-align:center;margin-top:40%">코드를 붙여 넣고 ▶ 실행해 보기를 눌러요</p>';
   renderChecks();
   renderFix();
+  renderPictures();
 }
 function renderAppInfo() {
   const n = (plan.app.html || '').length;
@@ -405,10 +413,81 @@ function setAppHtml(raw) {
   plan.app.updatedAt = new Date().toISOString();
   $('#appCode').value = html;
   saveNow();
-  mountApp($('#appFrame'), { html });
+  runApp();
   renderAppInfo();
+  renderPictures();
   return true;
 }
+// 앱 코드(원본) + 내 그림 = 실제로 실행·제출되는 앱
+const appliedHtml = () => applyImages(plan.app.html || '', plan.app.images);
+function runApp() {
+  if (plan.app.html) mountApp($('#appFrame'), { html: appliedHtml() });
+  else if (plan.app.url) mountApp($('#appFrame'), { url: plan.app.url });
+}
+
+function renderPictures() {
+  const slots = imageSlots(plan);
+  const prompts = Object.fromEntries(buildImagePrompts(plan).map((p) => [p.key, p.text]));
+  const imgs = plan.app.images || {};
+  const block = plan.app.html ? findImagesBlock(plan.app.html) : null;
+  const st = $('#picStatus');
+  if (!plan.app.html) st.replaceChildren(h('span', { class: 'muted' }, '먼저 ① 에 AI가 만든 앱 코드를 넣으면 그림이 게임에 들어가요. (그림은 미리 올려 둬도 돼요)'));
+  else if (!block) {
+    st.replaceChildren(h('div', { class: 'pic-warn' }, '🔎 앱 코드에 그림 자리(IMAGES)가 없어요. AI에게 그림 자리를 만들어 달라고 해요. ',
+      h('button', { class: 'chip small', type: 'button', onclick: askForImageSlots }, '🔧 고쳐 줘 프롬프트 만들기')));
+  } else {
+    const missing = slots.filter((x) => imgs[x.key] && !block.keys.includes(x.key)).map((x) => x.what);
+    st.replaceChildren(h('span', {}, '✅ 앱 코드에서 그림 자리를 찾았어요. ', missing.length ? h('span', { class: 'muted' }, `(${missing.join(', ')} 자리는 코드에 없어서 새로 만들어 넣었어요. 게임에 안 보이면 「고쳐 줘」로 부탁해요)`) : ''));
+  }
+  $('#picSlots').replaceChildren(...slots.map((sl) => {
+    const has = imgs[sl.key];
+    const file = h('input', { type: 'file', accept: 'image/*', hidden: true, id: `pic-${sl.key}`, 'data-slot': sl.key });
+    const clear = sl.clear ? h('input', { type: 'checkbox', checked: true, id: `clear-${sl.key}` }) : null;
+    file.onchange = async (e) => {
+      const f = e.target.files[0]; e.target.value = '';
+      if (!f) return;
+      toast('🪄 그림을 다듬는 중…');
+      try {
+        const r = await processPicture(f, sl, { clearWhite: clear ? clear.checked : false });
+        plan.app.images = { ...(plan.app.images || {}), [sl.key]: r.dataUrl };
+        if (plan.app.html && appliedHtml().length > MAX_APP_BYTES) {
+          delete plan.app.images[sl.key];
+          toast('앱이 너무 커져서 이 그림을 넣지 못했어요. 다른 그림을 빼거나 더 단순한 그림으로 해 봐요', 5000);
+          return;
+        }
+        plan.app.updatedAt = new Date().toISOString();
+        saveNow();
+        runApp();
+        renderPictures();
+        toast(sl.clear && r.cleared > 0.05 ? `✨ ${sl.what} 그림을 넣었어요 (하얀 배경을 지웠어요)` : `✨ ${sl.what} 그림을 넣었어요`);
+      } catch (err) { toast(err.message, 4500); }
+    };
+    return h('div', { class: `pic-slot${has ? ' done' : ''}`, 'data-pic': sl.key },
+      h('b', {}, sl.title, h('span', { class: 'muted small' }, ` ${sl.ratio}`)),
+      h('div', { class: 'pic-thumb' }, has ? h('img', { src: has, alt: `${sl.what} 그림` }) : '🖼️'),
+      h('div', { class: 'row' },
+        h('button', { type: 'button', onclick: () => safeCopy(prompts[sl.key], `📋 ${sl.what} 그림 프롬프트를 복사했어요`) }, '📋 프롬프트'),
+        h('label', { class: 'btn primary', for: `pic-${sl.key}` }, has ? '🔁 바꾸기' : '📷 그림 올리기'), file,
+        has ? h('button', { type: 'button', class: 'ghost', 'aria-label': `${sl.what} 그림 빼기`, onclick: () => {
+          const next = { ...plan.app.images }; delete next[sl.key];
+          plan.app.images = next; saveNow(); runApp(); renderPictures();
+        } }, '✕') : ''),
+      clear ? h('label', { class: 'pic-clear' }, clear, '하얀 배경 지우기') : '');
+  }));
+  const total = (plan.app.html ? appliedHtml() : '').length || imagesSize(imgs);
+  $('#picBudget').textContent = Object.keys(imgs).length
+    ? `그림 ${Object.keys(imgs).length}장 · 앱 크기 ${Math.round(total / 1000)}KB / ${Math.round(MAX_APP_BYTES / 1000)}KB`
+    : '';
+}
+
+function askForImageSlots() {
+  const keys = imageSlots(plan).map((x) => `${x.key}: ''`).join(', ');
+  $('#fixProblem').value = '내가 만든 그림을 넣을 그림 자리가 코드에 없어요';
+  $('#fixWant').value = `<script> 맨 위에 const IMAGES = { ${keys} }; 를 만들고, 값(그림 주소)이 있으면 그 그림을 쓰고 비어 있으면 지금처럼 그려 줘`;
+  renderFix();
+  $('#fixProblem').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 $('#runApp').onclick = () => { if (setAppHtml($('#appCode').value)) toast('▶ 실행했어요! 버튼과 규칙이 잘 되는지 시험해 봐요'); };
 $('#appFile').onchange = async (e) => {
   const f = e.target.files[0]; e.target.value = '';
@@ -453,22 +532,25 @@ function renderSubmit() {
 }
 
 function submissionPayload() {
-  const { html, ...appRest } = plan.app;
+  const { html, images, ...appRest } = plan.app;
   return {
     studentKey: plan.id,
     developer: plan.f.developer.trim(),
-    classInfo: plan.f.classInfo.trim(),
+    classInfo: '',   // 학년·반은 보내지 않음 (개인정보)
     appName: plan.f.appName.trim(),
     topicId: plan.topicId,
-    plan: { ...plan, app: { ...appRest, html: '' } },
-    appHtml: html || '',
+    plan: { ...plan, app: { ...appRest, html: '', images: {} } },
+    appHtml: html ? appliedHtml() : '',
     appUrl: plan.app.url || '',
   };
 }
 
 function canSubmit() {
-  if (!plan.f.developer.trim() || !plan.f.appName.trim()) { toast('기획서 1번에 개발자 이름과 앱 이름을 써요', 4000); return false; }
+  if (!plan.f.developer.trim() || !plan.f.appName.trim()) { toast('기획서 1번에 개발자 별명과 앱 이름을 써요', 4000); return false; }
+  const issues = planSafety(plan);
+  if (issues.length) { toast(`🚫 ${issues[0].n}번 ${issues[0].label}에 바꿔야 할 말(「${issues[0].words[0]}」)이 있어요. 고친 뒤에 보내요`, 5000); go('prompts'); return false; }
   if (!plan.app.html && !plan.app.url) { toast('4. 내 앱에 코드를 먼저 넣어요', 4000); return false; }
+  if (plan.app.html && appliedHtml().length > MAX_APP_BYTES) { toast(`앱이 너무 커요 (${Math.round(MAX_APP_BYTES / 1000)}KB까지). 그림을 하나 빼 볼까요?`, 5000); return false; }
   const bad = submitChecks().filter((c) => !c.ok);
   if (bad.length && !confirm(`아직 확인하지 않은 것이 있어요:\n- ${bad.map((b) => b.text).join('\n- ')}\n\n그래도 보낼까요?`)) return false;
   return true;
