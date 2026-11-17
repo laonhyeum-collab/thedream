@@ -32,7 +32,7 @@ export const CHANT = ['무', '궁', '화', ' ', '꽃', '이', ' ', '피', '었',
 export const CHANT_SYLLABLES = CHANT.filter((c) => c !== ' ').length; // 10
 
 export const ROUND_STEP = 25;    // 노래 한 번 동안 열심히 움직이면 25칸 (길이와 상관없이) → 4번이면 도착
-export const FULL_EFFORT = 0.6;  // 이만큼만 움직여도 '열심히'로 쳐 줌 (0~1)
+export const FULL_EFFORT = 0.35; // 이만큼만 움직여도 '열심히'로 쳐 줌 (0~1, 막대 3분의 1 정도)
 export const MAX_ROUNDS = 5;     // 열심히 하면 이 횟수 안에 도착
 export const COUNTDOWN = 3;      // 시작 전 3, 2, 1
 export const GOAL = 100;

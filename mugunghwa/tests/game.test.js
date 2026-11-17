@@ -94,7 +94,7 @@ test('규칙을 잘 지키면(부를 때 달리고 얼음 때 멈추면) 도착�
 
 test(`웬만큼 열심히 움직이면 노래 ${MAX_ROUNDS}번 안에 도착한다 (노래 빠르기가 달라도)`, () => {
   for (let seed = 1; seed <= 50; seed++) {
-    for (const effort of [0.5, 0.6, 1]) {
+    for (const effort of [0.35, 0.5, 0.6, 1]) {
       const g = new Game({ rng: seeded(seed) });
       run(g, (gm) => [gm.phase === 'chant' ? effort : 0], 120);
       assert.equal(g.phase, 'end', `seed ${seed}, effort ${effort}`);
@@ -103,7 +103,7 @@ test(`웬만큼 열심히 움직이면 노래 ${MAX_ROUNDS}번 안에 도착한�
   }
   // 아주 살짝만 움직이면 5번으로는 모자람 (놀이가 너무 쉬워지지 않게)
   const g = new Game({ rng: seeded(3) });
-  run(g, (gm) => [gm.phase === 'chant' ? 0.2 : 0], 120);
+  run(g, (gm) => [gm.phase === 'chant' ? 0.12 : 0], 120);
   assert.ok(g.round > MAX_ROUNDS);
 });
 

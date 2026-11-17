@@ -218,6 +218,20 @@ export function drawScene(c, w, h, st) {
     }
   }
 
+  // 몇 번째 노래인지
+  if (game.round > 0) {
+    const fs = Math.max(14, Math.min(w, h) * 0.06);
+    c.font = `900 ${fs}px system-ui, sans-serif`;
+    c.textAlign = 'left';
+    c.textBaseline = 'top';
+    const label = `${game.round}번째 노래`;
+    c.lineWidth = fs * 0.25;
+    c.strokeStyle = '#fff';
+    c.strokeText(label, fs * 0.5, fs * 0.4);
+    c.fillStyle = '#e0567f';
+    c.fillText(label, fs * 0.5, fs * 0.4);
+  }
+
   // 친구들
   game.players.forEach((p, i) => {
     const lx = laneW * (i + 0.5);
