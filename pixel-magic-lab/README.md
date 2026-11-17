@@ -11,6 +11,8 @@
 
 ## 1. 바로 사용하기 (빌드된 파일)
 
+**웹 주소:** https://laonhyeum-collab.github.io/thedream/pixel-magic-lab/ — `main` 브랜치에 변경이 올라가면 GitHub Actions(`.github/workflows/pages.yml`)가 테스트·빌드 후 자동으로 다시 배포합니다.
+
 `dist/` 폴더가 완성된 앱입니다.
 
 - **웹 서버에 올리기**: `dist/` 안의 모든 파일을 그대로 업로드하면 됩니다. 하위 폴더 주소(예: `https://학교.kr/coding/pixel/`)에서도 동작합니다.
