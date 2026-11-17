@@ -116,7 +116,7 @@
       </div>
       <details class="card">
         <summary><h3>🎨 이미지 만들기 프롬프트 (선택 · 시간이 남으면)</h3></summary>
-        <p class="muted small">이미지 생성 AI(Gemini 등)에 하나씩 넣어요. 그림이 없어도 앱은 이모지로 잘 돌아가요.</p>
+        <p class="muted small">이미지 생성 AI(Gemini 등)에 하나씩 넣어 그림을 만들고, 그림 파일을 저장해요. 그다음 <b>「4. 내 앱 → 🖼️ 내 그림 넣기」</b>에서 올리면 게임에 들어가요. 그림이 없어도 앱은 이모지로 잘 돌아가요.</p>
         <div id="imagePrompts" class="grid"></div>
       </details>
       <div class="card tips">
@@ -156,6 +156,17 @@
           <div class="row"><h3 class="grow">② 실행 화면</h3><button id="fullApp" class="ghost small">⛶ 크게</button></div>
           <iframe id="appFrame" class="app-frame" title="내 앱 실행 화면"></iframe>
         </div>
+      </div>
+      <div class="card" id="pictures">
+        <div class="row"><h3 class="grow">🖼️ 내 그림 넣기 <span class="muted small">(선택)</span></h3></div>
+        <ol class="pic-steps small">
+          <li><b>📋 프롬프트 복사</b> → 이미지 AI에 붙여 넣어 그림 만들기</li>
+          <li>마음에 드는 그림을 <b>기기에 저장</b></li>
+          <li><b>📷 그림 올리기</b>를 눌러 저장한 그림 고르기 → 게임에 바로 들어가요</li>
+        </ol>
+        <p id="picStatus" class="small"></p>
+        <div id="picSlots" class="pic-slots"></div>
+        <p id="picBudget" class="muted small"></p>
       </div>
       <div class="card">
         <h3>③ 테스트 체크리스트</h3>

@@ -2,6 +2,7 @@
 // 앱 화면, 인쇄용 기획서, 활동지가 모두 이 정의 하나를 같은 순서·같은 말로 씁니다.
 import { topicById, categoryById } from './topics.js';
 import { checkText, looksLikeRealName } from './recommend.js';
+import { cleanImages } from './images.js';
 
 export const SCHEMA = 'myappmaker.plan/1';
 
@@ -113,7 +114,7 @@ export function emptyPlan(topicId = null) {
     idea: null,          // 추천에서 고른 나만의 주제 (recommend.js ideaFromRec)
     difficulty: 'easy',
     f,
-    app: { html: '', url: '', updatedAt: null },
+    app: { html: '', url: '', images: {}, updatedAt: null },   // images: 그림 자리별 그림(data URL), 코드와 따로 보관
     submit: { at: null, status: null, feedback: '', booth: null },
   };
 }
@@ -131,6 +132,7 @@ export function normalizePlan(raw) {
     else out.f[i.key] = typeof v === 'string' ? v.slice(0, i.max || 2000) : base.f[i.key];
   }
   out.f.imageStyle = IMAGE_STYLE;
+  out.app.images = cleanImages(out.app.images);
   out.f.classInfo = '';                       // 학년·반은 받지 않음 (개인정보)
   if (out.difficulty === 'hard') out.difficulty = 'normal';   // 예전 3단계 난이도
   if (!DIFFICULTY.some((d) => d.id === out.difficulty)) out.difficulty = 'easy';
@@ -255,7 +257,7 @@ export function buildAppPrompt(plan) {
     `3. 위 화면들을 모두 만들고 시작 → 게임 → 성공/실패 → 결과 → 다시하기가 실제로 작동하게 해 줘.`,
     `4. 기획서에 쓴 규칙, 게임 요소(${f.elements.length ? f.elements.join(', ') : '점수'}), 나만의 특별 기능 하나만 넣고 진짜로 작동하게 해 줘. 규칙·기능을 더 늘리지 마.`,
     `5. 게임은 **한 판(1단계)만** 만들어 줘. 레벨·스테이지·다음 단계는 만들지 말고, 한 판이 끝나면 성공/실패 결과 화면 → 다시하기로 가게.`,
-    `6. 그림 파일 없이도 바로 보이도록 캐릭터와 물건은 이모지·CSS·Canvas 도형으로 그려 줘. 나중에 그림으로 바꿀 수 있게 코드 맨 위에 \`const IMAGES = { background: '', hero: '', ... }\` 처럼 그림 주소를 넣는 곳을 만들고, 주소를 넣으면 그 그림이 쓰이게 해 줘.`,
+    `6. 그림 파일 없이도 바로 보이도록 캐릭터와 물건은 이모지·CSS·Canvas 도형으로 그려 줘. 그리고 나중에 내가 만든 그림을 넣을 수 있게, <script> 맨 위에 꼭 이 이름 그대로 그림 자리를 만들어 줘:\n   \`const IMAGES = { ${imageSlots(plan).map((x) => `${x.key}: ''`).join(', ')} };\`\n   (${imageSlots(plan).map((x) => `${x.key} = ${x.what}`).join(', ')}) — 값이 비어 있으면 이모지·도형으로 그리고, 값(그림 주소)이 있으면 그 그림을 쓰게 해 줘. 투명한 PNG 그림도 잘 보이게.`,
     `7. alert() 대신 화면 안의 메시지 상자를 쓰고, 기록 저장(localStorage)은 try/catch로 감싸서 저장이 막혀도 게임이 멈추지 않게 해 줘.`,
     `8. 화면 글자는 모두 쉬운 한국어로, 게임 방법 안내를 시작 화면에 넣어 줘. 무섭거나 폭력적인 표현은 빼 줘.`,
     `9. 이 게임은 초등학교 수업과 연결돼야 해: 배울 내용(${filled(f.learnGoal) ? f.learnGoal : (t ? `${t.curr} · ${t.learn}` : '교과 내용')})이 게임 규칙 안에 들어가서, 놀이를 하면 그 내용을 익히게 해 줘. 퀴즈 화면만 따로 붙이지 말고, 내용은 초등학생 수준에 맞고 틀리지 않게.`,
@@ -269,6 +271,18 @@ export function buildAppPrompt(plan) {
 }
 
 // 7-2. Gemini 이미지 생성 프롬프트 (앱 프롬프트와 따로)
+// 그림 자리: 배경 1, 주인공 1, 게임 요소 아이콘 최대 3
+export function imageSlots(plan) {
+  const f = plan.f;
+  const icons = (f.elements.length ? f.elements : ['점수', '아이템']).filter((e) => ['코인', '아이템', '생명', '보상', '점수', '시간 제한', '최고 기록'].includes(e)).slice(0, 3);
+  return [
+    { key: 'background', what: '배경', title: '🏞️ 배경', ratio: '16:9', clear: false, max: [960, 540] },
+    { key: 'hero', what: '주인공', title: '🙂 주인공', ratio: '1:1', clear: true, max: [320, 320] },
+    ...icons.map((e, i) => ({ key: `icon${i + 1}`, what: `${e} 아이콘`, title: `⭐ ${e} 아이콘`, ratio: '1:1', clear: true, max: [160, 160], element: e })),
+  ];
+}
+
+// 7-2. 이미지 생성 프롬프트 (앱 프롬프트와 따로) — 그림 자리마다 하나씩
 export function buildImagePrompts(plan) {
   const t = topicView(plan);
   const f = plan.f;
@@ -278,13 +292,15 @@ export function buildImagePrompts(plan) {
   const colors = f.colors.length ? `대표 색상은 ${f.colors.join('·')}` : '밝고 선명한 색';
   const common = `그림체: ${style}. ${colors}. 이미지 안에 글자·숫자·로고·워터마크를 넣지 마. 유명 캐릭터나 브랜드를 따라 하지 말고 독창적으로. 어린이 게임에 어울리게 밝고 친근하게.`;
   const keep = `주인공 모습(${hero})은 모든 그림에서 똑같은 색과 생김새로 유지해 줘.`;
-  const icons = (f.elements.length ? f.elements : ['점수', '아이템']).filter((e) => ['코인', '아이템', '생명', '보상', '점수', '시간 제한', '최고 기록'].includes(e));
-  const list = [
-    { id: 'background', title: '🏞️ 배경 (16:9)', text: `게임 「${f.appName || (t ? t.name : '나의 게임')}」의 배경 그림을 그려 줘. 장소: ${place}. 가로 16:9 비율, 캐릭터 없이 배경만. 위쪽과 가운데에 점수·버튼이 올라갈 빈 공간을 넉넉히 남겨 줘. ${common}` },
-    { id: 'hero', title: '🙂 주인공 캐릭터 (투명 배경)', text: `게임 주인공 캐릭터 한 명을 그려 줘: ${hero}. 정면을 보고 서 있는 전신, 배경은 투명(또는 흰색 단색)으로, 그림자 없이. 정사각형 1:1. ${keep} ${common}` },
-    ...icons.slice(0, 3).map((e) => ({ id: `icon-${e}`, title: `⭐ 아이콘: ${e} (투명 배경)`, text: `게임에 쓸 "${e}" 아이콘 하나를 그려 줘. 단순하고 굵은 외곽선, 작게 줄여도 알아보기 쉽게, 배경은 투명(또는 흰색 단색), 정사각형 1:1. ${common}` })),
-  ];
-  return list;
+  const white = '배경은 아무것도 없는 하얀색 한 가지로(무늬·그림자·바닥 없이), 그림이 가운데에 오게';
+  return imageSlots(plan).map((sl) => ({
+    id: sl.key, key: sl.key, title: `${sl.title} (${sl.ratio})`, slot: sl,
+    text: sl.key === 'background'
+      ? `게임 「${f.appName || (t ? t.name : '나의 게임')}」의 배경 그림을 그려 줘. 장소: ${place}. 가로 16:9 비율, 캐릭터 없이 배경만. 위쪽과 가운데에 점수·버튼이 올라갈 빈 공간을 넉넉히 남겨 줘. ${common}`
+      : sl.key === 'hero'
+        ? `게임 주인공 캐릭터 한 명을 그려 줘: ${hero}. 정면을 보고 서 있는 전신, ${white}. 정사각형 1:1. ${keep} ${common}`
+        : `게임에 쓸 "${sl.element}" 아이콘 하나를 그려 줘. 단순하고 굵은 외곽선, 작게 줄여도 알아보기 쉽게, ${white}. 정사각형 1:1. ${common}`,
+  }));
 }
 
 export function buildAllPromptsText(plan) {

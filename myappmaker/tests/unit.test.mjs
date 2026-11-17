@@ -54,14 +54,15 @@ test('앱 제작 프롬프트에 기획서 내용과 필수 조건이 들어감'
   assert.ok(buildAppPrompt(emptyPlan()).length > 200, '빈 기획서도 오류 없이');
 });
 
-test('이미지 프롬프트: 배경 16:9, 캐릭터 투명, 글자·유명 캐릭터 금지, 스타일 반영, 앱 프롬프트와 분리', () => {
+test('이미지 프롬프트: 배경 16:9, 캐릭터 흰 배경(앱이 지움), 글자·유명 캐릭터 금지, 스타일 반영, 앱 프롬프트와 분리', () => {
   const p = fullPlan();
   const list = buildImagePrompts(p);
   assert.equal(list[0].id, 'background'); assert.match(list[0].text, /16:9/);
-  assert.match(list[1].text, /투명/); assert.match(list[1].text, /노란 모자/);
-  assert.ok(list.some((x) => x.id === 'icon-코인'));
+  assert.match(list[1].text, /하얀색 한 가지/); assert.match(list[1].text, /노란 모자/);
+  assert.ok(list.some((x) => x.id === 'icon2' && x.slot.element === '코인'));
   for (const x of list) { assert.match(x.text, /앱 월드와 같은 느낌/); assert.match(x.text, /글자/); assert.match(x.text, /유명 캐릭터/); }
   assert.ok(!buildAppPrompt(p).includes('16:9'));
+  assert.match(buildAppPrompt(p), /const IMAGES = \{ background: '', hero: '', icon1: '', icon2: '' \};/, '앱 프롬프트가 그림 자리 이름을 정해 줌');
 });
 
 test('고쳐 줘 프롬프트', () => {
