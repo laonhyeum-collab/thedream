@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Game, DIFFICULTY, GOAL } from '../js/game.js';
+import { Game, DIFFICULTY, GOAL, MAX_ROUNDS } from '../js/game.js';
 
 // 늘 같은 결과가 나오는 가짜 주사위
 function seeded(seed = 1) {
@@ -89,7 +89,22 @@ test('규칙을 잘 지키면(부를 때 달리고 얼음 때 멈추면) 도착�
   assert.equal(g.phase, 'end');
   assert.equal(g.players[0].progress, GOAL);
   assert.equal(g.players[0].caught, 0);
-  assert.ok(win.time > 10 && win.time < 60, `걸린 시간 ${win.time.toFixed(1)}초`);
+  assert.ok(win.time > 5 && win.time < 45, `걸린 시간 ${win.time.toFixed(1)}초`);
+});
+
+test(`웬만큼 열심히 움직이면 노래 ${MAX_ROUNDS}번 안에 도착한다 (노래 빠르기가 달라도)`, () => {
+  for (let seed = 1; seed <= 50; seed++) {
+    for (const effort of [0.5, 0.6, 1]) {
+      const g = new Game({ rng: seeded(seed) });
+      run(g, (gm) => [gm.phase === 'chant' ? effort : 0], 120);
+      assert.equal(g.phase, 'end', `seed ${seed}, effort ${effort}`);
+      assert.ok(g.round <= MAX_ROUNDS, `seed ${seed}, effort ${effort}: ${g.round}번`);
+    }
+  }
+  // 아주 살짝만 움직이면 5번으로는 모자람 (놀이가 너무 쉬워지지 않게)
+  const g = new Game({ rng: seeded(3) });
+  run(g, (gm) => [gm.phase === 'chant' ? 0.2 : 0], 120);
+  assert.ok(g.round > MAX_ROUNDS);
 });
 
 test('둘이서: 각자 따로 움직이고, 먼저 도착한 사람이 이긴다', () => {
