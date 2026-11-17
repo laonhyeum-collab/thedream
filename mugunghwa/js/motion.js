@@ -6,6 +6,9 @@ export const H = 60;
 export const PIXEL_THRESHOLD = 24; // 밝기가 이만큼 넘게 바뀐 점만 '움직임'
 export const FULL = 0.06;          // 구역의 6%가 바뀌면 "온 힘으로 움직임"(1.0)
 export const GLOBAL_JUMP = 0.55;   // 화면 전체가 한꺼번에 바뀌면(조명·카메라 밝기 조절) 무시
+export const ARM_ROWS = 0.75;      // 팔을 셀 때는 화면 위쪽 75%만 봄 (다리는 빼고)
+export const STROKE_HYST = 0.07;   // 움직임 중심이 화면 높이의 7% 넘게 되돌아오면 '한 번 흔듦'
+export const STROKE_GAP = 0.18;    // 이 시간 안에 또 바뀌면 한 번으로 셈(초) — 두 팔·몸 들썩임이 겹쳐 두 번 세지 않게
 
 /**
  * 화면(거울처럼 뒤집힌 모습) 기준 구역. 1P = 왼쪽, 2P = 오른쪽.
@@ -32,15 +35,24 @@ export function toLuma(rgba, out = new Uint8Array(rgba.length / 4)) {
 export function diffZones(cur, prev, w, h, zones, threshold = PIXEL_THRESHOLD) {
   const counts = new Array(zones.length).fill(0);
   const totals = new Array(zones.length).fill(0);
+  // 팔 구역: 사람 구역마다 왼쪽 반·오른쪽 반 (팔 하나씩)
+  const armCount = new Array(zones.length * 2).fill(0);
+  const armSumY = new Array(zones.length * 2).fill(0);
+  const armTotal = new Array(zones.length * 2).fill(0);
+  const armRows = Math.round(h * ARM_ROWS);
   // 열(x)마다 어느 구역인지 미리 계산
   const colZone = new Int8Array(w).fill(-1);
+  const colArm = new Int8Array(w).fill(-1);
   for (let x = 0; x < w; x++) {
     const screenX = 1 - (x + 0.5) / w; // 거울 뒤집기
-    colZone[x] = zones.findIndex(([a, b]) => screenX >= a && screenX < b);
+    const z = zones.findIndex(([a, b]) => screenX >= a && screenX < b);
+    colZone[x] = z;
+    if (z >= 0) colArm[x] = z * 2 + (screenX < (zones[z][0] + zones[z][1]) / 2 ? 0 : 1);
   }
   let changed = 0;
   for (let y = 0; y < h; y++) {
     const row = y * w;
+    const upper = y < armRows;
     for (let x = 0; x < w; x++) {
       const i = row + x;
       const d = cur[i] - prev[i];
@@ -50,12 +62,22 @@ export function diffZones(cur, prev, w, h, zones, threshold = PIXEL_THRESHOLD) {
       if (z >= 0) {
         totals[z]++;
         if (moved) counts[z]++;
+        if (upper) {
+          const a = colArm[x];
+          armTotal[a]++;
+          if (moved) { armCount[a]++; armSumY[a] += y; }
+        }
       }
     }
   }
   return {
     zones: counts.map((c, k) => (totals[k] ? c / totals[k] : 0)),
     global: changed / (w * h),
+    // 팔 구역마다: 바뀐 비율, 움직임 중심 높이(0=위, 1=아래)
+    arms: armCount.map((c, k) => ({
+      fraction: armTotal[k] ? c / armTotal[k] : 0,
+      y: c ? (armSumY[k] / c + 0.5) / h : null,
+    })),
   };
 }
 
@@ -63,6 +85,32 @@ export function diffZones(cur, prev, w, h, zones, threshold = PIXEL_THRESHOLD) {
 export function effortFrom(fraction, floor = 0) {
   const v = (fraction - floor) / FULL;
   return v <= 0 ? 0 : v >= 1 ? 1 : v;
+}
+
+/**
+ * 움직임 중심이 위↔아래로 방향을 바꿀 때마다 '한 번 흔듦'으로 셉니다.
+ * 처음 움직이기 시작한 방향도 한 번으로 셉니다(위로 1번, 아래로 2번 …).
+ */
+export class StrokeCounter {
+  constructor(hyst = STROKE_HYST) { this.hyst = hyst; this.reset(); }
+  reset() { this.dir = 0; this.lo = null; this.hi = null; this.y = null; this.idle = 0; }
+  /** @param y 움직임 중심 높이(0~1), 움직임이 없으면 null  @returns 이번에 흔든 것으로 셌는지 */
+  push(y, dt) {
+    if (y == null) {
+      this.idle += dt;
+      if (this.idle > 0.6) this.reset(); // 잠깐 쉬면 처음부터
+      return false;
+    }
+    this.idle = 0;
+    this.y = this.y == null ? y : this.y + (y - this.y) * 0.6; // 살짝 다듬기
+    const v = this.y;
+    if (this.lo == null) { this.lo = this.hi = v; return false; }
+    if (this.dir >= 0) this.hi = Math.max(this.hi, v);
+    if (this.dir <= 0) this.lo = Math.min(this.lo, v);
+    if (this.dir >= 0 && this.hi - v > this.hyst) { this.dir = -1; this.lo = this.hi = v; return true; }
+    if (this.dir <= 0 && v - this.lo > this.hyst) { this.dir = 1; this.lo = this.hi = v; return true; }
+    return false;
+  }
 }
 
 /** 프레임을 계속 넣으면 사람마다 부드럽게 다듬은 움직임 크기를 알려 주는 도구 */
@@ -78,7 +126,19 @@ export class MotionTracker {
     this.floor = new Array(players).fill(0.004);
     this.effort = new Array(players).fill(0);
     this.raw = new Array(players).fill(0);
+    this.arms = Array.from({ length: players * 2 }, () => new StrokeCounter());
+    this.lastStroke = new Array(players).fill(-1);
+    this.strokes = new Array(players).fill(0);   // 지금까지 흔든 횟수
+    this.pending = new Array(players).fill(0);   // 아직 놀이에 넘기지 않은 횟수
+    this.clock = 0;
     this.calib = null;
+  }
+
+  /** 지난번 이후 새로 흔든 횟수를 꺼냄 */
+  takeStrokes() {
+    const out = this.pending.slice();
+    this.pending.fill(0);
+    return out;
   }
 
   /** 가만히 서 있는 동안 잡음 크기 재기 시작/끝 */
@@ -101,8 +161,19 @@ export class MotionTracker {
     if (!this.prev) { this.prev = Uint8Array.from(luma); return this.effort; }
     const r = diffZones(luma, this.prev, W, H, this.zones);
     this.prev.set(luma);
+    this.clock += dt;
     if (r.global > GLOBAL_JUMP) return this.effort; // 화면 전체 번쩍: 이번 장면은 건너뜀
     if (this.calib) r.zones.forEach((f, k) => this.calib[k].push(f));
+    // 팔 흔들기 세기
+    r.arms.forEach((arm, a) => {
+      const k = a >> 1;
+      const enough = arm.fraction > this.floor[k] + 0.008;
+      if (this.arms[a].push(enough ? arm.y : null, dt) && this.clock - this.lastStroke[k] > STROKE_GAP) {
+        this.lastStroke[k] = this.clock;
+        this.strokes[k] += 1;
+        this.pending[k] += 1;
+      }
+    });
     r.zones.forEach((f, k) => {
       this.raw[k] = f;
       const target = effortFrom(f, this.floor[k]);

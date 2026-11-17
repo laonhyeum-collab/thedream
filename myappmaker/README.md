@@ -30,7 +30,8 @@
 
 ## 올리기 (GitHub Pages 예)
 
-빌드가 필요 없는 정적 사이트입니다. 저장소 **Settings → Pages → Branch: main / root** 로 켜면
+빌드가 필요 없는 정적 사이트입니다. `main`에 올라가면 `.github/workflows/pages.yml` 이 `index.html`·`student/`·`teacher/`·`world/`·`shared/` 를 GitHub Pages 로 자동 배포합니다.
+(처음 한 번: 저장소 **Settings → Pages → Source 를 "GitHub Actions"** 로 설정)
 아래 주소로 열립니다.
 
 | 앱 | 주소 |
