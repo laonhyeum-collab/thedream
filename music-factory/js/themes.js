@@ -26,6 +26,9 @@ const bingsu = {
   container: '빙수컵',
   rows: 8,
   cols: 3,
+  // 컵 그림(cup.png)이 있을 때 칸을 놓을 자리 (컵 그림에서 잰 %)
+  // top/bottom = 위아래 여백, topInset/bottomInset = 맨 위/맨 아래 줄의 양옆 여백 (컵이 아래로 좁아져요)
+  cupShape: { top: 9, bottom: 27, topInset: 10, bottomInset: 27.5 },
   defaultTitle: '나의 빙수 노래',
   ingredients: [
     { id: 'ice', name: '얼음', emoji: '🧊', color: '#d6f0ff', instrument: 'drum', voice: 'drum', sound: '기본 리듬' },

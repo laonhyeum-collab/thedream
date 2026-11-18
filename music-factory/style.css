@@ -61,6 +61,10 @@ img[data-optional].loaded { display: block; }
 .pic img, .item-body img, .ing-pic img, .size-pic img, .drag-ghost img, .ws-pic img, .ii-pic img,
 .theme-pic img, .ipic img, .inst-pic img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 .emo { line-height: 1; pointer-events: none; }
+/* 그림은 늘 자기 칸 안에만 (큰 그림이 칸 밖으로 넘치지 않게) */
+.pic, .item-body, .ing-pic, .size-pic, .ws-pic, .ii-pic, .theme-pic, .ipic, .inst-pic { position: relative; }
+.pic > img, .item-body > img, .ing-pic > img, .size-pic > img, .ws-pic > img, .ii-pic > img,
+.theme-pic > img, .ipic > img, .inst-pic > img, .drag-ghost > img { position: absolute; inset: 0; }
 
 /* ---------- 메인 화면 ---------- */
 #home { min-height: 100dvh; display: grid; place-items: center; padding: 24px; position: relative; overflow: hidden; }
@@ -173,6 +177,9 @@ h1 { margin: 6px 0 4px; font-size: clamp(2rem, 5vw, 3rem); color: var(--pink-dee
   filter: drop-shadow(0 6px 0 rgba(120, 170, 200, 0.35));
 }
 .cup-img.loaded ~ .cup-glass { display: none; }
+.cup.has-img { aspect-ratio: 2 / 3; }
+.cup.has-img .cup-rows { top: var(--ct); bottom: var(--cb); left: var(--ci); right: var(--ci); }
+.cup.has-img .row { margin-inline: var(--inset, 0); }
 .cup-glass::before {
   content: ""; position: absolute; inset: 3% 2% 7% 2%;
   clip-path: polygon(0 0, 100% 0, 86% 100%, 14% 100%);

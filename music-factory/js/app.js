@@ -97,7 +97,11 @@ function preloadImages() {
 
 // HTML 안에 미리 적어 둔 꾸밈 그림(로고, 배경, 컵)은 있을 때만 보여 줍니다.
 for (const im of $$('img[data-optional]')) {
-  const show = () => { if (im.naturalWidth) im.classList.add('loaded'); };
+  const show = () => {
+    if (!im.naturalWidth) return;
+    im.classList.add('loaded');
+    if (im.classList.contains('cup-img')) applyCupShape();
+  };
   if (im.complete) show(); else im.addEventListener('load', show);
 }
 
@@ -276,6 +280,27 @@ function buildCup() {
     }
     rows.append(row);
   }
+  applyCupShape();
+}
+
+// 컵 그림이 있으면, 칸을 컵 안쪽 모양(아래로 좁아지는 모양)에 맞춰 줄마다 폭을 줄여요.
+function applyCupShape() {
+  const cup = $('#cup');
+  const shape = state.theme.cupShape;
+  const hasImg = Boolean(shape) && $('.cup-img', cup).classList.contains('loaded');
+  cup.classList.toggle('has-img', hasImg);
+  if (!hasImg) return;
+  const { top, bottom, topInset, bottomInset } = shape;
+  cup.style.setProperty('--ct', `${top}%`);
+  cup.style.setProperty('--cb', `${bottom}%`);
+  cup.style.setProperty('--ci', `${topInset}%`);
+  const rows = $$('#cupRows .row');
+  const width = 100 - 2 * topInset;
+  rows.forEach((row, k) => {
+    const f = (k + 0.5) / rows.length; // 위(0) → 아래(1)
+    const edge = topInset + f * (bottomInset - topInset);
+    row.style.setProperty('--inset', `${((edge - topInset) / width) * 100}%`);
+  });
 }
 
 function itemAt(row, col) {
