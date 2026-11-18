@@ -231,6 +231,10 @@ ol.rx-list li::before{counter-increment:n;content:counter(n);width:20px;height:2
 
 /* ---------- admin ---------- */
 .admin{display:grid;grid-template-columns:280px minmax(0,1fr);gap:22px;align-items:start}
+.adm-toggle{display:none;align-items:center;gap:10px;width:100%;padding:12px 16px;text-align:left;font-size:16px;border-radius:14px}
+.adm-toggle span:first-child{color:var(--muted);white-space:nowrap}
+.adm-toggle b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.adm-toggle .chev{transition:transform .2s}
 .adm-nav{position:sticky;top:78px;max-height:calc(100vh - 96px);overflow:auto;padding:14px}
 .adm-nav .nb{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;padding:6px 10px;border-radius:9px;font-size:15px}
 .adm-nav .nb:hover{background:var(--cream)}
@@ -296,7 +300,11 @@ ol.rx-list li::before{counter-increment:n;content:counter(n);width:20px;height:2
 @media (max-width:1100px){.adm-main{grid-template-columns:1fr}.preview{position:static;max-height:none}}
 @media (max-width:860px){
   .cp-hero,.np-head{grid-template-columns:1fr}
-  .admin{grid-template-columns:1fr}.adm-nav{position:static;max-height:none}
+  .admin{grid-template-columns:1fr;gap:14px}.adm-nav{position:static;max-height:none;display:none}
+  .admin.nav-open .adm-nav{display:block}
+  .adm-toggle{display:flex!important}
+  .admin.nav-open .adm-toggle .chev{transform:rotate(180deg)}
+  .map-tools{right:14px;top:14px}.map-tools button{width:32px;height:32px;font-size:17px}
   .crumbs,.brand span{display:none}
   .nation.row{grid-template-columns:1fr}
 }
@@ -306,6 +314,8 @@ ol.rx-list li::before{counter-increment:n;content:counter(n);width:20px;height:2
   .tb-btn .t{display:none}
   .common,.story{padding:20px}
   .food-ed .row2{grid-template-columns:1fr}
+  .sub-ed{grid-template-columns:46px 1fr auto}.sub-ed .hint{display:none}
+  .sub-ed + .fld{margin-left:0!important}
 }
 @media print{.topbar,.map-tools,.pager{display:none}}
 </style>
@@ -1339,10 +1349,20 @@ function renderAdmin() {
   if (!adminOK) return renderLock();
   crumbs([['홈', '/'], ['자료 관리', '/admin']]);
   if (SEL.startsWith('country:') && !STATE.countries[SEL.slice(8)]) SEL = 'settings';
-  view.innerHTML = `<div class="admin fade"><aside class="card adm-nav" id="admNav"></aside><section class="adm-main" id="admMain"></section></div>`;
+  view.innerHTML = `<div class="admin fade" id="adminWrap"><button class="adm-toggle card" id="admToggle" aria-expanded="false"><span>📂 메뉴</span><b id="admCur"></b><span class="chev">▾</span></button><aside class="card adm-nav" id="admNav"></aside><section class="adm-main" id="admMain"></section></div>`;
+  $('#admToggle').onclick = () => { const w = $('#adminWrap'); const open = !w.classList.contains('nav-open'); w.classList.toggle('nav-open', open); $('#admToggle').setAttribute('aria-expanded', open); };
   renderNav(); renderEditor();
 }
+function selLabel() {
+  const [t, k] = SEL.split(':');
+  if (t === 'settings') return '기본 설정 · 백업 · 동기화';
+  if (t === 'guide') return '사용 방법';
+  if (t === 'country') return nameOf(k);
+  const cn = CONT_BASE[k] ? contInfo(k).name : '';
+  return { cont: `${cn} 식문화 공통점`, regions: `${cn} 소지역 구분 편집`, add: `${cn}에 나라 추가` }[t] || '';
+}
 function renderNav() {
+  const cur = $('#admCur'); if (cur) cur.textContent = selLabel();
   const nb = (sel, inner, cls = '') => `<button class="nb ${cls} ${SEL === sel ? 'sel' : ''}" data-sel="${sel}">${inner}</button>`;
   $('#admNav').innerHTML = `
     ${Sync.token ? '' : `<button class="nb" data-sel="settings" style="color:#B03A2E;font-weight:700">☁️ 동기화 꺼짐 — 연결하기</button>`}
@@ -1359,7 +1379,7 @@ function renderNav() {
     }).join('')}`;
 }
 $('#view').addEventListener('click', e => {
-  const b = e.target.closest('[data-sel]'); if (b && route().startsWith('/admin')) { SEL = b.dataset.sel; renderNav(); renderEditor(); window.scrollTo(0, 0); }
+  const b = e.target.closest('[data-sel]'); if (b && route().startsWith('/admin')) { SEL = b.dataset.sel; $('#adminWrap')?.classList.remove('nav-open'); $('#admToggle')?.setAttribute('aria-expanded', 'false'); renderNav(); renderEditor(); window.scrollTo(0, 0); }
 });
 
 const HELP = `<div class="help">✍️ <b>작성 요령</b> — 자유롭게 입력하면 발표 화면에서 자동으로 정리됩니다.<br>
@@ -1388,7 +1408,7 @@ function renderEditor() {
     main.className = 'adm-main single';
     const size = new Blob([JSON.stringify(STATE)]).size;
     main.innerHTML = `<div class="card editor">
-      <h2>⚙️ 기본 설정</h2><p class="lead-note">발표 첫 화면에 보이는 제목과 정보입니다. 모든 내용은 이 브라우저에 자동 저장됩니다.</p>
+      <h2>⚙️ 기본 설정</h2><p class="lead-note">발표 첫 화면에 보이는 제목과 정보입니다. 모든 내용은 자동 저장되며, 아래 <b>자동 동기화</b>를 연결하면 다른 기기에도 반영됩니다.</p>
       ${fld('발표 제목', txt('title', '대륙별 Comfort Food'))}
       ${fld('부제목', txt('subtitle', '마음을 데우는 세계의 집밥 이야기'))}
       ${fld('발표자 · 학급', txt('presenter', '예) 6학년 2반 ○○○'))}
