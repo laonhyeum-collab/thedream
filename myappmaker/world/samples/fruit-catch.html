@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>과일 바구니</title>
+<style>
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; background: linear-gradient(#bfe9ff, #e8ffd9); overflow: hidden; touch-action: none; }
+  #game { position: relative; width: 100%; height: 100%; }
+  .hud { position: absolute; top: 10px; left: 0; right: 0; display: flex; justify-content: center; gap: 12px; font-weight: 800; font-size: 20px; }
+  .hud span { background: #fff; border-radius: 999px; padding: 4px 14px; box-shadow: 0 2px 6px #0002; }
+  .item { position: absolute; font-size: 38px; transform: translate(-50%, -50%); user-select: none; }
+  #basket { position: absolute; bottom: 18px; font-size: 64px; transform: translateX(-50%); }
+  .screen { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 12px; background: #ffffffd9; padding: 20px; }
+  .screen h1 { margin: 0; font-size: 40px; }
+  button { font: inherit; font-size: 22px; font-weight: 800; border: 0; border-radius: 16px; padding: 14px 28px; background: #ff922b; color: #fff; cursor: pointer; }
+  .msg { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); font-size: 30px; font-weight: 900; color: #e8590c; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="hud"><span id="score">🍎 0</span><span id="time">⏱ 30</span><span id="life">❤️❤️❤️</span></div>
+  <div id="basket">🧺</div>
+  <div id="start" class="screen">
+    <h1>🍉 과일 바구니</h1>
+    <p>바구니를 좌우로 움직여 과일을 받아요!<br>💣 폭탄을 받으면 생명이 줄어요.<br>30초 동안 <b>100점</b>을 넘기면 성공!</p>
+    <button id="go">▶ 시작하기</button>
+  </div>
+  <div id="end" class="screen" hidden>
+    <h1 id="endTitle"></h1>
+    <p id="endText"></p>
+    <button id="again">🔁 다시하기</button>
+  </div>
+</div>
+<script>
+const IMAGES = { background: '', hero: '' }; // 그림 주소를 넣으면 바뀌어요
+const FRUITS = ['🍎', '🍌', '🍇', '🍓', '🍊', '🍉'];
+const game = document.getElementById('game');
+const basket = document.getElementById('basket');
+// 그림 자리에 그림이 있으면 그 그림을, 없으면 이모지를 써요
+if (IMAGES.background) game.style.background = 'center / cover no-repeat url(' + IMAGES.background + ')';
+if (IMAGES.hero) basket.innerHTML = '<img src="' + IMAGES.hero + '" alt="" style="width:84px;height:84px;object-fit:contain;display:block">';
+let items = [], score = 0, life = 3, time = 30, bx = 0.5, running = false, lastSpawn = 0, timer = null, best = 0;
+try { best = Number(localStorage.getItem('fruit-best')) || 0; } catch (e) {}
+function W() { return game.clientWidth; } function H() { return game.clientHeight; }
+function hud() {
+  document.getElementById('score').textContent = '🍎 ' + score;
+  document.getElementById('time').textContent = '⏱ ' + time;
+  document.getElementById('life').textContent = '❤️'.repeat(life) || '💔';
+  basket.style.left = (bx * W()) + 'px';
+}
+function pop(text) { const m = document.createElement('div'); m.className = 'msg'; m.textContent = text; game.appendChild(m); setTimeout(() => m.remove(), 500); }
+function start() {
+  items.forEach(i => i.el.remove()); items = []; score = 0; life = 3; time = 30; running = true;
+  document.getElementById('start').hidden = true; document.getElementById('end').hidden = true; hud();
+  clearInterval(timer); timer = setInterval(() => { time--; hud(); if (time <= 0) end(); }, 1000);
+  requestAnimationFrame(loop);
+}
+function end() {
+  running = false; clearInterval(timer);
+  const win = score >= 100 && life > 0;
+  if (score > best) { best = score; try { localStorage.setItem('fruit-best', best); } catch (e) {} }
+  document.getElementById('endTitle').textContent = win ? '🏆 성공!' : '😢 아쉬워요';
+  document.getElementById('endText').textContent = score + '점 (최고 기록 ' + best + '점)';
+  document.getElementById('end').hidden = false;
+}
+let prev = 0;
+function loop(t) {
+  if (!running) return;
+  const dt = Math.min(0.05, (t - (prev || t)) / 1000); prev = t;
+  const speedUp = 1 + (30 - time) / 30;
+  if (t - lastSpawn > 650 / speedUp) {
+    lastSpawn = t;
+    const bomb = Math.random() < 0.25;
+    const el = document.createElement('div'); el.className = 'item';
+    el.textContent = bomb ? '💣' : FRUITS[Math.floor(Math.random() * FRUITS.length)];
+    game.appendChild(el);
+    items.push({ el, x: 0.08 + Math.random() * 0.84, y: -0.05, bomb, v: 0.25 + Math.random() * 0.15 });
+  }
+  for (const it of items) {
+    it.y += it.v * speedUp * dt;
+    it.el.style.left = (it.x * W()) + 'px'; it.el.style.top = (it.y * H()) + 'px';
+    if (it.y > 0.86 && it.y < 0.95 && Math.abs(it.x - bx) < 0.09 && !it.done) {
+      it.done = true; it.el.remove();
+      if (it.bomb) { life--; pop('💥'); if (life <= 0) { hud(); end(); return; } } else { score += 10; pop('+10'); }
+      hud();
+    }
+    if (it.y > 1.1) { it.done = true; it.el.remove(); }
+  }
+  items = items.filter(i => !i.done);
+  requestAnimationFrame(loop);
+}
+function moveTo(clientX) { const r = game.getBoundingClientRect(); bx = Math.max(0.06, Math.min(0.94, (clientX - r.left) / r.width)); hud(); }
+game.addEventListener('pointermove', e => { if (running) moveTo(e.clientX); });
+game.addEventListener('pointerdown', e => { if (running) moveTo(e.clientX); });
+window.addEventListener('keydown', e => {
+  if (!running) return;
+  if (e.key === 'ArrowLeft') bx = Math.max(0.06, bx - 0.06);
+  if (e.key === 'ArrowRight') bx = Math.min(0.94, bx + 0.06);
+  hud();
+});
+document.getElementById('go').onclick = start;
+document.getElementById('again').onclick = start;
+window.addEventListener('resize', hud);
+hud();
+</script>
+</body>
+</html>

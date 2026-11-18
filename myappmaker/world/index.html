@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <title>MY APP META WORLD</title>
+  <meta name="description" content="친구들이 만든 게임 앱이 부스로 열리는 픽셀 섬 메타버스">
+  <meta name="theme-color" content="#2B2350">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
+  <link rel="stylesheet" href="../shared/common.css">
+  <link rel="stylesheet" href="world.css">
+  <script src="../shared/config.js"></script>
+</head>
+<body class="world">
+  <!-- 입장 -->
+  <section id="lobby" class="lobby">
+    <div class="card lobby-card">
+      <p class="logo-line"><span class="logo-pad">🎮</span><span><b>MY APP</b><br><b>META WORLD</b></span></p>
+      <h1 id="lobbyTitle">친구들이 만든 앱 월드</h1>
+      <p class="muted">친구들이 만든 게임이 부스로 열려 있어요. 내 캐릭터로 섬을 걸어 다니며 부스에 들어가 놀아 봐요!</p>
+      <label class="field"><span>내 별명 <small class="muted">(🔒 진짜 이름은 쓰지 않아요)</small></span><input id="nick" type="text" maxlength="10" placeholder="예) 별빛코더"></label>
+      <div class="field"><span class="small"><b>내 캐릭터</b></span><div id="lobbyAvatar"></div></div>
+      <button id="enterBtn" class="primary big">🚪 입장하기</button>
+      <p id="sourceInfo" class="small muted"></p>
+      <details class="small">
+        <summary>📁 선생님: 메타버스 파일로 열기</summary>
+        <p class="muted">교사 앱의 「메타버스 파일 내려받기」로 받은 파일을 넣으면 인터넷 저장소 없이 이 기기에서 앱 월드를 열어요.</p>
+        <label class="btn" for="worldFile">📁 파일 불러오기</label>
+        <input id="worldFile" type="file" accept=".json,application/json" hidden>
+      </details>
+    </div>
+  </section>
+
+  <!-- 월드 -->
+  <section id="stage" class="stage" hidden>
+    <canvas id="map" tabindex="0" aria-label="앱 월드 지도. 방향키나 화면을 눌러 움직여요. 탐험 버튼으로도 부스를 열 수 있어요."></canvas>
+
+    <header class="topbar">
+      <div class="brand"><span class="logo-pad">🎮</span><span class="brand-text"><b>MY APP</b><b>META WORLD</b></span></div>
+      <nav class="topnav" aria-label="앱 월드 메뉴">
+        <button data-nav="home" class="on"><span>🏠</span><b>홈</b></button>
+        <button data-nav="map"><span>🗺️</span><b>맵</b></button>
+        <button data-nav="myapp"><span>⭐</span><b>내 앱</b></button>
+        <button data-nav="friends"><span>👥</span><b>친구 <em id="friendCount">0</em></b></button>
+      </nav>
+      <button class="me-btn" data-nav="me" aria-label="나의 공간"><canvas id="meFace" width="48" height="48"></canvas><b id="meNick">나의 공간</b></button>
+      <button class="gear" data-nav="exit" aria-label="나가기">⚙️</button>
+    </header>
+
+    <aside class="sidebar" aria-label="활동 메뉴">
+      <button data-side="explore"><span>🧭</span><b>탐험</b></button>
+      <button data-side="missions"><span>✅</span><b>미션</b></button>
+      <button data-side="badges"><span>🏅</span><b>배지</b></button>
+      <button data-side="notice"><span>📢</span><b>공지</b><i id="noticeDot" hidden></i></button>
+    </aside>
+
+    <div id="joystick" class="joystick" aria-hidden="true"><div class="knob"></div></div>
+    <div id="enterHint" class="enter-hint" hidden>
+      <span id="enterText"></span>
+      <button id="enterBooth" class="sun big">들어가기 ▶</button>
+    </div>
+    <p class="help small">⌨️ 방향키·WASD로 움직이고 <b>Space</b>로 들어가요 · 📱 화면을 누르거나 끌어서 움직여요</p>
+  </section>
+
+  <!-- 부스 안 (앱 실행) -->
+  <div id="appRoom" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="roomTitle">
+    <div class="sheet wide room">
+      <div class="row room-head">
+        <span id="roomEmoji" class="room-emoji"></span>
+        <div class="grow">
+          <h2 id="roomTitle"></h2>
+          <p id="roomMeta" class="muted small"></p>
+        </div>
+        <button id="likeBtn" class="sun">👍 <span id="likeCount">0</span></button>
+        <a id="newTab" class="btn ghost" target="_blank" rel="noopener noreferrer" hidden>↗ 새 창</a>
+        <button id="closeRoom" class="primary">✕ 나가기</button>
+      </div>
+      <p id="roomIntro" class="room-intro"></p>
+      <iframe id="roomFrame" class="app-frame room-frame" title="친구가 만든 앱"></iframe>
+    </div>
+  </div>
+
+  <!-- 메뉴 창 (탐험·미션·배지·공지·친구·나의 공간) -->
+  <div id="panel" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="panelTitle">
+    <div class="sheet">
+      <div class="row"><h2 id="panelTitle" class="grow"></h2><button id="closePanel" class="ghost" aria-label="닫기">✕</button></div>
+      <div id="panelBody"></div>
+    </div>
+  </div>
+
+  <script type="module" src="world.js"></script>
+</body>
+</html>

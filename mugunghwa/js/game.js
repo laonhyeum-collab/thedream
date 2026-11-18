@@ -1,5 +1,6 @@
 // 무궁화 꽃이 피었습니다 — 놀이 규칙 (화면·카메라와 상관없는 순수 로직)
-// update(dt, efforts) 에 "얼마나 움직였는지(0~1)" 만 넣어 주면 진행 상황이 바뀝니다.
+// update(dt, efforts, strokes) 에 "얼마나 움직였는지(0~1)"와 "팔을 몇 번 흔들었는지"를 넣어 주면 진행 상황이 바뀝니다.
+// 앞으로 가는 건 팔 흔든 횟수, 얼음 때 걸리는 건 움직임 크기로 정합니다.
 
 export const DIFFICULTY = {
   easy: {
@@ -31,9 +32,7 @@ export const DIFFICULTY = {
 export const CHANT = ['무', '궁', '화', ' ', '꽃', '이', ' ', '피', '었', '습', '니', '다'];
 export const CHANT_SYLLABLES = CHANT.filter((c) => c !== ' ').length; // 10
 
-export const ROUND_STEP = 25;    // 노래 한 번 동안 열심히 움직이면 25칸 (길이와 상관없이) → 4번이면 도착
-export const FULL_EFFORT = 0.35; // 이만큼만 움직여도 '열심히'로 쳐 줌 (0~1, 막대 3분의 1 정도)
-export const MAX_ROUNDS = 5;     // 열심히 하면 이 횟수 안에 도착
+export const STEP_PER_STROKE = 2.5; // 팔을 한 번 흔들 때마다 2.5칸 → 40번 흔들면 도착
 export const COUNTDOWN = 3;      // 시작 전 3, 2, 1
 export const GOAL = 100;
 
@@ -49,6 +48,7 @@ export class Game {
       caughtThisFreeze: false,
       overTime: 0,         // 얼음 중 크게 움직인 시간 누적
       moving: 0,           // 화면 표시용 (최근 움직임)
+      strokes: 0,          // 노래 부를 때 흔든 횟수 (앞으로 간 횟수)
     }));
     this.phase = 'countdown';
     this.phaseTime = 0;
@@ -92,10 +92,11 @@ export class Game {
 
   /**
    * @param {number} dt  지난 시간(초)
-   * @param {number[]} efforts  사람마다 움직임 크기 0~1
+   * @param {number[]} efforts  사람마다 움직임 크기 0~1 (얼음 때 걸리는지 판단)
+   * @param {number[]} strokes  사람마다 지난번 이후 팔을 흔든 횟수 (노래 부를 때 앞으로 감)
    * @returns {object[]} 일어난 일 목록 (phase / caught / win)
    */
-  update(dt, efforts = []) {
+  update(dt, efforts = [], strokes = []) {
     const events = [];
     if (this.phase === 'end') return events;
     dt = Math.max(0, Math.min(dt, 0.25)); // 탭 전환 등으로 시간이 튀어도 안전하게
@@ -107,9 +108,12 @@ export class Game {
       p.moving = e;
 
       if (this.phase === 'chant') {
-        // 노래가 빠르든 느리든 한 번에 갈 수 있는 거리는 같게
-        const push = Math.min(1, e / FULL_EFFORT);
-        p.progress = Math.min(GOAL, p.progress + (ROUND_STEP * push * dt) / this.phaseLength);
+        const n = Math.max(0, Math.floor(strokes[i] || 0));
+        if (n) {
+          p.strokes += n;
+          p.progress = Math.min(GOAL, p.progress + STEP_PER_STROKE * n);
+          events.push({ type: 'step', player: i, strokes: n });
+        }
       } else if (this.phase === 'freeze' && !this.inGrace && !p.caughtThisFreeze) {
         if (e > this.cfg.catchLevel) p.overTime += dt;
         else p.overTime = Math.max(0, p.overTime - dt * 0.5);

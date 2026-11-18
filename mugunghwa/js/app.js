@@ -102,6 +102,13 @@ function drawOverlay() {
     const label = n === 2 ? look.name : '나';
     c.strokeText(label, (x0 + x1) / 2, ch * 0.04);
     c.fillText(label, (x0 + x1) / 2, ch * 0.04);
+    // 팔 흔든 횟수 (놀이 중엔 앞으로 간 횟수, 자리 잡기 땐 연습 횟수)
+    const count = game ? game.players[i].strokes : tracker.strokes[i];
+    const cs = `👋 ${count}`;
+    c.font = `900 ${fs * 0.9}px system-ui, sans-serif`;
+    c.textBaseline = 'bottom';
+    c.strokeText(cs, (x0 + x1) / 2, ch * 0.97);
+    c.fillText(cs, (x0 + x1) / 2, ch * 0.97);
     // 움직임 막대
     const e = tracker.effort[i];
     const bw = Math.max(8, cw * 0.035);
@@ -201,6 +208,7 @@ function beginPlay() {
   placeholder = null;
   calibUntil = performance.now() + 2500;
   tracker.startCalibration();
+  tracker.takeStrokes();
   setBig('가만히 멈춰요!\n술래가 살펴봐요 👀');
   setBanner();
   voice.say('가만히 멈춰 봐');
@@ -213,6 +221,8 @@ function handleEvents(events) {
       setBig('');
       sfx.go();
       voice.chant(ev.length);
+    } else if (ev.type === 'step') {
+      sfx.step();
     } else if (ev.type === 'phase' && ev.phase === 'freeze') {
       sfx.freeze();
       voice.say('얼음!', { rate: 1.2, pitch: 1.3 });
@@ -285,7 +295,8 @@ function frame(now) {
       lastCount = 3;
     }
     if (game) {
-      if (!document.hidden) handleEvents(game.update(dt, tracker.effort));
+      const strokes = tracker.takeStrokes();
+      if (!document.hidden) handleEvents(game.update(dt, tracker.effort, strokes));
       if (game.phase === 'countdown') {
         const left = Math.ceil(game.phaseLength - game.phaseTime);
         if (left !== lastCount && left > 0) { lastCount = left; setBig(String(left)); sfx.tick(); }
@@ -320,8 +331,8 @@ $('startBtn').addEventListener('click', async () => {
   const two = settings.players === '2';
   $('setupTitle').textContent = two ? '1P는 왼쪽, 2P는 오른쪽에 서요' : '카메라 앞에 서 보세요';
   $('setupHint').textContent = two
-    ? '화면 가운데 하얀 줄을 넘지 않게! 몸을 흔들면 막대가 올라가요.'
-    : '온몸이 보이게 조금 떨어져 서요. 몸을 흔들면 막대가 올라가요.';
+    ? '가운데 하얀 줄을 넘지 않게! 팔을 위아래로 흔들면 👋 숫자가 올라가요.'
+    : '팔까지 다 보이게 조금 떨어져 서요. 팔을 위아래로 흔들면 👋 숫자가 올라가요.';
   try {
     moveCamTo($('setupCam'));
     show('setup');
