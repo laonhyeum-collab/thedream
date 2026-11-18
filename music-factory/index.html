@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- 이 앱은 자기 파일 말고는 아무 곳에도 연결하지 않습니다 -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>뮤직 플레이 팩토리</title>
+  <meta name="description" content="내가 만든 모양이 음악이 된다! 재료를 쌓아 만드는 어린이 디지털 밴드 음악 창작 놀이터">
+  <meta name="theme-color" content="#ffb3c7">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ========== 메인 화면 ========== -->
+<section id="home" class="screen">
+  <img class="home-bg" data-optional src="assets/images/ui/home-bg.png" alt="">
+  <div class="home-card">
+    <div class="logo" aria-hidden="true">
+      <img data-optional src="assets/images/ui/logo.png" alt="">
+      <span class="logo-emoji">🍧🎸🥁</span>
+    </div>
+    <h1>뮤직 플레이 팩토리</h1>
+    <p class="slogan">내가 만든 모양이 음악이 된다!</p>
+    <nav class="menu">
+      <button type="button" class="menu-btn m1" data-go="themes"><span class="mi">🎵</span>음악 만들기</button>
+      <button type="button" class="menu-btn m2" data-go="library"><span class="mi">📦</span>나의 음악 보관함</button>
+      <button type="button" class="menu-btn m3" data-go="challenge"><span class="mi">🏆</span>음악 만들기 도전</button>
+      <button type="button" class="menu-btn m4" data-go="instruments"><span class="mi">🎧</span>악기 소리 체험</button>
+    </nav>
+  </div>
+</section>
+
+<!-- ========== 테마 선택 ========== -->
+<section id="themes" class="screen page" hidden>
+  <header class="pagebar">
+    <button type="button" class="round" data-go="home" aria-label="처음 화면">🏠</button>
+    <h2>무엇을 만들어 볼까요?</h2>
+  </header>
+  <div id="themeGrid" class="theme-grid"></div>
+</section>
+
+<!-- ========== 창작 화면 ========== -->
+<section id="create" class="screen" hidden>
+  <header class="topbar">
+    <button type="button" class="round" id="btnBack" aria-label="뒤로">⬅️</button>
+    <div class="title-box">
+      <h2 id="createTitle">🍧 빙수 만들기</h2>
+      <p id="createSub" class="sub">재료를 컵에 쌓으면 음악이 돼요!</p>
+    </div>
+    <div class="settings">
+      <label class="tempo" title="빠르기">
+        <span aria-hidden="true">🐢</span>
+        <input type="range" id="bpm" min="60" max="160" step="5" value="100" aria-label="빠르기 (BPM)">
+        <span aria-hidden="true">🐇</span>
+        <output id="bpmOut">100</output>
+      </label>
+      <button type="button" class="chip" id="btnLoop" aria-pressed="false">🔁 반복</button>
+      <button type="button" class="round" id="btnHelp" aria-label="사용 방법">❓</button>
+    </div>
+  </header>
+
+  <aside class="palette" aria-label="재료">
+    <h3>재료 고르기</h3>
+    <p class="tip">누르면 소리를 들을 수 있어요.<br>컵으로 끌어다 놓아요!</p>
+    <button type="button" class="voice-btn" id="btnVoices">🎚️ 재료마다 악기 고르기</button>
+    <div id="palette" class="palette-grid"></div>
+    <div class="trash" aria-hidden="true">🗑️<br>여기에 놓으면<br>재료를 빼요</div>
+  </aside>
+
+  <main class="stage">
+    <div class="length-info" id="lengthInfo">컵이 비어 있어요</div>
+    <div class="cup" id="cup">
+      <img class="cup-img" data-optional src="assets/images/bingsu/cup.png" alt="">
+      <div class="cup-glass" aria-hidden="true"></div>
+      <div class="cup-rows" id="cupRows"></div>
+      <div class="sparkles" id="sparkles" aria-hidden="true"></div>
+    </div>
+    <div class="direction" aria-hidden="true"><span>⬆️</span>위로 갈수록<br>나중에 연주</div>
+  </main>
+
+  <aside class="side">
+    <div class="panel" id="itemPanel">
+      <div class="empty-hint" id="itemEmpty">
+        <div class="big">👆</div>
+        컵에 담긴 재료를 누르면<br>크기(박자)를 바꿀 수 있어요.
+      </div>
+      <div id="itemEdit" hidden>
+        <div class="item-head">
+          <div class="item-pic" id="itemPic"></div>
+          <div>
+            <div class="item-name" id="itemName"></div>
+            <div class="item-inst" id="itemInst"></div>
+          </div>
+        </div>
+        <button type="button" class="voice-btn small" id="btnItemVoice">🎚️ 악기 바꾸기</button>
+        <p class="panel-label">크기 = 박자</p>
+        <div class="size-btns" id="sizeBtns"></div>
+        <button type="button" class="wide-btn danger" id="btnRemove">🗑️ 이 재료 빼기</button>
+      </div>
+    </div>
+    <div class="panel mission-panel" id="missionPanel" hidden></div>
+    <div class="panel band">
+      <p class="panel-label">우리 밴드</p>
+      <div class="band-grid" id="band"></div>
+    </div>
+  </aside>
+
+  <footer class="controls">
+    <button type="button" class="ctl play" id="btnPlay"><span class="ci">▶️</span><span class="cl">재생</span></button>
+    <button type="button" class="ctl" id="btnRestart"><span class="ci">⏮️</span><span class="cl">처음부터</span></button>
+    <button type="button" class="ctl" id="btnStop"><span class="ci">⏹️</span><span class="cl">멈춤</span></button>
+    <span class="ctl-gap"></span>
+    <button type="button" class="ctl" id="btnClear"><span class="ci">🧹</span><span class="cl">초기화</span></button>
+    <button type="button" class="ctl save" id="btnSave"><span class="ci">💾</span><span class="cl">저장</span></button>
+  </footer>
+</section>
+
+<!-- ========== 보관함 ========== -->
+<section id="library" class="screen page" hidden>
+  <header class="pagebar">
+    <button type="button" class="round" data-go="home" aria-label="처음 화면">🏠</button>
+    <h2>📦 나의 음악 보관함</h2>
+  </header>
+  <div id="workList" class="work-list"></div>
+  <div id="workEmpty" class="page-empty" hidden>
+    <div class="big">🍧</div>
+    아직 저장한 음악이 없어요.<br>
+    <button type="button" class="wide-btn" data-go="themes">🎵 음악 만들러 가기</button>
+  </div>
+</section>
+
+<!-- ========== 도전 ========== -->
+<section id="challenge" class="screen page" hidden>
+  <header class="pagebar">
+    <button type="button" class="round" data-go="home" aria-label="처음 화면">🏠</button>
+    <h2>🏆 음악 만들기 도전</h2>
+  </header>
+  <p class="page-lead">미션을 골라 빙수 음악을 만들어 보세요. 조건을 채우고 ▶️ 끝까지 들으면 성공!</p>
+  <div id="missionList" class="mission-list"></div>
+</section>
+
+<!-- ========== 악기 소리 체험 ========== -->
+<section id="instruments" class="screen page" hidden>
+  <header class="pagebar">
+    <button type="button" class="round" data-go="home" aria-label="처음 화면">🏠</button>
+    <h2>🎧 악기 소리 체험</h2>
+  </header>
+  <div class="len-pick">
+    <span>소리 길이:</span>
+    <div id="lenPick" class="len-btns"></div>
+  </div>
+  <div id="instGrid" class="inst-grid"></div>
+</section>
+
+<!-- ========== 창(대화상자) ========== -->
+<dialog id="saveDialog" class="dlg">
+  <form method="dialog">
+    <h3>💾 내 음악 저장하기</h3>
+    <label class="field">작품 제목
+      <input type="text" id="saveTitle" maxlength="30" autocomplete="off" required>
+    </label>
+    <div class="dlg-btns">
+      <button type="button" class="wide-btn ghost" value="cancel" id="saveCancel">취소</button>
+      <button type="submit" class="wide-btn" value="save" id="saveOk">저장</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="doneDialog" class="dlg done">
+  <div class="done-burst" aria-hidden="true">🎉</div>
+  <h3 id="doneTitle">완성!</h3>
+  <p id="doneText"></p>
+  <div class="dlg-btns col">
+    <button type="button" class="wide-btn" id="doneListen">▶️ 다시 듣기</button>
+    <button type="button" class="wide-btn ghost" id="doneLibrary">📦 보관함 보기</button>
+    <button type="button" class="wide-btn ghost" id="doneClose">✏️ 계속 만들기</button>
+  </div>
+</dialog>
+
+<dialog id="confirmDialog" class="dlg">
+  <h3 id="confirmText">정말요?</h3>
+  <div class="dlg-btns">
+    <button type="button" class="wide-btn ghost" id="confirmNo">아니요</button>
+    <button type="button" class="wide-btn danger" id="confirmYes">네</button>
+  </div>
+</dialog>
+
+<dialog id="voiceDialog" class="dlg voice-dlg">
+  <h3>🎚️ 재료마다 악기 고르기</h3>
+  <p class="voice-lead">① 재료를 고르고 ② 어울리는 악기를 눌러요. 누르면 소리가 나요.</p>
+  <div class="voice-ings" id="voiceIngs"></div>
+  <p class="voice-for" id="voiceFor"></p>
+  <div class="voice-choices" id="voiceChoices"></div>
+  <div class="dlg-btns">
+    <button type="button" class="wide-btn ghost" id="voiceResetAll">↩️ 모두 처음 악기로</button>
+    <button type="button" class="wide-btn" id="voiceClose">다 골랐어요</button>
+  </div>
+</dialog>
+
+<dialog id="helpDialog" class="dlg help">
+  <h3>🍧 이렇게 만들어요</h3>
+  <ol class="help-steps">
+    <li><span class="hs">👆</span><b>재료 누르기</b> — 어떤 악기 소리인지 들어 봐요.</li>
+    <li><span class="hs">✋</span><b>컵으로 끌어다 놓기</b> — 아래에 놓은 재료부터 먼저 연주해요.</li>
+    <li><span class="hs">↔️</span><b>같은 줄에 나란히</b> — 함께(동시에) 연주해요.</li>
+    <li><span class="hs">🎚️</span><b>악기 고르기</b> — 재료마다 어울리는 악기를 내가 바꿀 수 있어요.</li>
+    <li><span class="hs">🔍</span><b>크기 바꾸기</b> — 작게 ½박, 1박, 2박, 크게 4박! 클수록 길게 연주해요.</li>
+    <li><span class="hs">▶️</span><b>재생</b> — 내가 만든 빙수가 음악이 돼요. 고치고 싶으면 멈춘 다음 고쳐요.</li>
+  </ol>
+  <div class="dlg-btns">
+    <button type="button" class="wide-btn" id="helpClose">알겠어요!</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

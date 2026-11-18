@@ -1,0 +1,11 @@
+{
+  "name": "music-play-factory",
+  "private": true,
+  "type": "module",
+  "description": "뮤직 플레이 팩토리 - 재료를 쌓아 만드는 어린이 디지털 밴드 음악 창작 앱",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test tests/*.test.js",
+    "e2e": "node tests/e2e.mjs"
+  }
+}
