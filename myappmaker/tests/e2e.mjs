@@ -185,13 +185,12 @@ try {
   assert.ok((await st.textContent('#fixPrompt')).includes('폭탄이 너무 많아요'));
   await snap(st, 'myapp');
 
-  step('학생: 입점 신청 (저장소) — 내 캐릭터·내 부스 그림 함께');
+  step('학생: 입점 신청 (저장소) — 내 캐릭터 함께 (부스 건물은 지도에 있어서 그림 칸 없음)');
   await st.click('[data-go="submit"]');
   await st.waitForSelector('#submit:not([hidden])');
   await st.click('#avatarBox .avatar-opt[data-k="hair"][data-i="3"]');
   await st.click('#avatarBox .avatar-opt[data-k="acc"][data-i="4"]');
-  await st.setInputFiles('#boothFile', toFile('booth.png', pics.hero));
-  await st.waitForSelector('#boothSlot img');
+  assert.equal(await st.locator('#boothFile, #boothSlot').count(), 0, '부스 그림 칸은 숨김');
   assert.equal(await st.locator('#submitChecks li.ok').count(), 3);
   await st.click('#sendBtn');
   await st.waitForSelector('#statusBox.submitted');
@@ -201,7 +200,7 @@ try {
   assert.ok(!gas.sheets.get('제출').data[1].join('').includes('data:image'), '기획서(시트)에는 그림을 넣지 않음');
   const row1 = Object.fromEntries(gas.sheets.get('제출').data[0].map((k, i) => [k, gas.sheets.get('제출').data[1][i]]));
   assert.deepEqual([JSON.parse(row1.planJson).avatar.hair, JSON.parse(row1.planJson).avatar.acc], [3, 4], '캐릭터가 함께 제출됨');
-  assert.ok(row1.boothFileId && gas.files.get(row1.boothFileId).content.startsWith('data:image/'), '부스 그림이 따로 저장됨');
+  assert.ok(!row1.boothFileId, '부스 그림은 보내지 않음');
 
   // ───── 2. 교사 ─────
   step('교사: 연결 → 확인 → 입점 승인');
@@ -285,7 +284,7 @@ try {
   assert.equal(await wd.inputValue('#nick'), '바다', '캐릭터를 골라도 이름 유지');
   await snap(wd, 'world-lobby');
   await wd.click('#enterBtn');
-  assert.equal(await wd.getAttribute('#map', 'data-mode'), 'pixel', '지도 그림이 없으면 픽셀 섬');
+  assert.equal(await wd.getAttribute('#map', 'data-mode'), 'preset:castle', '지도 그림을 안 올리면 준비된 지도(기본: 별빛 성 섬)');
   await wd.keyboard.down('ArrowUp'); await wd.waitForTimeout(600); await wd.keyboard.up('ArrowUp');
   await snap(wd, 'world-walk');
   await wd.click('[data-side="explore"]');

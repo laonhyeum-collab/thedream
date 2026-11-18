@@ -172,3 +172,26 @@ test('수업: 4차시 모두 40분', () => {
   assert.equal(LESSONS.length, 4);
   for (const l of LESSONS) assert.equal(l.steps.reduce((a, s) => a + s.min, 0), 40, `${l.n}차시`);
 });
+
+test('준비된 지도: 그림 파일·문 자리 12곳이 맞고, 백엔드와 id가 같음', async () => {
+  const fs = await import('node:fs');
+  const { MAP_PRESETS, MAP_PRESET_IDS, cleanWorldSettings } = await import('../shared/worldart.js');
+  for (const p of MAP_PRESETS) {
+    assert.ok(fs.existsSync(new URL(`../shared/maps/${p.file}`, import.meta.url)), p.file);
+    assert.equal(p.hotspots.booths.length, 12);
+    for (const pt of [p.hotspots.hall, p.hotspots.start, ...p.hotspots.booths]) assert.ok(pt.every((v) => v > 0 && v < 1));
+  }
+  const gs = fs.readFileSync(new URL('../backend/Code.gs', import.meta.url), 'utf8');
+  assert.match(gs, new RegExp(`MAP_PRESET_IDS = \\[${MAP_PRESET_IDS.map((x) => `'${x}'`).join(', ')}\\]`));
+  assert.equal(cleanWorldSettings({}).mapPreset, 'castle');
+  assert.equal(cleanWorldSettings({ mapPreset: 'pixel' }).mapPreset, 'pixel');
+});
+
+test('지도 속 구역 찾기: 낱말 첫머리만, 장소 글이 먼저', async () => {
+  const { worldSpot, presetById } = await import('../shared/worldart.js');
+  const S = presetById('seasons'), R = presetById('river');
+  assert.equal(worldSpot('화산이 보이는 공룡 섬', '공룡 화석 발굴대', S), '용암이 흐르는 화산');
+  assert.equal(worldSpot('우주 정거장', '행성 순서', R), '', '「행성」 속 「성」은 성터가 아님');
+  assert.equal(worldSpot('', '바다 생물 도감', R), '야자수와 파라솔이 있는 모래 해변', '「생물」 속 「물」은 폭포가 아님');
+  assert.equal(worldSpot('눈 내리는 마을', '', S), '눈 덮인 산과 얼음집');
+});

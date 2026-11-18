@@ -72,8 +72,12 @@ test('월드 설정: 교사만 바꾸고, 메타버스는 읽기만', () => {
   const g = createGas();
   assert.equal(g.post({ action: 'setWorld', teacherKey: 'nope', settings: {} }).ok, false);
   const r = g.post({ action: 'setWorld', teacherKey: 'TEST-TEACHER', settings: { schoolName: '해솔초<script>', title: '', notice: '오늘은 앱 월드 오픈!' } });
-  assert.deepEqual({ ...r.settings, hotspots: undefined, labelMode: undefined }, { schoolName: '해솔초script', title: '친구들이 만든 앱 월드', notice: '오늘은 앱 월드 오픈!', hotspots: undefined, labelMode: undefined });
+  assert.deepEqual({ ...r.settings, hotspots: undefined, labelMode: undefined, mapPreset: undefined }, { schoolName: '해솔초script', title: '친구들이 만든 앱 월드', notice: '오늘은 앱 월드 오픈!', hotspots: undefined, labelMode: undefined, mapPreset: undefined });
   assert.equal(r.settings.labelMode, 'small');
+  assert.equal(r.settings.mapPreset, 'castle');   // 기본 = 준비된 지도
+  const g2 = createGas();
+  assert.equal(g2.post({ action: 'setWorld', teacherKey: 'TEST-TEACHER', settings: { mapPreset: 'river' } }).settings.mapPreset, 'river');
+  assert.equal(g2.post({ action: 'setWorld', teacherKey: 'TEST-TEACHER', settings: { mapPreset: 'x<y' } }).settings.mapPreset, 'castle');
   const w = g.get({ action: 'world', classCode: 'TEST-CLASS' });
   assert.equal(w.settings.schoolName, '해솔초script');
   assert.deepEqual(w.assets, []);

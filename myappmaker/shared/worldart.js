@@ -19,7 +19,66 @@ export const SLOTS = [
 // hotspots: 지도 그림(일러스트) 위 문 자리. 그림 크기에 대한 비율(0~1)로 [x, y]
 //   hall = 선생님의 앱, start = 처음 서는 곳, booths[0..11] = 01~12번 부스
 // labelMode: 'small' = 그림 속 간판을 살리고 작은 이름표만 / 'big' = 큰 이름표
-export const DEFAULT_WORLD = { schoolName: '', title: '친구들이 만든 앱 월드', notice: '', hotspots: { hall: null, start: null, booths: Array(12).fill(null) }, labelMode: 'small' };
+// ---------- 준비된 지도 그림 (선생님이 그림을 만들지 않아도 바로 쓰는 완성 지도) ----------
+// 문 자리는 그림 크기에 대한 비율 [x, y] (문 바로 앞 바닥). 부스 12곳 + 선생님의 앱 + 처음 서는 곳.
+export const MAP_PRESETS = [
+  { id: 'castle', title: '🏰 별빛 성 섬', file: 'castle.webp', w: 1536, h: 1024,
+    hotspots: { hall: [0.497, 0.345], start: [0.5, 0.86],
+      booths: [[0.125, 0.205], [0.37, 0.195], [0.645, 0.155], [0.27, 0.35], [0.765, 0.275], [0.145, 0.465],
+        [0.695, 0.445], [0.282, 0.56], [0.69, 0.66], [0.15, 0.715], [0.345, 0.795], [0.86, 0.755]] } },
+  { id: 'seasons', title: '🌋 사계절 모험 섬', file: 'seasons.webp', w: 1672, h: 941,
+    hotspots: { hall: [0.495, 0.405], start: [0.5, 0.86],
+      booths: [[0.175, 0.22], [0.358, 0.185], [0.585, 0.14], [0.80, 0.205], [0.162, 0.435], [0.855, 0.365],
+        [0.31, 0.56], [0.725, 0.51], [0.228, 0.735], [0.815, 0.695], [0.368, 0.855], [0.64, 0.845]] } },
+  { id: 'river', title: '🌉 강물 다리 섬', file: 'river.webp', w: 1672, h: 941,
+    hotspots: { hall: [0.495, 0.46], start: [0.5, 0.79],
+      booths: [[0.258, 0.24], [0.475, 0.175], [0.675, 0.22], [0.14, 0.37], [0.85, 0.37], [0.305, 0.535],
+        [0.73, 0.48], [0.875, 0.615], [0.21, 0.735], [0.378, 0.845], [0.605, 0.85], [0.755, 0.75]] } },
+];
+// 지도 속 구역: 학생이 쓴 장소·주제 낱말과 맞으면 「지도 속 그 구역」에 이어지는 그림으로
+export const MAP_REGIONS = {
+  beach: { name: '야자수와 파라솔이 있는 모래 해변', keys: ['바다', '해변', '모래', '물고기', '조개', '배', '해적', '보물', '수영', '고래', '상어', '물속', '바닷'] },
+  waterfall: { name: '폭포와 맑은 연못', keys: ['폭포', '연못', '강', '호수', '물', '개구리', '낚시', '오리'] },
+  forest: { name: '둥근 나무가 빽빽한 숲', keys: ['숲', '나무', '곤충', '벌레', '정글', '동물', '새', '다람쥐', '공룡', '탐험', '모험'] },
+  cherry: { name: '분홍 벚꽃 언덕', keys: ['벚꽃', '꽃', '정원', '봄', '나비', '요정'] },
+  cave: { name: '빛나는 수정 동굴', keys: ['동굴', '수정', '보석', '광산', '미로', '어둠', '박쥐', '탈출', '암호', '비밀'] },
+  park: { name: '관람차와 서커스 천막이 있는 놀이공원', keys: ['놀이공원', '놀이', '서커스', '관람차', '축제', '음악', '리듬'] },
+  camp: { name: '모닥불이 있는 캠핑장', keys: ['캠핑', '텐트', '모닥불', '별', '밤하늘', '요리', '음식'] },
+  snow: { name: '눈 덮인 산과 얼음집', keys: ['눈', '얼음', '겨울', '북극', '펭귄', '남극', '썰매'] },
+  volcano: { name: '용암이 흐르는 화산', keys: ['화산', '용암', '불', '마그마', '지진'] },
+  farm: { name: '밭과 풍차가 있는 농장', keys: ['농장', '밭', '채소', '과일', '동물 키우기', '닭', '소', '농사', '키우기'] },
+  maze: { name: '초록 울타리 미로 정원', keys: ['미로', '퍼즐', '길찾기'] },
+  autumn: { name: '단풍이 물든 가을 숲', keys: ['가을', '단풍', '낙엽', '도토리'] },
+  ruins: { name: '오래된 돌 성터', keys: ['성', '기사', '유적', '역사', '옛날', '왕'] },
+};
+const PRESET_INFO = {
+  castle: { world: '폭포와 연못, 관람차, 수정 동굴과 광산 기찻길, 모래 해변과 등대가 있는 섬. 가운데에 보라 지붕 성과 노란 별 분수', regions: ['beach', 'waterfall', 'forest', 'cherry', 'cave', 'park', 'camp', 'snow'] },
+  seasons: { world: '농장과 풍차, 눈 덮인 얼음집, 용암 화산, 벚꽃 언덕, 장미 정원, 초록 미로, 단풍 숲, 수정 동굴, 해변이 한 섬에 모여 있는 사계절 섬. 가운데에 파란 지붕 학교와 노란 별 분수', regions: ['farm', 'snow', 'volcano', 'cherry', 'forest', 'maze', 'autumn', 'cave', 'beach', 'waterfall'] },
+  river: { world: '강물이 섬 사이를 흐르고 나무다리로 이어진 섬. 폭포, 캠핑장, 오래된 돌 성터, 관람차와 서커스 천막, 광산 동굴, 해변과 등대, 부두와 작은 배. 가운데에 학사모를 쓴 보라 지붕 학교와 노란 별 분수', regions: ['waterfall', 'camp', 'ruins', 'park', 'cave', 'beach', 'forest', 'cherry'] },
+};
+for (const p of MAP_PRESETS) Object.assign(p, { world: PRESET_INFO[p.id].world, regions: PRESET_INFO[p.id].regions });
+
+// 학생 그림이 지도 속 어디와 이어질지: 장소(place)·주제·소개 글의 낱말로 그 지도에 있는 구역을 고름
+export function worldSpot(place, more = '', preset = MAP_PRESETS[0]) {
+  const p = preset || MAP_PRESETS[0];
+  let best = null, score = 0;
+  for (const id of p.regions) {
+    const r = MAP_REGIONS[id];
+    // 장소 글에 나온 낱말이 가장 중요(먼저 나온 낱말일수록 조금 더), 주제·소개 낱말은 거들기만
+    // 낱말 첫머리에서만 찾기(「행성」 속 「성」, 「생물」 속 「물」은 아님)
+    const at = (text, k) => { const m = new RegExp(`(^|[^가-힣])${k}`).exec(String(text || '')); return m ? m.index : -1; };
+    const sc = r.keys.reduce((n, k) => { const i = at(place, k); return n + (i >= 0 ? 100 - Math.min(i, 50) : 0) + (at(more, k) >= 0 ? 1 : 0); }, 0);
+    if (sc > score) { best = r; score = sc; }
+  }
+  return best ? best.name : '';
+}
+
+export const MAP_PRESET_IDS = [...MAP_PRESETS.map((p) => p.id), 'pixel'];   // 'pixel' = 앱이 그리는 픽셀 섬
+export const presetById = (id) => MAP_PRESETS.find((p) => p.id === id) || null;
+export const presetUrl = (p) => new URL(`./maps/${p.file}`, import.meta.url).href;
+
+// mapPreset: 준비된 지도 id 또는 'pixel'. 선생님이 직접 올린 지도 + 문 자리가 있으면 그게 먼저.
+export const DEFAULT_WORLD = { schoolName: '', title: '친구들이 만든 앱 월드', notice: '', hotspots: { hall: null, start: null, booths: Array(12).fill(null) }, labelMode: 'small', mapPreset: 'castle' };
 
 const pt = (v) => (Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === 'number' && n >= 0 && n <= 1) ? [Math.round(v[0] * 10000) / 10000, Math.round(v[1] * 10000) / 10000] : null);
 export function cleanHotspots(v) {
@@ -33,25 +92,28 @@ export function cleanWorldSettings(v) {
   const s = v && typeof v === 'object' ? v : {};
   const str = (x, n) => (typeof x === 'string' ? x.replace(/[<>]/g, '').trim().slice(0, n) : '');
   return { schoolName: str(s.schoolName, 20), title: str(s.title, 24) || DEFAULT_WORLD.title, notice: str(s.notice, 300),
-    hotspots: cleanHotspots(s.hotspots), labelMode: s.labelMode === 'big' ? 'big' : 'small' };
+    hotspots: cleanHotspots(s.hotspots), labelMode: s.labelMode === 'big' ? 'big' : 'small',
+    mapPreset: MAP_PRESET_IDS.includes(s.mapPreset) ? s.mapPreset : DEFAULT_WORLD.mapPreset };
 }
 
 export const worldName = (s) => (s && s.schoolName ? `${s.schoolName} ${s.title || DEFAULT_WORLD.title}` : (s && s.title) || DEFAULT_WORLD.title);
 
 // ---------- 그림체 (월드·학생 그림 모두 같은 말을 씀) ----------
-// 그림체의 기준 = 선생님이 보여 준 「MY APP META WORLD」 참고 화면. 월드 그림과 학생 그림이 모두 이 말을 써서 같은 세계처럼 보이게.
+// 그림체의 기준 = 앱에 들어 있는 준비된 지도 그림(shared/maps). 월드 그림과 학생 그림이 모두 이 말을 써서 같은 섬처럼 보이게.
 export const PIXEL_STYLE = [
-  '16비트 레트로 RPG 게임 같은 픽셀아트',
+  '밝고 선명한 16비트 레트로 게임 픽셀아트',
   '위에서 비스듬히(약 45도) 내려다본 쿼터뷰',
-  '진하고 선명한 색: 청록빛 맑은 물, 싱그러운 연두·초록 잔디와 둥근 나무, 분홍 벚꽃, 보라색 포인트, 따뜻한 노란 불빛',
-  '모든 물체에 어두운 남색 외곽선과 단계가 또렷한 픽셀 명암(부드러운 그라데이션·흐림·사진 질감 없이)',
-  '둥글둥글 귀엽고 꽃·화분·작은 소품이 많은 아기자기한 장식',
+  '선명한 색: 코발트·하늘색 맑은 바다와 흰 물거품, 싱그러운 연두 잔디, 통통하고 둥근 초록 나무와 분홍 벚꽃, 크림색 돌길, 보라색 포인트, 따뜻한 노란 불빛',
+  '모든 물체에 진한 외곽선과 2~3단계로 또렷한 픽셀 명암, 반짝이는 작은 하이라이트(부드러운 그라데이션·흐림·사진 질감 없이)',
+  '꽃 화단·가로등·나무다리·작은 소품이 많은 아기자기하고 귀여운 분위기',
   '땅은 윗면이 잔디이고 옆면이 갈색 흙 절벽인 블록 모양',
 ].join(', ');
-// 앱 월드의 아이 캐릭터 모습 (참고 화면의 아이들)
+// 지도에 늘 나오는 소품 (학생 배경에 1~2개 넣으면 같은 섬처럼 보여요)
+export const WORLD_MOTIFS = '크림색 돌길, 통통하고 둥근 초록 나무, 분홍 벚꽃나무, 노란 별이 달린 보라색 깃발 가로등, 알록달록한 꽃 화단';
+// 앱 월드의 아이 캐릭터 모습
 export const CHIBI_LOOK = '머리가 크고 몸이 작은 2등신의 귀여운 픽셀 캐릭터(단순한 점 눈, 발그레한 볼, 진한 외곽선, 밝은 옷 색)';
-// 앱 월드 건물의 공통 모습 (참고 화면의 부스 건물들)
-export const BUILDING_LOOK = '지붕 위에 흰 테두리가 있는 동그란 아이콘 문장(주제를 나타내는 그림 하나), 건물 앞에 흰색 둥근 간판(글씨 없이 비움), 가운데에 노랗게 빛나는 아치 문(문 위에 작은 게임기 무늬)';
+// 앱 월드 건물의 공통 모습 (준비된 지도의 부스 건물들)
+export const BUILDING_LOOK = '구름처럼 둥글게 부푼 알록달록한 지붕(가운데에 흰 테두리가 있는 동그란 문장), 크림색 돌벽, 가운데에 노랗게 빛나는 아치 문';
 // 아이콘·문장 모양
 export const BADGE_LOOK = '흰 테두리가 있는 동그란 배지 안에 그림 하나(앱 월드 건물 지붕 위 문장과 같은 모양)';
 // 지도 그림을 함께 올렸을 때

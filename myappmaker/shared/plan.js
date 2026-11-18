@@ -3,7 +3,7 @@
 import { topicById, categoryById } from './topics.js';
 import { checkText, looksLikeRealName } from './recommend.js';
 import { cleanImages, MAX_IMAGE_CHARS } from './images.js';
-import { PIXEL_STYLE, CHIBI_LOOK, BADGE_LOOK, REF_HINT } from './worldart.js';
+import { PIXEL_STYLE, CHIBI_LOOK, BADGE_LOOK, REF_HINT, WORLD_MOTIFS, MAP_PRESETS, worldSpot } from './worldart.js';
 import { cleanAvatar } from './avatar.js';
 
 export const SCHEMA = 'myappmaker.plan/1';
@@ -289,10 +289,15 @@ export function imageSlots(plan) {
 }
 
 // 7-2. 이미지 생성 프롬프트 (앱 프롬프트와 따로) — 그림 자리마다 하나씩
-export function buildImagePrompts(plan) {
+// preset: 선생님이 고른 앱 월드 지도(없으면 기본 지도). 그 지도 속 구역과 이어지는 그림이 되도록.
+export function buildImagePrompts(plan, { preset = MAP_PRESETS[0] } = {}) {
   const t = topicView(plan);
   const f = plan.f;
   const style = IMAGE_STYLE_DESC;
+  const p = preset || MAP_PRESETS[0];
+  const region = worldSpot(f.place, [f.appName, f.intro, t ? `${t.name} ${t.hint.place}` : ''].join(' '), p);
+  const spot = region ? `이 섬의 「${region}」 구역으로 들어가 가까이서 본 장면처럼` : '이 섬에 새로 생긴 작은 구역(지도와 같은 땅·바다·나무가 이어지는 곳)을 가까이서 본 장면처럼';
+  const worldIs = `우리 반 메타버스 「앱 월드」는 ${p.world}`;
   const hero = [f.charName, f.charLook, f.charTrait].filter(filled).join(', ') || (t ? t.hint.character : '귀여운 주인공');
   const place = f.place.trim() || (t ? t.hint.place : '밝은 게임 배경');
   const colors = f.colors.length ? `대표 색상은 ${f.colors.join('·')}` : '밝고 선명한 색';
@@ -302,10 +307,10 @@ export function buildImagePrompts(plan) {
   return imageSlots(plan).map((sl) => ({
     id: sl.key, key: sl.key, title: `${sl.title} (${sl.ratio})`, slot: sl,
     text: sl.key === 'background'
-      ? `우리 반 메타버스 「앱 월드」 안의 한 장소처럼 보이는 게임 「${f.appName || (t ? t.name : '나의 게임')}」 배경을 그려 줘. 장소: ${place}. 앱 월드와 같은 쿼터뷰 픽셀아트로(블록 모양 땅·흙 절벽·맑은 물·둥근 나무·꽃이 앱 월드와 똑같은 느낌). 가로 16:9, 캐릭터 없이 배경만, 가운데와 위쪽은 게임이 펼쳐지도록 넓게 비워 둬. ${common}`
+      ? `${worldIs}. ${spot}, 내 게임 「${f.appName || (t ? t.name : '나의 게임')}」의 배경을 그려 줘. 장소: ${place}. 지도와 같은 쿼터뷰·색·외곽선으로, 땅은 잔디 윗면과 흙 절벽, 물은 맑은 하늘색과 흰 물거품. 지도에서 보던 소품(${WORLD_MOTIFS}) 중 1~2개를 가장자리에 넣어 같은 섬이라는 느낌이 나게 해 줘. 가로 16:9, 캐릭터 없이 배경만, 가운데와 위쪽은 게임이 펼쳐지도록 넓게 비워 둬. ${common}`
       : sl.key === 'hero'
-        ? `앱 월드에 사는 아이들과 똑같은 ${CHIBI_LOOK}로 내 게임 주인공을 그려 줘: ${hero}. 살짝 비스듬히 정면을 보고 서 있는 전신 한 명, ${white}. 정사각형 1:1. ${keep} ${common}`
-        : `게임에 쓸 「${sl.element}」 아이콘: ${BADGE_LOOK}. 작게 줄여도 알아보기 쉽게 단순하게, 동그란 배지 바깥은 하얀색 한 가지로. 정사각형 1:1. ${common}`,
+        ? `${worldIs}. 이 섬 마을을 걸어 다니는 아이들과 똑같은 ${CHIBI_LOOK}로 내 게임 주인공을 그려 줘: ${hero}. 지도 위에 세워 놓아도 어울리는 크기감과 색감으로, 살짝 비스듬히 정면을 보고 서 있는 전신 한 명, ${white}. 정사각형 1:1. ${keep} ${common}`
+        : `게임에 쓸 「${sl.element}」 아이콘: ${BADGE_LOOK}. 앱 월드 건물 지붕의 문장처럼 보이게, 작게 줄여도 알아보기 쉽게 단순하게, 동그란 배지 바깥은 하얀색 한 가지로. 정사각형 1:1. ${common}`,
   }));
 }
 
