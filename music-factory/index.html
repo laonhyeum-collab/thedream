@@ -28,6 +28,7 @@
       <button type="button" class="menu-btn m2" data-go="library"><span class="mi">📦</span>나의 음악 보관함</button>
       <button type="button" class="menu-btn m3" data-go="challenge"><span class="mi">🏆</span>음악 만들기 도전</button>
       <button type="button" class="menu-btn m4" data-go="instruments"><span class="mi">🎧</span>악기 소리 체험</button>
+      <button type="button" class="menu-btn m5" data-go="songs"><span class="mi">🎼</span>노래 따라 만들기</button>
     </nav>
   </div>
 </section>
@@ -101,6 +102,16 @@
       </div>
     </div>
     <div class="panel mission-panel" id="missionPanel" hidden></div>
+    <div class="panel song-panel" id="songPanel" hidden>
+      <p class="panel-label" id="songLevel"></p>
+      <strong class="m-title" id="songTitle"></strong>
+      <div class="song-btns">
+        <button type="button" class="song-btn" id="btnSongListen"><span>🎧</span><b>정답 듣기</b></button>
+        <button type="button" class="song-btn" id="btnSongScore"><span>📜</span><b>악보</b></button>
+        <button type="button" class="song-btn check" id="btnSongCheck"><span>✅</span><b>맞는지 확인</b></button>
+      </div>
+      <p class="m-state" id="songState"></p>
+    </div>
     <div class="panel band">
       <p class="panel-label">우리 밴드</p>
       <div class="band-grid" id="band"></div>
@@ -139,6 +150,16 @@
   </header>
   <p class="page-lead">미션을 골라 빙수 음악을 만들어 보세요. 조건을 채우고 ▶️ 끝까지 들으면 성공!</p>
   <div id="missionList" class="mission-list"></div>
+</section>
+
+<!-- ========== 노래 따라 만들기 ========== -->
+<section id="songs" class="screen page" hidden>
+  <header class="pagebar">
+    <button type="button" class="round" data-go="home" aria-label="처음 화면">🏠</button>
+    <h2>🎼 노래 따라 만들기</h2>
+  </header>
+  <p class="page-lead">노래를 듣고 컵에 재료를 쌓아 <b>똑같은 노래</b>를 연주해 보세요. 악보를 보며 해도 되고, 귀로만 들어도 돼요!</p>
+  <div id="songList" class="song-list"></div>
 </section>
 
 <!-- ========== 악기 소리 체험 ========== -->
@@ -196,6 +217,16 @@
   <div class="dlg-btns">
     <button type="button" class="wide-btn ghost" id="voiceResetAll">↩️ 모두 처음 악기로</button>
     <button type="button" class="wide-btn" id="voiceClose">다 골랐어요</button>
+  </div>
+</dialog>
+
+<dialog id="songDialog" class="dlg song-dlg">
+  <h3 id="songDlgTitle">📜 악보</h3>
+  <p class="voice-lead" id="songDlgLead"></p>
+  <ol class="score" id="songScore"></ol>
+  <div class="dlg-btns">
+    <button type="button" class="wide-btn ghost" id="songDlgListen">🎧 정답 듣기</button>
+    <button type="button" class="wide-btn" id="songDlgClose">컵으로 돌아가기</button>
   </div>
 </dialog>
 

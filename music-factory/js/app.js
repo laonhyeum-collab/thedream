@@ -8,6 +8,7 @@ import {
 } from './themes.js';
 import { AudioEngine, Player } from './audio.js';
 import { MISSIONS, getMission, checkMission } from './missions.js';
+import { SONGS, LEVELS, getSong, songItems, songBeats, compareToSong } from './songs.js';
 import * as store from './storage.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -33,6 +34,7 @@ const state = {
   title: '',
   createdAt: null,
   mission: null,
+  song: null, // 노래 따라 만들기: { song, level, result }
   backTo: 'themes',
   voices: {}, // 학생이 고른 재료별 악기 { 재료 id: 소리 id } (기본과 다른 것만)
 };
@@ -116,7 +118,8 @@ for (const im of $$('img[data-optional]')) {
 
 // ---------- 화면 이동 ----------
 function go(screen) {
-  if (state.screen === 'create' && screen !== 'create') {
+  // 다른 화면으로 가면 소리를 멈춰요 (노래 목록에서 들어보기 하던 것도)
+  if (screen !== state.screen && (state.screen === 'create' || player.state !== 'stopped')) {
     player.stop();
     audio.stopPreview();
     updatePlayUI();
@@ -127,6 +130,7 @@ function go(screen) {
   if (screen === 'themes') renderThemes();
   if (screen === 'library') renderLibrary();
   if (screen === 'challenge') renderMissions();
+  if (screen === 'songs') renderSongs();
   if (screen === 'instruments') renderInstruments();
   window.scrollTo(0, 0);
 }
@@ -186,10 +190,12 @@ $('#themeGrid').addEventListener('click', (e) => {
 });
 
 // ---------- 창작 화면 열기 ----------
-function openCreate({ themeId = 'bingsu', work = null, mission = null, fresh = false, backTo = 'themes' } = {}) {
+function openCreate({ themeId = 'bingsu', work = null, mission = null, song = null, fresh = false, backTo = 'themes' } = {}) {
   player.stop();
   state.theme = getTheme(themeId);
   state.mission = mission;
+  state.song = song ? { song: song.song, level: song.level, result: null } : null;
+  if (song) fresh = true;
   state.backTo = backTo;
   state.selectedId = null;
   state.armedIng = null;
@@ -212,6 +218,10 @@ function openCreate({ themeId = 'bingsu', work = null, mission = null, fresh = f
     state.createdAt = useDraft ? draft.createdAt : null;
     state.voices = useDraft ? { ...draft.voices } : {};
     if (useDraft && draft.items.length) setTimeout(() => toast('🍧 만들던 빙수를 다시 열었어요'), 300);
+    if (song) {
+      state.bpm = song.song.bpm;
+      setTimeout(() => toast('🎧 먼저 「정답 듣기」로 노래를 들어 봐요'), 300);
+    }
   }
   preloadImages();
   buildCup();
@@ -229,24 +239,31 @@ function renderAll() {
   renderItemPanel();
   renderBand();
   renderMissionPanel();
+  renderSongPanel();
   updatePlayUI();
 }
 
 function renderHeader() {
   const t = state.theme;
-  $('#createTitle').textContent = `${t.emoji} ${state.title || t.name}`;
+  $('#createTitle').textContent = state.song
+    ? `🎼 ${state.song.song.title}`
+    : `${t.emoji} ${state.title || t.name}`;
   $('#createSub').textContent = state.mission
     ? `도전: ${state.mission.title}`
-    : `재료를 ${t.container}에 쌓으면 음악이 돼요!`;
+    : state.song
+      ? '노래를 듣고 컵에 똑같이 쌓아 봐요!'
+      : `재료를 ${t.container}에 쌓으면 음악이 돼요!`;
 }
 
 function changed() {
   state.items = state.items.slice();
+  if (state.song) state.song.result = null; // 고치면 확인 결과는 다시
   renderCup();
   renderItemPanel();
   renderBand();
   renderMissionPanel();
-  if (!state.mission) {
+  renderSongPanel();
+  if (!state.mission && !state.song) {
     store.saveDraft({
       id: state.workId, title: state.title, theme: state.theme.id, bpm: state.bpm,
       loop: state.loop, items: state.items, voices: state.voices, createdAt: state.createdAt,
@@ -1012,6 +1029,159 @@ $('#workList').addEventListener('click', async (e) => {
   openCreate({ themeId: w.theme, work: w, backTo: 'library' });
   if (b.dataset.act === 'play') startPlay();
 });
+
+// ---------- 노래 따라 만들기 ----------
+function levelInfo(level) {
+  return LEVELS.find((l) => l.level === level) || LEVELS[0];
+}
+
+function renderSongs() {
+  const done = store.loadSongDone();
+  const theme = getTheme('bingsu');
+  const list = $('#songList');
+  list.replaceChildren();
+  for (const s of SONGS) {
+    const card = el('article', 'song-card');
+    card.dataset.song = s.id;
+    const head = el('div', 'song-head');
+    head.append(el('span', 'm-stars', '⭐'.repeat(s.stars)), el('strong', 'song-name', s.title));
+    const listen = el('button', 'chip song-try', '🎧 들어보기');
+    listen.type = 'button';
+    listen.dataset.act = 'listen';
+    head.append(listen);
+    const meta = el('p', 'song-meta', `${s.steps.length}층 · ${songBeats(s)}박 · 빠르기 ${s.bpm}`);
+    // 쓰인 재료 미리 보기 (아래층부터)
+    const icons = el('div', 'song-icons');
+    for (const step of s.steps) for (const [ing] of step) {
+      const i = ingredientOf(theme, ing);
+      icons.append(pic(imagePath(theme.id, i.id), i.emoji, 'ws-pic'));
+    }
+    const levels = el('div', 'song-levels');
+    for (const L of LEVELS) {
+      const ok = done.has(`${s.id}:${L.level}`);
+      const b = el('button', `song-level${ok ? ' done' : ''}`);
+      b.type = 'button';
+      b.dataset.level = L.level;
+      b.append(el('span', 'sl-icon', ok ? '✅' : L.icon), el('b', '', L.name), el('span', 'sl-desc', L.desc));
+      levels.append(b);
+    }
+    card.append(head, el('p', 'song-desc', s.desc), meta, icons, levels);
+    list.append(card);
+  }
+}
+
+$('#songList').addEventListener('click', (e) => {
+  const card = e.target.closest('.song-card');
+  if (!card) return;
+  const song = getSong(card.dataset.song);
+  audio.ensure();
+  if (e.target.closest('[data-act="listen"]')) { playSong(song); return; }
+  const lv = e.target.closest('.song-level');
+  if (lv) openCreate({ themeId: song.theme, song: { song, level: Number(lv.dataset.level) }, backTo: 'songs' });
+});
+
+// 정답 노래 연주 (컵에 놓인 재료와 상관없이)
+function playSong(song) {
+  player.stop();
+  clearPlayVisuals();
+  const theme = getTheme(song.theme);
+  const ok = player.play(songItems(song, theme), { bpm: song.bpm, loop: false, onEnd: () => { updatePlayUI(); } });
+  if (!ok) { toast('😢 이 기기에서는 소리를 낼 수 없어요'); return; }
+  toast(`🎧 정답 노래 「${song.title}」`, 1600);
+  updatePlayUI();
+}
+
+const REASON_TEXT = {
+  ok: '맞아요!',
+  missing: '아직 없어요',
+  extra: '정답보다 층이 많아요',
+  instrument: '악기가 달라요',
+  length: '길이가 달라요',
+};
+
+function reasonText(step) {
+  if (step.reason === 'length') return step.hint === 'longer' ? '길이가 달라요 · 더 길게!' : '길이가 달라요 · 더 짧게!';
+  if (step.reason === 'instrument' && step.countDiff > 0) return '악기가 모자라요';
+  if (step.reason === 'instrument' && step.countDiff < 0) return '악기가 너무 많아요';
+  return REASON_TEXT[step.reason];
+}
+
+function renderSongPanel() {
+  const p = $('#songPanel');
+  const s = state.song;
+  p.hidden = !s;
+  if (!s) return;
+  const L = levelInfo(s.level);
+  $('#songLevel').textContent = `🎼 따라 만들기 · ${L.icon} ${L.name} ${'⭐'.repeat(s.song.stars)}`;
+  $('#songTitle').textContent = s.song.title;
+  const r = s.result;
+  p.classList.toggle('ok', Boolean(r?.allOk));
+  $('#songState').textContent = r
+    ? (r.allOk ? '🎉 정답 노래와 똑같아요!' : `${r.total}층 중 ${r.correct}층이 맞았어요. 📜 악보에서 틀린 곳을 봐요`)
+    : `${s.song.steps.length}층짜리 노래예요. ${L.desc}`;
+}
+
+// 악보: 위층이 위에 오도록 (컵과 같은 방향)
+function renderScore() {
+  const s = state.song;
+  const theme = state.theme;
+  const L = levelInfo(s.level);
+  $('#songDlgTitle').textContent = `📜 「${s.song.title}」 악보`;
+  $('#songDlgLead').textContent = s.level === 1
+    ? '아래(1층)부터 연주해요. 같은 줄은 함께 연주해요.'
+    : s.level === 2 ? '악기만 보여요. 몇 박인지는 들어서 맞혀 봐요!' : '귀로만 들어요. 몇 층인지만 알려 줘요.';
+  const ol = $('#songScore');
+  ol.replaceChildren();
+  const r = s.result;
+  const n = Math.max(s.song.steps.length, r ? r.steps.length : 0);
+  for (let i = n - 1; i >= 0; i--) {
+    const step = s.song.steps[i];
+    const res = r?.steps[i];
+    const li = el('li', `score-row${res ? (res.ok ? ' ok' : ' bad') : ''}`);
+    li.append(el('span', 'score-no', String(i + 1)));
+    const notes = el('div', 'score-notes');
+    if (!step) notes.append(el('span', 'score-q', '(정답에는 없는 층)'));
+    else for (const [ingId, size] of step) {
+      const ing = ingredientOf(theme, ingId);
+      const inst = INSTRUMENTS[ing.instrument];
+      const note = el('span', 'score-note');
+      if (s.level === 1) note.append(ingPic(ing, 'sn-pic'), el('b', '', sizeOf(size).short));
+      else if (s.level === 2) note.append(instPic(ing.instrument, 'sn-pic'), el('b', '', '?박'));
+      else note.append(el('span', 'score-q', '❓'));
+      note.title = s.level === 1 ? `${ing.name} (${inst.name}) ${sizeOf(size).short}` : '';
+      notes.append(note);
+    }
+    li.append(notes);
+    if (res) li.append(el('span', 'score-res', `${res.ok ? '✅' : '❌'} ${reasonText(res)}`));
+    ol.append(li);
+  }
+}
+
+function openScore() {
+  renderScore();
+  if (!$('#songDialog').open) $('#songDialog').showModal();
+}
+
+function checkSong() {
+  const s = state.song;
+  if (!s) return;
+  if (!state.items.length) { toast('🍧 재료를 먼저 컵에 쌓아요'); return; }
+  s.result = compareToSong(s.song, state.theme, state.items, state.voices);
+  renderSongPanel();
+  if (s.result.allOk) {
+    store.markSongDone(s.song.id, s.level);
+    sparkle();
+    showDone('🎼 똑같아요!', `「${s.song.title}」을(를) ${levelInfo(s.level).name} 완성했어요! ${'⭐'.repeat(s.song.stars)}`, { mission: true });
+  } else {
+    openScore();
+  }
+}
+
+$('#btnSongListen').addEventListener('click', () => { audio.ensure(); playSong(state.song.song); });
+$('#btnSongScore').addEventListener('click', openScore);
+$('#btnSongCheck').addEventListener('click', () => { if (guardEdit()) checkSong(); });
+$('#songDlgListen').addEventListener('click', () => { audio.ensure(); playSong(state.song.song); });
+$('#songDlgClose').addEventListener('click', () => $('#songDialog').close());
 
 // ---------- 도전 목록 ----------
 function renderMissions() {

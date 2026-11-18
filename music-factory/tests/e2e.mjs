@@ -73,7 +73,7 @@ async function attachMeter() {
 // ---------- 1. 메인 → 테마 → 창작 ----------
 await page.goto(URL_);
 await page.screenshot({ path: path.join(OUT, '1-home.png') });
-check(await page.locator('#home .menu-btn').count() === 4, '메인 메뉴 4개');
+check(await page.locator('#home .menu-btn').count() === 5, '메인 메뉴 5개');
 await page.click('text=음악 만들기');
 check(await page.locator('.theme-card').count() === 7, '테마 7개');
 check(await page.locator('.theme-card:not([disabled])').count() === 1, '빙수만 열려 있음');
@@ -225,6 +225,47 @@ check(/미션 성공/.test(await page.textContent('#doneTitle')), '끝까지 들
 await page.click('#doneClose');
 await page.click('#btnBack');
 check(await page.locator('.mission[data-mission="together"].done').count() === 1, '도전 목록에 성공 표시');
+
+// ---------- 6-1. 노래 따라 만들기 ----------
+await page.click('[data-go="home"] >> visible=true');
+await page.click('#home [data-go="songs"]');
+check(await page.locator('.song-card').count() >= 6, '노래 따라 만들기: 노래 목록');
+await page.click('.song-card[data-song="berry-march"] .song-level[data-level="1"]');
+await attachMeter();
+check(/딸기 망고 행진/.test(await page.textContent('#createTitle')), '따라 만들기 화면 열림');
+// 정답 듣기: 컵이 비어 있어도 소리가 남
+await page.click('#btnSongListen');
+let songLevel = 0;
+for (let i = 0; i < 40; i++) { songLevel = Math.max(songLevel, await page.evaluate(() => window.__level())); await page.waitForTimeout(25); }
+check(songLevel > 0.02, `정답 노래가 소리 남 (${songLevel.toFixed(3)})`);
+await page.click('#btnStop');
+// 악보 보기 (보며 만들기: 재료와 박자가 보임)
+await page.click('#btnSongScore');
+check(await page.locator('#songScore .score-row').count() === 4 && /2박/.test(await page.textContent('#songScore')), '악보: 4층, 박자 표시');
+await page.click('#songDlgClose');
+// 일부러 틀리게: 얼음 2박 / 딸기 2박(정답 1박) / 망고 1박
+await dragTo('#palette .ing[data-ing="ice"]', slot(0, 1));
+await page.click('#sizeBtns .size-btn[data-level="3"]');
+await dragTo('#palette .ing[data-ing="strawberry"]', slot(1, 1));
+await page.click('#sizeBtns .size-btn[data-level="3"]');
+await dragTo('#palette .ing[data-ing="mango"]', slot(2, 1));
+await page.click('#btnSongCheck');
+await page.waitForSelector('#songDialog[open]');
+const rows = await page.$$eval('#songScore .score-row', (els) => els.map((e) => e.className.includes('ok') ? 'ok' : 'bad').reverse());
+check(JSON.stringify(rows) === JSON.stringify(['ok', 'bad', 'ok', 'bad']), `틀린 층을 알려 줌 (${rows.join(',')})`);
+check(/더 짧게/.test(await page.textContent('#songScore')), '딸기는 "더 짧게" 힌트');
+await page.click('#songDlgClose');
+// 고치기: 딸기 1박, 아이스크림 2박 더하기 → 정답
+await page.click(`${slot(1, 1)} .item`);
+await page.click('#sizeBtns .size-btn[data-level="2"]');
+await dragTo('#palette .ing[data-ing="icecream"]', slot(3, 0));
+await page.click('#sizeBtns .size-btn[data-level="3"]');
+await page.click('#btnSongCheck');
+await page.waitForSelector('#doneDialog[open]', { timeout: 3000 });
+check(/똑같아요/.test(await page.textContent('#doneTitle')), '똑같이 쌓으면 성공');
+await page.click('#doneClose');
+await page.click('#btnBack');
+check(await page.locator('.song-card[data-song="berry-march"] .song-level.done[data-level="1"]').count() === 1, '노래 목록에 성공 표시');
 
 // ---------- 7. 악기 소리 체험 ----------
 await page.click('[data-go="home"] >> visible=true');
