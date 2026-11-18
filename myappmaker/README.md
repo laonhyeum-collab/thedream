@@ -14,6 +14,14 @@
 - 기획서 검토 의견과 4차시 조정안: [`docs/기획서_검토.md`](docs/기획서_검토.md)
 - 프로젝트 설명 발표 자료: [`slides/MY_APP_MAKER_프로젝트_소개.pptx`](slides/MY_APP_MAKER_프로젝트_소개.pptx)
 - 우리 반 저장소(선택) 설치: [`backend/README.md`](backend/README.md)
+- 그림으로 보는 설치·계정 안내서: [`docs/우리반_저장소_설치안내.docx`](docs/우리반_저장소_설치안내.docx)
+
+## 계정 (우리 반 저장소가 있을 때)
+
+- **관리자(선생님)**: 아이디·비밀번호로 교사 앱에 로그인. 첫 계정은 Code.gs 의 설치 열쇠로 만들고, 그다음부터 관리자 추가·비밀번호 변경.
+- **학생**: 교사 앱 「👥 학생 계정」에서 번호 아이디(01, 02 …) + 숫자 4자리 비밀번호를 한꺼번에 만들고 로그인 카드를 인쇄.
+  학생은 어느 노트북에서든 로그인하면 기획서·앱·그림이 저장소에서 이어지고, 입점 상태도 아이디를 따라가요. 한 노트북을 여러 학생이 써도 섞이지 않아요.
+- 로그인은 서명된 출입증(12시간)으로 확인하고, 비밀번호를 새로 만들거나 계정을 지우면 예전 로그인은 바로 풀려요. 10번 틀리면 5분 잠금.
 
 ## 주제 추천과 안전 규칙 (`shared/recommend.js`)
 
@@ -97,7 +105,7 @@
 
 ```bash
 cd myappmaker
-npm start          # 사이트 + 가짜 우리 반 저장소 (http://localhost:8090) — 반 코드 TEST-CLASS / 교사 열쇠 TEST-TEACHER
+npm start          # 사이트 + 가짜 우리 반 저장소 (http://localhost:8090) — 반 코드 TEST-CLASS / 설치 열쇠 TEST-TEACHER (교사 앱에서 이걸로 첫 관리자 계정을 만들어요)
 npm test           # 주제·기획서·프롬프트·저장·월드 배치 + Code.gs(가짜 Apps Script 위에서) 시험
 npm run e2e        # 진짜 브라우저로 학생→교사→월드 전체 흐름 (Playwright + Chromium)
 npm run slides     # 발표 자료 다시 만들기 (pptxgenjs)

@@ -25,6 +25,7 @@ test('각 앱은 자기 폴더와 shared/ 만 씀 (다른 앱 파일 참조 금�
         // 다른 앱으로 가는 "링크"(../world/ 같은 이동)는 괜찮고, 다른 앱의 코드·스타일을 가져오면 안 됨
         const isNavigation = /\/$/.test(r);
         if (isNavigation) continue;
+        if (top === 'docs' && /\.docx$/.test(r)) continue;   // 내려받는 안내 문서(docs/)는 어느 앱에서나 링크 가능
         assert.ok(top === app || top === 'shared' || top === '..' || target.startsWith(`world${path.sep}samples`) && app === 'world',
           `${app}/${f} → ${r} 는 다른 앱(${top})의 파일을 씀`);
       }
