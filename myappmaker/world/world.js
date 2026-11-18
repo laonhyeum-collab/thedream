@@ -6,7 +6,7 @@ import { readFileText } from '../shared/files.js';
 import { cleanWorldSettings, worldName, DEFAULT_WORLD, WORLD_ASSET_KEYS, hasHotspots } from '../shared/worldart.js';
 import { cleanAvatar, randomAvatar, avatarFromText, avatarPixels, avatarBuilder, AVATAR_W, AVATAR_H } from '../shared/avatar.js';
 import { layoutWorld, layoutIllustrated, moveWithin, nearestDoor, buildingAt, PLAYER_R } from './worldmap.js';
-import { PX, buildGround, boothSprite, hallSprite, fountainSprite, archSprite } from './pixelart.js';
+import { PX, buildGround, boothSprite, emptyLotSprite, hallSprite, fountainSprite, archSprite, sparkles } from './pixelart.js';
 import { h, $, toast } from '../shared/ui.js';
 
 const PREF = 'myappmaker.world.me';
@@ -147,13 +147,18 @@ window.addEventListener('resize', resize);
 
 function zoom() {
   if (overview) return Math.min(vw / 1920, (vh - 60) / 1080);
-  return Math.max(0.42, Math.min(1.3, Math.min(vw / 1150, vh / 700)));
+  const z = Math.max(0.42, Math.min(1.3, Math.min(vw / 1150, vh / 700)));
+  if (state.world.illustrated) return z;
+  // 픽셀아트 한 칸이 화면 픽셀 정수배가 되게 (칸 크기가 들쭉날쭉하지 않게)
+  const k = Math.max(1, Math.round(PX * z * dpr));
+  return k / (PX * dpr);
 }
 function camera(z) {
   const W = state.world.width, H = state.world.height, sw = vw / z, sh = vh / z;
   const cx = sw >= W ? (W - sw) / 2 : Math.max(0, Math.min(W - sw, pos.x - sw / 2));
   const cy = sh >= H ? (H - sh) / 2 - (overview ? 30 / z : 0) : Math.max(-60 / z, Math.min(H - sh, pos.y - sh / 2));
-  return { x: cx, y: cy };
+  const g = z * dpr;   // 화면 픽셀에 딱 맞추기
+  return { x: Math.round(cx * g) / g, y: Math.round(cy * g) / g };
 }
 
 // 캐릭터 그림 캐시 (12×16 → 확대)
@@ -214,10 +219,9 @@ let labelScale = 1;
 
 function drawBooth(b, t) {
   const it = b.item;
-  if (!it) {   // 빈 자리
-    ctx.fillStyle = 'rgba(255,255,255,.35)'; rr(b.x - 60, b.y - 70, 120, 70, 14); ctx.fill();
-    ctx.setLineDash([8, 6]); ctx.strokeStyle = 'rgba(59,47,92,.45)'; ctx.lineWidth = 3; ctx.stroke(); ctx.setLineDash([]);
-    emoji('🚧', b.x, b.y - 36, 30);
+  if (!it) {   // 빈 자리: 울타리 친 꽃밭
+    const s = cached('lot', emptyLotSprite);
+    ctx.drawImage(s, b.x - (s.width * PX) / 2, b.y - s.height * PX + 10, s.width * PX, s.height * PX);
     return;
   }
   const own = state.boothImgs.get(it.id);
@@ -225,17 +229,34 @@ function drawBooth(b, t) {
   const catImg = t0 && state.assets[`booth_${t0.cat}`];
   const img = own || catImg || state.assets.booth;
   if (img) drawFit(img, b.x, b.y + 4, b.w + 24, b.h + 24);
-  else { const s = cached(`booth:${itemColor(it)}`, () => boothSprite(itemColor(it))); ctx.drawImage(s, b.x - (s.width * PX) / 2, b.y - s.height * PX + 6, s.width * PX, s.height * PX); }
-  if (!own) emoji(itemEmoji(it), b.x, b.y - b.h + 34 + (near && near.booth === b ? Math.sin(t / 150) * 3 : 0), 34);
-  if (near && near.booth === b) { ctx.strokeStyle = '#FFD54F'; ctx.lineWidth = 6; rr(b.x - b.w / 2 - 6, b.y - b.h - 6, b.w + 12, b.h + 16, 18); ctx.stroke(); }
+  let ey = b.y - b.h + 34, ex = b.x, es = 34;
+  if (!img) {
+    const cat = topicById(it.topicId)?.cat;
+    const s = cached(`booth:${cat}:${itemColor(it)}:${b.n}`, () => boothSprite(cat, itemColor(it), b.n));
+    const x0 = b.x - (s.width * PX) / 2, y0 = b.y - s.height * PX + 6;
+    ctx.drawImage(s, x0, y0, s.width * PX, s.height * PX);
+    if (s.emblem) { ex = x0 + s.emblem.x * PX; ey = y0 + s.emblem.y * PX; es = s.emblem.r * PX * 1.35; }
+  }
+  if (!own) emoji(itemEmoji(it), ex, ey + (near && near.booth === b ? Math.sin(t / 150) * 3 : 0), es);
+  if (near && near.booth === b) doorRing(b.door.x, b.door.y - 14, t);
+}
+
+// 가까이 간 문: 바닥에 반짝이는 노란 고리
+function doorRing(x, y, t) {
+  const k = 1 + Math.sin(t / 160) * 0.08;
+  ctx.fillStyle = 'rgba(255,213,79,.28)'; ctx.beginPath(); ctx.ellipse(x, y + 12, 56 * k, 18 * k, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#FFD54F'; ctx.lineWidth = 5; ctx.stroke();
 }
 
 function drawHall(t) {
   const hl = state.world.hall;
-  if (state.assets.hall) drawFit(state.assets.hall, hl.x, hl.y + 6, hl.w + 40, hl.h + 50);
-  else { const s = cached('hall', hallSprite); ctx.drawImage(s, hl.x - (s.width * PX) / 2, hl.y - s.height * PX + 8, s.width * PX, s.height * PX); }
-  if (!state.assets.hall) emoji('🎓', hl.x, hl.y - hl.h + 70, 40);
-  if (near && near.kind === 'teacher') { ctx.strokeStyle = '#FFD54F'; ctx.lineWidth = 6; rr(hl.x - hl.w / 2 - 8, hl.y - hl.h - 8, hl.w + 16, hl.h + 20, 20); ctx.stroke(); }
+  if (state.assets.hall) { drawFit(state.assets.hall, hl.x, hl.y + 6, hl.w + 40, hl.h + 50); }
+  else {
+    const s = cached('hall', hallSprite), x0 = hl.x - (s.width * PX) / 2, y0 = hl.y - s.height * PX + 12;
+    ctx.drawImage(s, x0, y0, s.width * PX, s.height * PX);
+    emoji('🎓', x0 + s.emblem.x * PX, y0 + s.emblem.y * PX, s.emblem.r * PX * 1.3);
+  }
+  if (near && near.kind === 'teacher') doorRing(hl.door.x, hl.door.y - 20, t);
   if (state.teacherApp) emoji('✨', hl.x + hl.w / 2 - 10, hl.y - hl.h + 20 + Math.sin(t / 300) * 4, 26);
 }
 
@@ -299,7 +320,14 @@ function draw(t) {
   ctx.imageSmoothingEnabled = false;
   const W = state.world.width, H = state.world.height;
   if (state.assets.map) { ctx.imageSmoothingEnabled = true; ctx.drawImage(state.assets.map, 0, 0, W, H); ctx.imageSmoothingEnabled = false; }
-  else ctx.drawImage(state.ground, 0, 0, W, H);
+  else {
+    ctx.drawImage(state.ground, 0, 0, W, H);
+    ctx.fillStyle = '#FFFFFF';   // 물 반짝임
+    for (const s of sparkles()) {
+      const ph = (t / 500 + s.p) % 4;
+      if (ph < 1) { ctx.fillRect(s.x, s.y, PX, PX); if (ph > 0.3 && ph < 0.7) { ctx.fillRect(s.x - PX, s.y, PX, PX); ctx.fillRect(s.x + PX, s.y, PX, PX); ctx.fillRect(s.x, s.y - PX, PX, PX); ctx.fillRect(s.x, s.y + PX, PX, PX); } }
+    }
+  }
 
   // 위에서 아래로 (가까운 것이 앞에)
   const list = [
@@ -314,17 +342,17 @@ function draw(t) {
 
   // 이름표 (맨 위)
   const hl = state.world.hall;
-  label(state.teacherApp ? `🎓 ${state.teacherApp.title}` : '🎓 선생님의 앱', hl.x, hl.y - hl.h - 14, { size: 22, maxW: 260 });
+  label(state.teacherApp ? `🎓 ${state.teacherApp.title}` : '🎓 선생님의 앱', hl.x, hl.y + 50, { size: 18, maxW: 260 });
   for (const b of state.world.booths) {
     if (b.item) {
-      label(b.item.appName || '이름 없는 앱', b.x, b.y - b.h - 8, { n: b.n, color: itemColor(b.item) });
-      label(b.item.developer || '', b.host.x, b.host.y + 16, { size: 13, maxW: 90 });
-    } else label('빈 부스', b.x, b.y - 88, { n: b.n, color: '#B0A8C8', size: 16 });
+      label(b.item.appName || '이름 없는 앱', b.x, b.y + 46, { n: b.n, color: itemColor(b.item), size: 16, maxW: 170 });
+      label(b.item.developer || '', b.host.x, b.host.y + 14, { size: 12, maxW: 90 });
+    } else label('곧 열려요', b.x, b.y + 30, { n: b.n, color: '#B0A8C8', size: 12 });
   }
   const a = state.world.arch;
-  ctx.font = `400 ${26 * Math.min(1.2, labelScale)}px "Jua",sans-serif`;
+  ctx.font = `400 ${24 * Math.min(1.2, labelScale)}px "Jua",sans-serif`;
   ctx.fillStyle = '#4A3A8A'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(worldName(state.settings), a.x, a.y - (state.assets.arch ? a.h * 0.72 : 88), a.w - 40);
+  ctx.fillText(worldName(state.settings), a.x, a.y - (state.assets.arch ? a.h * 0.72 : 86), state.assets.arch ? a.w - 40 : 255);
   label(me.nick || '나', pos.x, pos.y - 70, { size: 15, maxW: 120 });
   if (target) { ctx.strokeStyle = 'rgba(110,79,192,.7)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(target.x, target.y, 12 + Math.sin(t / 120) * 3, 0, Math.PI * 2); ctx.stroke(); }
   if (!state.items.length && state.source === 'server') label('선생님이 입점을 승인하면 부스가 열려요!', state.world.fountain.x, state.world.fountain.y + 120, { size: 18, maxW: 520 });
