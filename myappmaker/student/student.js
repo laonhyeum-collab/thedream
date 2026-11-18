@@ -12,7 +12,7 @@ import { extractHtml, looksLikeApp, mountApp, isHttpUrl, MAX_APP_BYTES } from '.
 import { applyImages, findImagesBlock, imagesSize } from '../shared/images.js';
 import { processPicture } from '../shared/picture.js';
 import { avatarBuilder, avatarFromText } from '../shared/avatar.js';
-import { studentBoothPrompt, BOOTH_IMAGE_SLOT } from '../shared/worldart.js';
+import { studentBoothPrompt, BOOTH_IMAGE_SLOT, presetById, presetUrl, cleanWorldSettings } from '../shared/worldart.js';
 import { h, $, toast, copyText } from '../shared/ui.js';
 
 const store = createStore();
@@ -535,7 +535,16 @@ function refTip() {
         const a = h('a', { href: data, download: `앱월드_지도.${data.startsWith('data:image/png') ? 'png' : 'jpg'}` });
         document.body.append(a); a.click(); a.remove();
         toast('🗺️ 지도 그림을 내려받았어요. 이미지 AI에 같이 올려요');
-      } catch { toast('선생님이 아직 지도 그림을 올리지 않았어요. 앱 월드 화면을 캡처해서 올려도 돼요', 5000); }
+      } catch {
+        // 직접 올린 지도가 없으면 선생님이 고른 준비된 지도 그림
+        try {
+          const p = presetById(cleanWorldSettings((await api.world()).settings).mapPreset);
+          if (!p) throw new Error('none');
+          const a = h('a', { href: presetUrl(p), download: `앱월드_지도.webp` });
+          document.body.append(a); a.click(); a.remove();
+          toast('🗺️ 지도 그림을 내려받았어요. 이미지 AI에 같이 올려요');
+        } catch { toast('앱 월드 화면을 캡처해서 이미지 AI에 같이 올려 주세요', 5000); }
+      }
     } }, '🗺️ 앱 월드 지도 그림 받기'));
   } else {
     box.append(h('a', { class: 'btn', href: '../world/', target: '_blank', rel: 'noopener' }, '🌏 앱 월드 열기'), h('span', { class: 'muted small' }, '(화면을 캡처해서 같이 올려도 돼요)'));

@@ -3,7 +3,7 @@ import { topicById, categoryById } from '../shared/topics.js';
 import { loadConfig, createApi } from '../shared/api.js';
 import { mountApp } from '../shared/sandbox.js';
 import { readFileText } from '../shared/files.js';
-import { cleanWorldSettings, worldName, DEFAULT_WORLD, WORLD_ASSET_KEYS, hasHotspots } from '../shared/worldart.js';
+import { cleanWorldSettings, worldName, DEFAULT_WORLD, WORLD_ASSET_KEYS, hasHotspots, presetById, presetUrl } from '../shared/worldart.js';
 import { cleanAvatar, randomAvatar, avatarFromText, avatarPixels, avatarBuilder, AVATAR_W, AVATAR_H } from '../shared/avatar.js';
 import { layoutWorld, layoutIllustrated, moveWithin, nearestDoor, buildingAt, PLAYER_R } from './worldmap.js';
 import { PX, buildGround, boothSprite, emptyLotSprite, hallSprite, fountainSprite, archSprite, sparkles } from './pixelart.js';
@@ -82,19 +82,34 @@ async function loadData(first) {
     state.items = DEMO.items;
     state.teacherApp = DEMO.teacherApp;
   }
+  await loadPreset();
   rebuild(first);
 }
 
+// 어떤 지도를 쓸까: ① 선생님이 올린 지도 + 문 자리 ② 준비된 지도 그림(기본) ③ 앱이 그리는 픽셀 섬
+async function loadPreset() {
+  const custom = state.assets.map && hasHotspots(state.settings.hotspots);
+  const p = custom ? null : presetById(state.settings.mapPreset);
+  if (!p) { state.preset = null; return; }
+  if (state.preset && state.preset.id === p.id && state.preset.img) return;
+  state.preset = { ...p, img: await loadImg(presetUrl(p)) };
+}
+
 function rebuild(first) {
-  const map = state.assets.map;
-  const illustrated = !!(map && hasHotspots(state.settings.hotspots));
-  const sig = JSON.stringify([state.items.map((x) => [x.id, x.booth]), illustrated && state.settings.hotspots, map && map.width]);
+  const custom = !!(state.assets.map && hasHotspots(state.settings.hotspots));
+  const pre = !custom && state.preset && state.preset.img ? state.preset : null;
+  const map = custom ? state.assets.map : pre ? pre.img : null;
+  const hotspots = custom ? state.settings.hotspots : pre ? pre.hotspots : null;
+  state.mapImg = map;
+  state.bigLabels = pre ? true : state.settings.labelMode === 'big';
+  const illustrated = !!(map && hotspots);
+  const sig = JSON.stringify([state.items.map((x) => [x.id, x.booth]), illustrated && hotspots, map && map.width, pre && pre.id]);
   if (!state.world || state.sig !== sig) {
     state.sig = sig;
     // 그림 지도 + 문 자리가 있으면 그 그림 그대로, 없으면 앱이 그린 픽셀 섬
-    state.world = illustrated ? layoutIllustrated(state.items, state.settings.hotspots, 1920, Math.round((1920 * map.height) / map.width)) : layoutWorld(state.items);
+    state.world = illustrated ? layoutIllustrated(state.items, hotspots, 1920, Math.round((1920 * map.height) / map.width)) : layoutWorld(state.items);
     if (!illustrated) state.ground = state.ground || buildGround(state.world);
-    canvasEl.dataset.mode = illustrated ? 'illustrated' : 'pixel';   // 시험·디버깅용 표시
+    canvasEl.dataset.mode = illustrated ? (pre ? `preset:${pre.id}` : 'illustrated') : 'pixel';   // 시험·디버깅용 표시
     if (first) pos = { ...state.world.spawn }; else pos = moveWithin(state.world, pos, 0, 0);
   }
   const name = worldName(state.settings);
@@ -129,7 +144,7 @@ $('#worldFile').onchange = async (e) => {
   if (!f) return;
   try {
     await loadFile(JSON.parse(await readFileText(f, 40_000_000)));
-    state.sig = null; rebuild(true);
+    await loadPreset(); state.sig = null; rebuild(true);
     toast(`📁 부스 ${state.items.length}개를 열었어요`);
   } catch (err) { toast(`불러오지 못했어요: ${err.message}`, 4000); }
 };
@@ -146,7 +161,7 @@ function resize() {
 window.addEventListener('resize', resize);
 
 function zoom() {
-  if (overview) return Math.min(vw / 1920, (vh - 60) / 1080);
+  if (overview) return Math.min(vw / state.world.width, (vh - 60) / state.world.height);
   const z = Math.max(0.42, Math.min(1.3, Math.min(vw / 1150, vh / 700)));
   if (state.world.illustrated) return z;
   // 픽셀아트 한 칸이 화면 픽셀 정수배가 되게 (칸 크기가 들쭉날쭉하지 않게)
@@ -280,9 +295,9 @@ function drawArch() {
 }
 
 function drawIllustrated(t) {
-  const w = state.world, small = state.settings.labelMode !== 'big';
+  const w = state.world, small = !state.bigLabels;
   ctx.imageSmoothingEnabled = true;
-  ctx.drawImage(state.assets.map, 0, 0, w.width, w.height);
+  ctx.drawImage(state.mapImg, 0, 0, w.width, w.height);
   ctx.imageSmoothingEnabled = false;
   const ring = (x, y) => { ctx.strokeStyle = '#FFD54F'; ctx.lineWidth = 6; ctx.beginPath(); ctx.ellipse(x, y, 58 + Math.sin(t / 150) * 4, 22, 0, 0, Math.PI * 2); ctx.stroke(); };
   if (near && near.kind === 'teacher' && w.hall) ring(w.hall.door.x, w.hall.door.y);

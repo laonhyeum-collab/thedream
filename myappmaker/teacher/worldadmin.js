@@ -1,6 +1,6 @@
 // [교사 앱] 월드 꾸미기: 학교 이름·월드 이름·공지, 선생님의 앱, 월드 그림(프롬프트 복사 → 그림 올리기)
 // 우리 반 저장소가 있으면 저장소에, 없으면 이 기기에 저장하고 「메타버스 파일」에 함께 담습니다.
-import { worldPrompts, mapWithSchoolNamePrompt, cleanWorldSettings, cleanHotspots, worldName, STUDENT_BOOTHS } from '../shared/worldart.js';
+import { worldPrompts, mapWithSchoolNamePrompt, cleanWorldSettings, cleanHotspots, hasHotspots, worldName, STUDENT_BOOTHS, MAP_PRESETS, presetUrl } from '../shared/worldart.js';
 import { processPicture } from '../shared/picture.js';
 import { extractHtml, looksLikeApp, mountApp, MAX_APP_BYTES } from '../shared/sandbox.js';
 import { readFileText } from '../shared/files.js';
@@ -93,6 +93,7 @@ export function createWorldAdmin({ getApi, getKey }) {
         h('label', { class: 'field' }, h('span', {}, '📢 공지 (앱 월드 「공지」에 보여요)'), notice),
         h('div', { class: 'row' }, h('span', { class: 'grow' }, '미리보기: 🚪 ', preview),
           h('button', { class: 'primary', onclick: async () => { try { await saveSettings({ ...conf.settings, schoolName: school.value, title: title.value, notice: notice.value }); toast('💾 월드 이름과 공지를 저장했어요'); render(); } catch (e) { toast(e.message, 4000); } } }, '💾 저장'))),
+      mapPicker(),
       h('div', { class: 'card' },
         h('h2', {}, '🎓 선생님의 앱 (가운데 큰 건물)'),
         h('p', { class: 'muted small' }, '선생님이 만든 앱 1개를 올리면 앱 월드 한가운데 「선생님의 앱」 건물에서 열려요.'),
@@ -112,7 +113,7 @@ export function createWorldAdmin({ getApi, getKey }) {
       h('div', { class: 'card' },
         h('div', { class: 'row' }, h('h2', { class: 'grow' }, '🖼️ 월드 그림'),
           h('a', { class: 'btn sun', href: '../docs/월드_이미지_프롬프트.docx', download: '' }, '📄 프롬프트 문서(.docx)')),
-        h('p', { class: 'small' }, `그림을 올리지 않아도 앱이 픽셀아트 섬을 그려요. 이미지 AI로 만든 그림을 올리면 그 그림으로 바뀌어요. 학생 부스는 ${STUDENT_BOOTHS}개, 가운데에 선생님의 앱 건물 1개가 있어요.`),
+        h('p', { class: 'small' }, `(선택) 그림을 올리지 않으면 위에서 고른 지도가 쓰여요. 이미지 AI로 직접 만든 지도를 올리고 문 자리를 찍으면 그 그림이 먼저 나와요. 학생 부스는 ${STUDENT_BOOTHS}개, 가운데에 선생님의 앱 건물 1개가 있어요.`),
         h('p', { class: 'muted small' }, '순서: 📋 프롬프트 복사 → 이미지 AI(예: Gemini)에 붙여 넣기 → 그림 저장 → 📷 올리기. 건물·분수·아치 그림의 하얀 배경은 앱이 지워요. 이미지 AI는 한글 글씨를 틀리게 그릴 수 있어서, 학교 이름은 앱이 아치 현수막에 써 줘요.'),
         h('div', { class: 'row' }, h('button', { class: 'ghost small', onclick: () => copyText(mapWithSchoolNamePrompt(conf.settings), '📋 학교 이름을 그림에 넣는 지도 프롬프트를 복사했어요') }, '📋 (선택) 학교 이름을 그림에 직접 넣는 지도 프롬프트')),
         h('div', { class: 'asset-grid', id: 'assetGrid' })),
@@ -121,6 +122,26 @@ export function createWorldAdmin({ getApi, getKey }) {
     renderAssets();
     renderHotspots();
     showTA();
+  }
+
+  // ---------- 앱 월드 지도 고르기 (준비된 그림 3장 + 앱이 그리는 픽셀 섬) ----------
+  function mapPicker() {
+    const cur = conf.settings.mapPreset;
+    const custom = 'map' in conf.assets && hasHotspots(conf.settings.hotspots);
+    const choose = async (id) => {
+      try { await saveSettings({ ...conf.settings, mapPreset: id }); toast('🗺️ 지도를 바꿨어요. 앱 월드를 새로 열면 바뀌어요'); render(); } catch (e) { toast(e.message, 4000); }
+    };
+    const card = (id, title, thumb) => h('button', {
+      type: 'button', class: 'map-choice', 'aria-pressed': String(cur === id), onclick: () => choose(id),
+      style: `display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:14px;cursor:pointer;background:#fff;border:3px solid ${cur === id ? '#8E6BD8' : '#E3E8ED'}`,
+    }, thumb, h('b', {}, `${cur === id ? '✅ ' : ''}${title}`));
+    return h('div', { class: 'card' },
+      h('h2', {}, '🗺️ 앱 월드 지도 고르기'),
+      h('p', { class: 'muted small' }, `완성된 지도 그림 중 하나를 고르면 바로 앱 월드가 돼요. 건물 문 자리 ${STUDENT_BOOTHS}곳과 선생님의 앱 자리는 미리 맞춰 두었어요.`),
+      custom ? h('p', { class: 'pill' }, '📌 지금은 아래 「월드 그림」에서 직접 올린 지도가 먼저 쓰여요. 고른 지도를 쓰려면 직접 올린 지도를 지워 주세요.') : '',
+      h('div', { style: 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px' },
+        ...MAP_PRESETS.map((p) => card(p.id, p.title, h('img', { src: presetUrl(p), alt: p.title, loading: 'lazy', style: 'width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:10px' }))),
+        card('pixel', '🧩 앱이 그리는 픽셀 섬', h('div', { style: 'width:100%;aspect-ratio:16/10;border-radius:10px;background:#4FC3E8;display:grid;place-items:center;font-size:44px' }, '🏝️'))));
   }
 
   // ---------- 지도 그림 위에 문 자리 찍기 ----------

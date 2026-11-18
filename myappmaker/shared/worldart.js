@@ -19,7 +19,28 @@ export const SLOTS = [
 // hotspots: 지도 그림(일러스트) 위 문 자리. 그림 크기에 대한 비율(0~1)로 [x, y]
 //   hall = 선생님의 앱, start = 처음 서는 곳, booths[0..11] = 01~12번 부스
 // labelMode: 'small' = 그림 속 간판을 살리고 작은 이름표만 / 'big' = 큰 이름표
-export const DEFAULT_WORLD = { schoolName: '', title: '친구들이 만든 앱 월드', notice: '', hotspots: { hall: null, start: null, booths: Array(12).fill(null) }, labelMode: 'small' };
+// ---------- 준비된 지도 그림 (선생님이 그림을 만들지 않아도 바로 쓰는 완성 지도) ----------
+// 문 자리는 그림 크기에 대한 비율 [x, y] (문 바로 앞 바닥). 부스 12곳 + 선생님의 앱 + 처음 서는 곳.
+export const MAP_PRESETS = [
+  { id: 'castle', title: '🏰 별빛 성 섬', file: 'castle.webp', w: 1536, h: 1024,
+    hotspots: { hall: [0.497, 0.345], start: [0.5, 0.86],
+      booths: [[0.125, 0.205], [0.37, 0.195], [0.645, 0.155], [0.27, 0.35], [0.765, 0.275], [0.145, 0.465],
+        [0.695, 0.445], [0.282, 0.56], [0.69, 0.66], [0.15, 0.715], [0.345, 0.795], [0.86, 0.755]] } },
+  { id: 'seasons', title: '🌋 사계절 모험 섬', file: 'seasons.webp', w: 1672, h: 941,
+    hotspots: { hall: [0.495, 0.405], start: [0.5, 0.86],
+      booths: [[0.175, 0.22], [0.358, 0.185], [0.585, 0.14], [0.80, 0.205], [0.162, 0.435], [0.855, 0.365],
+        [0.31, 0.56], [0.725, 0.51], [0.228, 0.735], [0.815, 0.695], [0.368, 0.855], [0.64, 0.845]] } },
+  { id: 'river', title: '🌉 강물 다리 섬', file: 'river.webp', w: 1672, h: 941,
+    hotspots: { hall: [0.495, 0.46], start: [0.5, 0.79],
+      booths: [[0.258, 0.24], [0.475, 0.175], [0.675, 0.22], [0.14, 0.37], [0.85, 0.37], [0.305, 0.535],
+        [0.73, 0.48], [0.875, 0.615], [0.21, 0.735], [0.378, 0.845], [0.605, 0.85], [0.755, 0.75]] } },
+];
+export const MAP_PRESET_IDS = [...MAP_PRESETS.map((p) => p.id), 'pixel'];   // 'pixel' = 앱이 그리는 픽셀 섬
+export const presetById = (id) => MAP_PRESETS.find((p) => p.id === id) || null;
+export const presetUrl = (p) => new URL(`./maps/${p.file}`, import.meta.url).href;
+
+// mapPreset: 준비된 지도 id 또는 'pixel'. 선생님이 직접 올린 지도 + 문 자리가 있으면 그게 먼저.
+export const DEFAULT_WORLD = { schoolName: '', title: '친구들이 만든 앱 월드', notice: '', hotspots: { hall: null, start: null, booths: Array(12).fill(null) }, labelMode: 'small', mapPreset: 'castle' };
 
 const pt = (v) => (Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === 'number' && n >= 0 && n <= 1) ? [Math.round(v[0] * 10000) / 10000, Math.round(v[1] * 10000) / 10000] : null);
 export function cleanHotspots(v) {
@@ -33,7 +54,8 @@ export function cleanWorldSettings(v) {
   const s = v && typeof v === 'object' ? v : {};
   const str = (x, n) => (typeof x === 'string' ? x.replace(/[<>]/g, '').trim().slice(0, n) : '');
   return { schoolName: str(s.schoolName, 20), title: str(s.title, 24) || DEFAULT_WORLD.title, notice: str(s.notice, 300),
-    hotspots: cleanHotspots(s.hotspots), labelMode: s.labelMode === 'big' ? 'big' : 'small' };
+    hotspots: cleanHotspots(s.hotspots), labelMode: s.labelMode === 'big' ? 'big' : 'small',
+    mapPreset: MAP_PRESET_IDS.includes(s.mapPreset) ? s.mapPreset : DEFAULT_WORLD.mapPreset };
 }
 
 export const worldName = (s) => (s && s.schoolName ? `${s.schoolName} ${s.title || DEFAULT_WORLD.title}` : (s && s.title) || DEFAULT_WORLD.title);

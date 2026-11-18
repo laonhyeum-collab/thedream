@@ -172,3 +172,17 @@ test('수업: 4차시 모두 40분', () => {
   assert.equal(LESSONS.length, 4);
   for (const l of LESSONS) assert.equal(l.steps.reduce((a, s) => a + s.min, 0), 40, `${l.n}차시`);
 });
+
+test('준비된 지도: 그림 파일·문 자리 12곳이 맞고, 백엔드와 id가 같음', async () => {
+  const fs = await import('node:fs');
+  const { MAP_PRESETS, MAP_PRESET_IDS, cleanWorldSettings } = await import('../shared/worldart.js');
+  for (const p of MAP_PRESETS) {
+    assert.ok(fs.existsSync(new URL(`../shared/maps/${p.file}`, import.meta.url)), p.file);
+    assert.equal(p.hotspots.booths.length, 12);
+    for (const pt of [p.hotspots.hall, p.hotspots.start, ...p.hotspots.booths]) assert.ok(pt.every((v) => v > 0 && v < 1));
+  }
+  const gs = fs.readFileSync(new URL('../backend/Code.gs', import.meta.url), 'utf8');
+  assert.match(gs, new RegExp(`MAP_PRESET_IDS = \\[${MAP_PRESET_IDS.map((x) => `'${x}'`).join(', ')}\\]`));
+  assert.equal(cleanWorldSettings({}).mapPreset, 'castle');
+  assert.equal(cleanWorldSettings({ mapPreset: 'pixel' }).mapPreset, 'pixel');
+});

@@ -202,6 +202,8 @@ function cleanSetting_(v, n) { return str_(v, n).replace(/[<>]/g, '').trim(); }
 
 // 지도 그림 위 문 자리 (0~1 비율)
 function pt_(v) { return (v && v.length === 2 && typeof v[0] === 'number' && typeof v[1] === 'number' && v[0] >= 0 && v[0] <= 1 && v[1] >= 0 && v[1] <= 1) ? [v[0], v[1]] : null; }
+var MAP_PRESET_IDS = ['castle', 'seasons', 'river', 'pixel'];   // shared/worldart.js MAP_PRESETS 와 같게
+
 function cleanHotspots_(v) {
   v = v || {};
   var booths = [];
@@ -216,7 +218,8 @@ function setWorld_(p) {
     var w = worldConf_();
     var s = p.settings || {};
     w.settings = { schoolName: cleanSetting_(s.schoolName, 20), title: cleanSetting_(s.title, 24) || '친구들이 만든 앱 월드', notice: cleanSetting_(s.notice, 300),
-      hotspots: cleanHotspots_(s.hotspots), labelMode: s.labelMode === 'big' ? 'big' : 'small' };
+      hotspots: cleanHotspots_(s.hotspots), labelMode: s.labelMode === 'big' ? 'big' : 'small',
+      mapPreset: MAP_PRESET_IDS.indexOf(s.mapPreset) >= 0 ? s.mapPreset : 'castle' };
     saveWorldConf_(w);
     return { settings: w.settings };
   });

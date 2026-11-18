@@ -285,7 +285,7 @@ try {
   assert.equal(await wd.inputValue('#nick'), '바다', '캐릭터를 골라도 이름 유지');
   await snap(wd, 'world-lobby');
   await wd.click('#enterBtn');
-  assert.equal(await wd.getAttribute('#map', 'data-mode'), 'pixel', '지도 그림이 없으면 픽셀 섬');
+  assert.equal(await wd.getAttribute('#map', 'data-mode'), 'preset:castle', '지도 그림을 안 올리면 준비된 지도(기본: 별빛 성 섬)');
   await wd.keyboard.down('ArrowUp'); await wd.waitForTimeout(600); await wd.keyboard.up('ArrowUp');
   await snap(wd, 'world-walk');
   await wd.click('[data-side="explore"]');
