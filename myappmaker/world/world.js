@@ -127,10 +127,25 @@ function rebuild(first) {
 
 // ---------- 입장 ----------
 function renderLobby() {
+  $('#idLogin').hidden = !api.enabled || params.has('demo');
   $('#nick').value = me.nick;
   $('#lobbyAvatar').replaceChildren(avatarBuilder(h, me.avatar, (a) => { me.avatar = a; saveJSON(PREF, me); paintMe(); }));
 }
+// (선택) 선생님이 만든 아이디로 들어오면 내 부스를 자동으로 찾아요. 아이디는 저장하지 않아요.
+async function findMyBooth() {
+  const id = $('#wLoginId').value.trim(), pin = $('#wLoginPin').value.trim();
+  if (!api.enabled || !id || !pin) return;
+  try {
+    const { token } = await api.studentLogin(id, pin);
+    const r = await api.mine('', token);
+    $('#wLoginPin').value = '';
+    if (r.found && r.status === 'approved') { saveJSON(MYBOOTH, r.id); toast('⭐ 내 부스를 찾았어요! 위의 「⭐ 내 앱」을 눌러 봐요', 4500); }
+    else if (r.found) toast('내 앱은 아직 선생님이 확인하는 중이에요', 4000);
+    else toast('아직 입점 신청한 앱이 없어요', 4000);
+  } catch (e) { toast(`아이디 확인: ${e.message}`, 4500); }
+}
 $('#enterBtn').onclick = () => {
+  findMyBooth();
   me.nick = $('#nick').value.trim().slice(0, 10) || '방문자';
   saveJSON(PREF, me);
   paintMe();

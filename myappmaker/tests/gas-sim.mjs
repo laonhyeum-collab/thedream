@@ -27,6 +27,7 @@ export function createGas({ classCode = 'TEST-CLASS', teacherKey = 'TEST-TEACHER
           const v = (data[r - 1 + i] || [])[c - 1 + j];
           return v === undefined ? '' : v;
         })),
+        setNumberFormat() {},
         setValues: (vals) => {
           vals.forEach((row, i) => {
             if (!data[r - 1 + i]) data[r - 1 + i] = [];
@@ -55,7 +56,7 @@ export function createGas({ classCode = 'TEST-CLASS', teacherKey = 'TEST-TEACHER
       },
       getFileById: (id) => {
         const f = files.get(id); if (!f) throw new Error('파일 없음');
-        return { setTrashed: (t) => { f.trashed = t; }, getBlob: () => ({ getDataAsString: () => f.content }) };
+        return { setTrashed: (t) => { f.trashed = t; }, setContent: (c) => { if (f.trashed) throw new Error('휴지통 파일'); f.content = c; }, getBlob: () => ({ getDataAsString: () => f.content }) };
       },
     },
     MimeType: { HTML: 'text/html', PLAIN_TEXT: 'text/plain' },
@@ -65,7 +66,14 @@ export function createGas({ classCode = 'TEST-CLASS', teacherKey = 'TEST-TEACHER
       MimeType: { JSON: 'application/json' },
       createTextOutput: (s) => { const o = { content: s, setMimeType: () => o, getContent: () => s }; return o; },
     },
-    Utilities: { getUuid: () => crypto.randomUUID() },
+    Utilities: {
+      getUuid: () => crypto.randomUUID(),
+      DigestAlgorithm: { SHA_256: 'sha256' }, Charset: { UTF_8: 'utf8' },
+      // 실제 Apps Script 처럼 -128~127 바이트 배열
+      computeDigest: (alg, text) => [...crypto.createHash(alg).update(String(text), 'utf8').digest()].map((b) => (b > 127 ? b - 256 : b)),
+      computeHmacSha256Signature: (text, key) => [...crypto.createHmac('sha256', String(key)).update(String(text), 'utf8').digest()].map((b) => (b > 127 ? b - 256 : b)),
+    },
+    encodeURIComponent, decodeURIComponent,
   };
   vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(CODE, 'utf8'), ctx, { filename: 'Code.gs' });

@@ -64,9 +64,12 @@ export function createApi(cfg, fetchImpl = globalThis.fetch.bind(globalThis)) {
   return {
     enabled,
     ping: () => call('GET', { action: 'ping', classCode }),
-    // 학생
+    // 학생 (선생님이 만든 아이디로 로그인하면 token 으로 구분)
+    studentLogin: (loginId, pin) => call('POST', { action: 'studentLogin', classCode, loginId, pin }),
+    loadDraft: (token) => call('POST', { action: 'loadDraft', classCode, token }),
+    saveDraft: (token, plan) => call('POST', { action: 'saveDraft', classCode, token, plan }),
     submit: (sub) => call('POST', { action: 'submit', classCode, ...sub }),
-    mine: (studentKey) => call('GET', { action: 'mine', classCode, studentKey }),
+    mine: (studentKey, token) => call('POST', { action: 'mine', classCode, studentKey, token }),
     // 메타버스
     world: () => call('GET', { action: 'world', classCode }),
     app: (id) => call('GET', { action: 'app', classCode, id }),
@@ -74,6 +77,18 @@ export function createApi(cfg, fetchImpl = globalThis.fetch.bind(globalThis)) {
     booth: (id) => call('GET', { action: 'booth', classCode, id }),
     asset: (key) => call('GET', { action: 'asset', classCode, key }),
     teacherAppHtml: () => call('GET', { action: 'teacherAppHtml', classCode }),
+    // 관리자 계정 (teacherKey 자리에 로그인 출입증을 넣어요)
+    adminSetup: (setupKey, adminId, password) => call('POST', { action: 'adminSetup', setupKey, adminId, password }),
+    adminLogin: (adminId, password) => call('POST', { action: 'adminLogin', adminId, password }),
+    whoami: (teacherKey) => call('POST', { action: 'whoami', teacherKey }),
+    admins: (teacherKey) => call('POST', { action: 'admins', teacherKey }),
+    addAdmin: (teacherKey, adminId, password) => call('POST', { action: 'addAdmin', teacherKey, adminId, password }),
+    removeAdmin: (teacherKey, adminId) => call('POST', { action: 'removeAdmin', teacherKey, adminId }),
+    changePassword: (teacherKey, password) => call('POST', { action: 'changePassword', teacherKey, password }),
+    accounts: (teacherKey) => call('POST', { action: 'accounts', teacherKey }),
+    createAccounts: (teacherKey, o) => call('POST', { action: 'createAccounts', teacherKey, ...o }),
+    resetPin: (teacherKey, loginId) => call('POST', { action: 'resetPin', teacherKey, loginId }),
+    removeAccount: (teacherKey, loginId) => call('POST', { action: 'removeAccount', teacherKey, loginId }),
     // 교사 (teacherKey 필요)
     list: (teacherKey) => call('POST', { action: 'list', teacherKey }),
     teacherApp: (teacherKey, id) => call('POST', { action: 'teacherApp', teacherKey, id }),

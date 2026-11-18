@@ -7,6 +7,7 @@ import { applyImages } from '../shared/images.js';
 import { download, readFileText, safeName } from '../shared/files.js';
 import { LESSONS, TIMER_PRESETS } from './lesson.js';
 import { createWorldAdmin } from './worldadmin.js';
+import { createAccountsAdmin } from './accounts.js';
 import { STUDENT_BOOTHS } from '../shared/worldart.js';
 import { h, $, toast, copyText, fmtTime } from '../shared/ui.js';
 
@@ -332,25 +333,22 @@ function shareLinks() {
 function renderSettings() {
   $('#cfgEndpoint').value = cfg.endpoint;
   $('#cfgClass').value = cfg.classCode;
-  $('#cfgKey').value = teacherKey;
   shareLinks();
 }
 $('#cfgSave').onclick = async () => {
   const endpoint = $('#cfgEndpoint').value.trim();
   if (endpoint && !isValidEndpoint(endpoint)) { $('#cfgResult').textContent = '⚠ https:// 로 시작하는 주소를 넣어 주세요'; return; }
   cfg = { endpoint, classCode: $('#cfgClass').value.trim() };
-  teacherKey = $('#cfgKey').value.trim();
   saveConfig('teacher', cfg);
-  try { localStorage.setItem(KEY_STORE, teacherKey); } catch { /* 저장 불가 */ }
   api = createApi(cfg);
   shareLinks();
-  if (!api.enabled) { $('#cfgResult').textContent = '📁 저장소 없이 파일 모드로 써요'; refresh(); return; }
+  if (!api.enabled) { $('#cfgResult').textContent = '📁 저장소 없이 파일 모드로 써요'; accountsAdmin.renderAdmin(); refresh(); return; }
   $('#cfgResult').textContent = '연결 시험 중…';
   try {
     await api.ping();
-    await api.list(teacherKey);
-    $('#cfgResult').textContent = '✅ 연결 성공! 반 코드와 교사 열쇠가 맞아요';
+    $('#cfgResult').textContent = teacherKey ? '✅ 연결 성공!' : '✅ 연결 성공! 아래에서 관리자로 로그인해 주세요';
   } catch (e) { $('#cfgResult').textContent = `⚠ ${e.message}`; }
+  accountsAdmin.renderAdmin();
   refresh();
 };
 document.addEventListener('click', (e) => {
@@ -365,18 +363,25 @@ $('#clearLocal').onclick = () => {
 // ---------- 월드 꾸미기 ----------
 const worldAdmin = createWorldAdmin({ getApi: () => api, getKey: () => teacherKey });
 
+// ---------- 계정 (관리자 로그인 · 학생 아이디) ----------
+function setKey(k) { teacherKey = k || ''; try { if (teacherKey) localStorage.setItem(KEY_STORE, teacherKey); else localStorage.removeItem(KEY_STORE); } catch { /* 저장 불가 */ } }
+const accountsAdmin = createAccountsAdmin({ getApi: () => api, getKey: () => teacherKey, setKey, onLogin: () => refresh() });
+
 // ---------- 탭 ----------
 document.querySelectorAll('[data-tab]').forEach((b) => {
   b.onclick = () => {
     document.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
     document.querySelectorAll('.tab-panel').forEach((p) => { p.hidden = p.id !== `tab-${b.dataset.tab}`; });
     if (b.dataset.tab === 'world') worldAdmin.render();
+    if (b.dataset.tab === 'accounts') accountsAdmin.renderAccounts();
+    if (b.dataset.tab === 'settings') accountsAdmin.renderAdmin();
   };
 });
 $('#refreshBtn').onclick = refresh;
 
 renderLesson();
 renderSettings();
+accountsAdmin.renderAdmin();
 showTimer();
 if (!teacherKey && !localItems().length) document.querySelector('[data-tab="settings"]').click();
 refresh();

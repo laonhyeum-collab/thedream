@@ -95,9 +95,22 @@ async function fillPlan(page, name, appName) {
 
 try {
   // ───── 1. 학생 (저장소 연결) ─────
-  step('학생: 주제 → 기획서');
+  step('학생: 선생님이 만든 아이디로 로그인 → 주제 → 기획서');
+  const accs = gas.post({ action: 'createAccounts', teacherKey: 'TEST-TEACHER', prefix: '', from: 1, count: 2 }).made;
+  const pinOf = (id) => accs.find((a) => a.loginId === id).pin;
+  const login = async (page, id, pin) => {
+    await page.waitForSelector('#login:not([hidden])');
+    await page.fill('#loginId', id); await page.fill('#loginPin', pin); await page.click('#loginBtn');
+  };
   const st = await newPage();
   await st.goto(`${base}/student/?${q}`);
+  assert.equal(await st.isHidden('#home'), true, '저장소가 있으면 로그인부터');
+  await login(st, '01', '0000');
+  await st.waitForFunction(() => document.querySelector('#loginMsg').textContent.includes('맞지 않아요'));
+  await snap(st, 'student-login');
+  await login(st, '01', pinOf('01'));
+  await st.waitForSelector('#home:not([hidden])');
+  assert.match(await st.textContent('#userBtn'), /01/);
   await snap(st, 'student-home');
   await fillPlan(st, '하늘', '다람이의 과일 바구니');
 
@@ -201,18 +214,44 @@ try {
   const row1 = Object.fromEntries(gas.sheets.get('제출').data[0].map((k, i) => [k, gas.sheets.get('제출').data[1][i]]));
   assert.deepEqual([JSON.parse(row1.planJson).avatar.hair, JSON.parse(row1.planJson).avatar.acc], [3, 4], '캐릭터가 함께 제출됨');
   assert.ok(!row1.boothFileId, '부스 그림은 보내지 않음');
+  assert.equal(row1.studentKey, 'id:01', '아이디로 제출');
+  await st.waitForFunction(() => document.querySelector('#cloudStatus').textContent.includes('저장소 저장'));
+  assert.ok(gas.sheets.get('학생계정').data[1][6], '작업이 저장소에 저장됨');
 
   // ───── 2. 교사 ─────
   step('교사: 연결 → 확인 → 입점 승인');
   const tc = await newPage({ width: 1280, height: 860 });
   await tc.goto(`${base}/teacher/?${q}`);
   await tc.waitForSelector('#tab-settings:not([hidden])');
-  await tc.fill('#cfgKey', 'WRONG');
-  await tc.click('#cfgSave');
-  await tc.waitForFunction(() => document.querySelector('#cfgResult').textContent.includes('교사 열쇠'));
-  await tc.fill('#cfgKey', 'TEST-TEACHER');
   await tc.click('#cfgSave');
   await tc.waitForFunction(() => document.querySelector('#cfgResult').textContent.includes('연결 성공'));
+  step('교사: 설치 열쇠로 첫 관리자 계정 만들기 → 로그아웃 → 아이디·비밀번호로 로그인');
+  await tc.click('#adminBox details summary');
+  const setup = tc.locator('#adminBox details');
+  await setup.locator('input[placeholder="Code.gs 의 TEACHER_KEY"]').fill('WRONG');
+  await setup.locator('input[placeholder="예) kim"]').fill('kim');
+  await setup.locator('input[placeholder="6자 이상"]').fill('kim-pass-1');
+  await tc.click('#adminSetupBtn');
+  await tc.waitForFunction(() => document.querySelector('#adminBox').textContent.includes('설치 열쇠'));
+  await setup.locator('input[placeholder="Code.gs 의 TEACHER_KEY"]').fill('TEST-TEACHER');
+  await tc.click('#adminSetupBtn');
+  await tc.waitForFunction(() => document.querySelector('#adminBox').textContent.includes('kim 로그인됨'));
+  await tc.click('#adminBox button:has-text("로그아웃")');
+  await tc.waitForSelector('#adminLoginBtn');
+  await tc.fill('#adminBox input[placeholder="관리자 아이디"]', 'kim');
+  await tc.fill('#adminBox input[placeholder="비밀번호"]', 'kim-pass-1');
+  await tc.click('#adminLoginBtn');
+  await tc.waitForFunction(() => document.querySelector('#adminBox').textContent.includes('kim 로그인됨'));
+  await snap(tc, 'teacher-admin');
+  step('교사: 학생 계정 — 아이디별 작업 저장·입점 상태, 계정 더 만들기');
+  await tc.click('[data-tab="accounts"]');
+  await tc.waitForSelector('.acc-table');
+  assert.equal(await tc.locator('.acc-table tbody tr').count(), 2);
+  assert.match(await tc.textContent('.acc-table tbody tr >> nth=0'), /다람이의 과일 바구니/);
+  await tc.fill('#accountsAdmin input[type="number"] >> nth=1', '1');
+  await tc.click('#createAccBtn');
+  await tc.waitForFunction(() => document.querySelectorAll('.acc-table tbody tr').length === 3);
+  await snap(tc, 'teacher-accounts');
   assert.ok((await tc.textContent('#studentLink')).includes('class=TEST-CLASS'));
   assert.ok(!(await tc.textContent('#studentLink')).includes('TEST-TEACHER'), '학생 주소에 교사 열쇠 없음');
   await tc.click('[data-tab="students"]');
@@ -259,9 +298,25 @@ try {
   assert.ok((await st.textContent('#statusBox')).includes('황금 사과 아이디어 최고!'));
   assert.ok((await st.textContent('#statusBox')).includes('1번 부스'));
 
-  step('학생: 같은 태블릿을 다른 학생이 써도 덮어쓰지 않음');
-  await st.click('#newTopicBtn');
-  await st.goto(`${base}/student/?${q}#home`);
+  step('학생: 다른 노트북에서 같은 아이디로 로그인 → 기획서·앱·입점 상태가 그대로');
+  const lb = await newPage();
+  await lb.goto(`${base}/student/?${q}`);
+  await login(lb, '01', pinOf('01'));
+  await lb.waitForSelector('#home:not([hidden])');
+  assert.match(await lb.textContent('#resumeInfo'), /다람이의 과일 바구니/, '저장소에서 불러옴');
+  await lb.click('#continueBtn');
+  await lb.goto(`${base}/student/#myapp`);
+  assert.ok((await lb.inputValue('#appCode')).length > 100, '앱 코드도 이어짐');
+  await lb.click('[data-go="submit"]');
+  await lb.waitForSelector('#statusBox.approved');
+  await snap(lb, 'laptop-b');
+  await lb.close();
+
+  step('학생: 같은 태블릿을 다른 학생(아이디 02)이 써도 섞이지 않음');
+  await st.click('#userBtn');
+  await login(st, '02', pinOf('02'));
+  await st.waitForSelector('#home:not([hidden])');
+  assert.equal(await st.isHidden('#continueBtn'), true, '02는 빈 기획서로 시작');
   await fillPlan(st, '구름', '구름이의 과일 비');
   await st.goto(`${base}/student/#myapp`);
   await st.fill('#appCode', fruit);
@@ -272,6 +327,10 @@ try {
   await st.click('#sendBtn');
   await st.waitForSelector('#statusBox.submitted');
   assert.equal(gas.sheets.get('제출').data.length, 3, '두 학생 모두 저장');
+  await st.click('#userBtn');
+  await login(st, '01', pinOf('01'));
+  await st.waitForSelector('#home:not([hidden])');
+  assert.match(await st.textContent('#resumeInfo'), /다람이의 과일 바구니/, '01로 다시 들어오면 01의 작업');
 
   // ───── 3. 메타버스 (저장소) ─────
   step('메타버스: 학교 이름 → 내 캐릭터 → 입장 → 탐험 → 부스 → 좋아요 → 미션·공지·친구·선생님 앱');
@@ -282,8 +341,14 @@ try {
   await wd.fill('#nick', '바다');
   await wd.click('#lobbyAvatar .avatar-opt[data-k="hair"][data-i="2"]');
   assert.equal(await wd.inputValue('#nick'), '바다', '캐릭터를 골라도 이름 유지');
+  await wd.click('#idLogin summary');
+  await wd.fill('#wLoginId', '01'); await wd.fill('#wLoginPin', pinOf('01'));
   await snap(wd, 'world-lobby');
   await wd.click('#enterBtn');
+  await wd.waitForFunction(() => document.querySelector('.toast') && document.querySelector('.toast').textContent.includes('내 부스를 찾았어요'));
+  await wd.click('[data-nav="myapp"]');
+  await wd.waitForSelector('#panelBody >> text=내 부스로 가기');
+  await wd.click('#closePanel');
   assert.equal(await wd.getAttribute('#map', 'data-mode'), 'preset:castle', '지도 그림을 안 올리면 준비된 지도(기본: 별빛 성 섬)');
   await wd.keyboard.down('ArrowUp'); await wd.waitForTimeout(600); await wd.keyboard.up('ArrowUp');
   await snap(wd, 'world-walk');
@@ -380,7 +445,7 @@ try {
 
   const wf = await newPage();
   await wf.goto(`${base}/world/`);
-  await wf.click('#lobby details summary');
+  await wf.click('#lobby details:not(#idLogin) summary');
   await wf.setInputFiles('#worldFile', worldFile);
   await wf.waitForFunction(() => document.querySelector('#sourceInfo').textContent.includes('메타버스 파일'));
   await wf.click('#enterBtn');

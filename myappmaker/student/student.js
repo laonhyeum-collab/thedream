@@ -18,7 +18,13 @@ import { h, $, toast, copyText } from '../shared/ui.js';
 const store = createStore();
 const cfg = loadConfig('student');
 const api = createApi(cfg);
-let plan = store.load();
+// ---------- 로그인 (우리 반 저장소가 있으면 선생님이 만든 아이디로) ----------
+const SESSION = 'myappmaker.student.session';
+function loadSession() { try { const v = JSON.parse(localStorage.getItem(SESSION)); return v && v.token && v.loginId ? v : null; } catch { return null; } }
+function saveSession(v) { try { if (v) localStorage.setItem(SESSION, JSON.stringify(v)); else localStorage.removeItem(SESSION); } catch { /* 저장 불가 */ } }
+let session = api.enabled ? loadSession() : null;
+if (session) store.useUser(session.loginId);
+let plan = api.enabled && !session ? null : store.load();
 let part = 1;
 let lastQuery = '';
 let lastResult = null;
@@ -48,17 +54,120 @@ function saveNow() {
   if (!plan) return;
   store.save(plan);
   dirty = false;
+  queueCloud();
   updateProgress();
   refreshTabDots();
 }
+
+// ---------- 우리 반 저장소에 자동 저장 (아이디로 로그인했을 때) ----------
+const cloudEl = $('#cloudStatus');
+let cloudDirty = false, cloudTimer = null, cloudBusy = false, expired = false;
+const hhmm = (d = new Date()) => d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+function cloudPill(text, cls = '') { cloudEl.hidden = !session; cloudEl.textContent = text; cloudEl.className = `pill ${cls}`; }
+function queueCloud() {
+  if (!session || !plan) return;
+  cloudDirty = true;
+  if (expired) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(cloudSave, 2500);
+}
+async function cloudSave() {
+  clearTimeout(cloudTimer);
+  if (!session || !plan || !cloudDirty || expired) return !cloudDirty;
+  if (cloudBusy) { cloudTimer = setTimeout(cloudSave, 1500); return false; }
+  cloudBusy = true; cloudDirty = false;
+  cloudPill('☁️ 저장소에 저장 중…');
+  try {
+    await api.saveDraft(session.token, plan);
+    cloudPill(`☁️ 저장소 저장 ${hhmm()}`, 'ok');
+    return true;
+  } catch (e) {
+    cloudDirty = true;
+    if (/로그인/.test(e.message)) {
+      expired = true;
+      cloudPill('⚠ 다시 로그인 (눌러요)', 'bad');
+      toast('로그인 시간이 지났어요. 위의 「다시 로그인」을 누르면 이어서 저장돼요 (이 기기에는 저장돼 있어요)', 7000);
+    } else {
+      cloudPill('⚠ 저장소 저장 안 됨 · 이 기기엔 저장됨', 'bad');
+      cloudTimer = setTimeout(cloudSave, 20000);
+    }
+    return false;
+  } finally { cloudBusy = false; }
+}
+cloudEl.onclick = () => { if (expired) logout({ keepWork: true }); else cloudSave(); };
+
+// 저장소의 내 작업과 이 기기의 작업 중 더 최근 것을 써요
+function newer(a, b) { return String((a && a.updatedAt) || '') > String((b && b.updatedAt) || ''); }
+async function syncFromCloud(local) {
+  let srv = null;
+  const r = await api.loadDraft(session.token);
+  try { srv = r.plan ? normalizePlan(r.plan) : null; } catch { srv = null; }
+  if (srv && (!local || newer(srv, local))) {
+    plan = srv;
+    store.save(plan, { keepTime: true });
+    cloudPill(`☁️ 저장소에서 불러옴 ${hhmm()}`, 'ok');
+    return true;
+  }
+  plan = local;
+  if (plan) { cloudDirty = true; cloudSave(); } else cloudPill('☁️ 저장소 연결됨', 'ok');
+  return false;
+}
+
+async function doLogin() {
+  const id = $('#loginId').value.trim(), pin = $('#loginPin').value.trim();
+  const msg = $('#loginMsg');
+  if (!id || !pin) { msg.textContent = '아이디와 비밀번호를 모두 넣어요'; return; }
+  const btn = $('#loginBtn');
+  btn.disabled = true; msg.textContent = '들어가는 중…';
+  try {
+    const r = await api.studentLogin(id, pin);
+    session = { loginId: r.loginId, token: r.token };
+    saveSession(session);
+    expired = false;
+    store.useUser(session.loginId);
+    const loaded = await syncFromCloud(store.load()).catch(() => { plan = store.load(); return false; });
+    $('#loginPin').value = ''; msg.textContent = '';
+    renderUser();
+    toast(loaded ? `☁️ ${session.loginId} — 저장소에 있던 내 작업을 불러왔어요` : `👋 ${session.loginId}, 반가워요!`);
+    go('home'); route();
+  } catch (e) { msg.textContent = `⚠ ${e.message}`; }
+  finally { btn.disabled = false; }
+}
+async function logout({ keepWork = false } = {}) {
+  if (dirty) saveNow();
+  if (!keepWork && cloudDirty && !expired) {
+    const ok = await cloudSave();
+    if (!ok && !confirm('저장소에 아직 저장되지 않았어요. 그래도 나갈까요? (이 기기에는 저장돼 있어요)')) return;
+  }
+  const id = session && session.loginId;
+  session = null; saveSession(null); expired = false;
+  if (!keepWork) { store.useUser(''); plan = null; }
+  renderUser();
+  if (keepWork && id) $('#loginId').value = id;
+  go('home'); route();
+}
+function renderUser() {
+  const b = $('#userBtn');
+  b.hidden = !session;
+  b.textContent = session ? `👤 ${session.loginId} · 나가기` : '';
+  cloudEl.hidden = !session;
+}
+$('#userBtn').onclick = () => logout();
+$('#loginBtn').onclick = doLogin;
+$('#loginPin').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+$('#loginId').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#loginPin').focus(); });
 setInterval(() => { if (dirty) saveNow(); }, 15000);   // 혹시 놓친 것도 15초마다
-window.addEventListener('pagehide', () => { if (dirty) saveNow(); });
-document.addEventListener('visibilitychange', () => { if (document.hidden && dirty) saveNow(); });
+window.addEventListener('pagehide', () => { if (dirty) saveNow(); if (cloudDirty) cloudSave(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if (dirty) saveNow(); if (cloudDirty) cloudSave(); } });
 
 // ---------- 화면 이동 ----------
 const SCREENS = ['home', 'topics', 'plan', 'prompts', 'myapp', 'submit'];
 function go(name) { if (location.hash !== `#${name}`) location.hash = name; else route(); }
 function route() {
+  const needLogin = api.enabled && !session;
+  $('#login').hidden = !needLogin;
+  document.querySelector('.steps').hidden = needLogin;
+  if (needLogin) { for (const s of SCREENS) $(`#${s}`).hidden = true; setTimeout(() => $('#loginId').focus(), 0); return; }
   let name = location.hash.slice(1) || 'home';
   if (!SCREENS.includes(name)) name = 'home';
   if (['plan', 'prompts', 'myapp', 'submit'].includes(name) && !(plan && plan.topicId)) {
@@ -90,6 +199,9 @@ function renderHome() {
     ? `${t.emoji} ${plan.f.appName || t.name} — 기획서 ${progress(plan)}% · 마지막 저장 ${new Date(plan.updatedAt).toLocaleString('ko-KR')}`
     : '';
   $('#classInfo').textContent = api.enabled ? `🏫 우리 반 저장소에 연결됨 (반 코드 ${cfg.classCode})` : '';
+  $('#saveNote').replaceChildren(...(session
+    ? ['쓰는 내용은 ', h('b', {}, `내 아이디(${session.loginId})로 우리 반 저장소`), '에 자동 저장돼요. 다른 노트북에서도 같은 아이디로 들어오면 그대로 이어서 할 수 있어요. 다 쓰면 오른쪽 위 「나가기」를 눌러요.']
+    : ['쓰는 내용은 ', h('b', {}, '이 기기의 이 브라우저'), '에 자동 저장돼요. 다른 기기에서 이어 하거나 브라우저 기록을 지우면 사라질 수 있으니, 기획서 화면의 ', h('b', {}, '「백업 내려받기」'), '로 파일을 꼭 챙겨 두세요.']));
 }
 $('#startBtn').onclick = () => go('topics');
 $('#continueBtn').onclick = () => go(plan.app.html || plan.app.url ? 'myapp' : 'plan');
@@ -581,7 +693,7 @@ function renderSubmit() {
   $('#reviewFields').replaceChildren(...SECTIONS.find((s) => s.n === 15).inputs.map((i) => inputFor(i, t)));
   $('#sendOnline').hidden = !api.enabled;
   $('#sendOffline').hidden = api.enabled;
-  if (plan.submit.status) showStatus(plan.submit);
+  if (plan.submit.status) showStatus(plan.submit); else $('#statusBox').hidden = true;
   if (api.enabled) refreshStatus(true);
 }
 
@@ -589,6 +701,7 @@ function submissionPayload() {
   const { html, images, ...appRest } = plan.app;
   return {
     studentKey: plan.id,
+    token: session ? session.token : undefined,
     developer: plan.f.developer.trim(),
     classInfo: '',   // 학년·반은 보내지 않음 (개인정보)
     appName: plan.f.appName.trim(),
@@ -629,7 +742,7 @@ $('#sendBtn').onclick = async () => {
 $('#checkBtn').onclick = () => refreshStatus(false);
 async function refreshStatus(quiet) {
   try {
-    const r = await api.mine(plan.id);
+    const r = await api.mine(plan.id, session ? session.token : undefined);
     if (!r.found) { if (!quiet) toast('아직 보낸 적이 없어요'); return; }
     plan.submit = { ...plan.submit, status: r.status, feedback: r.feedback || '', booth: r.booth, likes: r.likes, id: r.id };
     store.save(plan);
@@ -662,4 +775,10 @@ if (api.enabled) {
   $('#worldLink').href = u.toString();
 }
 
+renderUser();
 route();
+if (session) {
+  syncFromCloud(plan).then((loaded) => { if (loaded) { toast('☁️ 다른 노트북에서 쓴 최신 내용을 불러왔어요'); route(); } }).catch((e) => {
+    if (/로그인/.test(e.message)) { expired = true; cloudPill('⚠ 다시 로그인 (눌러요)', 'bad'); } else cloudPill('⚠ 저장소에 연결 안 됨 · 이 기기엔 저장됨', 'bad');
+  });
+}

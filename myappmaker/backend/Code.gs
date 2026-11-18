@@ -41,11 +41,19 @@ function respond_(fn) {
 function route_(p) {
   var a = String(p.action || '');
   if (CLASS_CODE.indexOf('CHANGE-ME') === 0 || TEACHER_KEY.indexOf('CHANGE-ME') === 0) throw new Error('선생님이 Code.gs 의 CLASS_CODE·TEACHER_KEY 를 아직 정하지 않았어요');
+  if (a === 'adminSetup') return adminSetup_(p);
+  if (a === 'adminLogin') return adminLogin_(p);
   var teacherActions = { list: listAll_, teacherApp: teacherApp_, review: review_, remove: remove_,
-    worldAdmin: worldAdmin_, setWorld: setWorld_, setAsset: setAsset_, setTeacherApp: setTeacherApp_ };
-  if (teacherActions[a]) { needTeacher_(p); return teacherActions[a](p); }
+    worldAdmin: worldAdmin_, setWorld: setWorld_, setAsset: setAsset_, setTeacherApp: setTeacherApp_,
+    whoami: function (q, me) { return { adminId: me || '', admins: Object.keys(admins_()).length }; },
+    admins: adminList_, addAdmin: addAdmin_, removeAdmin: removeAdmin_, changePassword: changePassword_,
+    accounts: accounts_, createAccounts: createAccounts_, resetPin: resetPin_, removeAccount: removeAccount_ };
+  if (teacherActions[a]) { var me = needTeacher_(p); return teacherActions[a](p, me); }
   needClass_(p);
   if (a === 'ping') return { classCode: CLASS_CODE, time: new Date().toISOString() };
+  if (a === 'studentLogin') return studentLogin_(p);
+  if (a === 'saveDraft') return saveDraft_(p);
+  if (a === 'loadDraft') return loadDraft_(p);
   if (a === 'submit') return submit_(p);
   if (a === 'mine') return mine_(p);
   if (a === 'world') return world_();
@@ -58,7 +66,14 @@ function route_(p) {
 }
 
 function needClass_(p) { if (String(p.classCode || '') !== CLASS_CODE) throw new Error('반 코드가 맞지 않아요'); }
-function needTeacher_(p) { if (String(p.teacherKey || '') !== TEACHER_KEY) throw new Error('교사 열쇠가 맞지 않아요'); }
+// 교사 요청: 관리자 출입증(로그인) 또는 설치 열쇠(TEACHER_KEY). 돌려주는 값 = 관리자 아이디('' = 설치 열쇠)
+function needTeacher_(p) {
+  var k = String(p.teacherKey || '');
+  if (k && k === TEACHER_KEY) return '';
+  var me = adminFromToken_(k);
+  if (!me) throw new Error('관리자로 다시 로그인해 주세요');
+  return me;
+}
 
 // ---------- 시트 ----------
 function sheet_() {
@@ -128,8 +143,14 @@ function readHtml_(id) {
 }
 
 // ---------- 요청 처리 ----------
+// 학생 아이디로 로그인했으면 그 아이디로, 아니면 기기마다 만든 열쇠(studentKey)로 학생을 구분
+function studentKey_(p) {
+  if (p.token) return studentKeyOf_(needStudent_(p).loginId);
+  return str_(p.studentKey, 80);
+}
+
 function submit_(p) {
-  var key = str_(p.studentKey, 80);
+  var key = studentKey_(p);
   if (!key) throw new Error('학생 구분 열쇠가 없어요');
   var developer = str_(p.developer, 20).trim();
   var appName = str_(p.appName, 30).trim();
@@ -164,7 +185,8 @@ function submit_(p) {
 }
 
 function mine_(p) {
-  var key = str_(p.studentKey, 80);
+  var key = studentKey_(p);
+  if (!key) return { found: false };
   var all = rows_();
   for (var i = 0; i < all.length; i++) {
     var o = all[i];
@@ -327,4 +349,264 @@ function remove_(p) {
     sheet_().deleteRow(o._row);
     return { id: o.id };
   });
+}
+
+// ====================================================================
+// 계정: 관리자(선생님) 아이디·비밀번호 + 선생님이 만들어 주는 학생 아이디·비밀번호(4자리)
+// - 로그인하면 서명된 출입증(token)을 줘요. 서버에 따로 적어 두지 않아도 위조를 알아챌 수 있어요.
+// - 학생 비밀번호를 새로 만들거나 계정을 지우면 예전 출입증은 바로 못 써요(ver).
+// - 비밀번호를 10번 틀리면 그 아이디는 5분 동안 잠겨요.
+// ====================================================================
+var ACCOUNT_SHEET = '학생계정';
+var ACCOUNT_COLS = ['loginId', 'pin', 'ver', 'createdAt', 'lastLoginAt', 'draftFileId', 'draftAt', 'fails', 'lockedUntil'];
+var SESSION_HOURS = 12;
+var MAX_DRAFT = 2000000;       // 학생 작업(기획서+앱 코드+그림) 저장 최대 크기(글자)
+var MAX_FAILS = 10, LOCK_MINUTES = 5;
+var ID_RE = /^[A-Za-z0-9가-힣-]{1,20}$/;
+
+function props_() { return PropertiesService.getScriptProperties(); }
+function jsonProp_(k, d) { try { var v = props_().getProperty(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+function setJsonProp_(k, v) { props_().setProperty(k, JSON.stringify(v)); }
+function hex_(bytes) { return bytes.map(function (b) { return ((b < 0 ? b + 256 : b) + 256).toString(16).slice(1); }).join(''); }
+function hash_(salt, pw) { return hex_(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, salt + '|' + pw, Utilities.Charset.UTF_8)); }
+function secret_() {
+  var s = props_().getProperty('SECRET');
+  if (!s) { s = Utilities.getUuid() + Utilities.getUuid(); props_().setProperty('SECRET', s); }
+  return s;
+}
+function sign_(text) { return hex_(Utilities.computeHmacSha256Signature(text, secret_())).slice(0, 40); }
+function normId_(v) { return str_(v, 40).trim().toLowerCase(); }
+
+// 출입증: 역할.아이디(인코딩).버전.만료.서명
+function makeToken_(role, who, ver) {
+  var base = [role, encodeURIComponent(who), ver, Date.now() + SESSION_HOURS * 3600000].join('.');
+  return base + '.' + sign_(base);
+}
+function readToken_(t, role) {
+  var parts = String(t || '').split('.');
+  if (parts.length !== 5 || parts[0] !== role) return null;
+  var base = parts.slice(0, 4).join('.');
+  if (sign_(base) !== parts[4] || Number(parts[3]) < Date.now()) return null;
+  return { who: decodeURIComponent(parts[1]), ver: Number(parts[2]) };
+}
+
+// ---------- 관리자 ----------
+function admins_() { return jsonProp_('ADMINS', {}); }
+function adminFromToken_(t) {
+  var x = readToken_(t, 'a');
+  if (!x) return null;
+  var a = admins_()[x.who];
+  return a && Number(a.v) === x.ver ? x.who : null;
+}
+function setAdminPw_(all, id, pw) {
+  var salt = Utilities.getUuid();
+  var old = all[id] || { c: new Date().toISOString(), v: 0 };
+  all[id] = { s: salt, h: hash_(salt, pw), v: (Number(old.v) || 0) + 1, c: old.c, f: 0, l: 0 };
+}
+function checkNewAdmin_(id, pw) {
+  if (!ID_RE.test(id)) throw new Error('관리자 아이디는 영문·숫자·한글·- 로 20자까지 써 주세요');
+  if (String(pw || '').length < 6) throw new Error('비밀번호는 6자 이상으로 정해 주세요');
+}
+// 처음 관리자 만들기 / 비밀번호를 잊었을 때: Code.gs 의 TEACHER_KEY(설치 열쇠)가 있어야 해요
+function adminSetup_(p) {
+  if (String(p.setupKey || '') !== TEACHER_KEY) throw new Error('설치 열쇠(Code.gs 의 TEACHER_KEY)가 맞지 않아요');
+  var id = normId_(p.adminId), pw = String(p.password || '');
+  checkNewAdmin_(id, pw);
+  return withLock_(function () {
+    var all = admins_();
+    setAdminPw_(all, id, pw);
+    setJsonProp_('ADMINS', all);
+    return { adminId: id, token: makeToken_('a', id, all[id].v) };
+  });
+}
+function adminLogin_(p) {
+  var id = normId_(p.adminId), pw = String(p.password || '');
+  return withLock_(function () {
+    var all = admins_(), a = all[id];
+    if (!a) throw new Error('아이디 또는 비밀번호가 맞지 않아요');
+    if (Number(a.l) > Date.now()) throw new Error('비밀번호를 여러 번 틀려서 잠시 잠겼어요. ' + LOCK_MINUTES + '분 뒤에 다시 해 보세요');
+    if (hash_(a.s, pw) !== a.h) {
+      a.f = (Number(a.f) || 0) + 1;
+      if (a.f >= MAX_FAILS) { a.f = 0; a.l = Date.now() + LOCK_MINUTES * 60000; }
+      setJsonProp_('ADMINS', all);
+      throw new Error('아이디 또는 비밀번호가 맞지 않아요');
+    }
+    a.f = 0; a.l = 0; setJsonProp_('ADMINS', all);
+    return { adminId: id, token: makeToken_('a', id, a.v) };
+  });
+}
+function adminList_() {
+  var all = admins_();
+  return { admins: Object.keys(all).sort().map(function (k) { return { adminId: k, createdAt: all[k].c }; }) };
+}
+function addAdmin_(p) {
+  var id = normId_(p.adminId), pw = String(p.password || '');
+  checkNewAdmin_(id, pw);
+  return withLock_(function () {
+    var all = admins_();
+    if (all[id]) throw new Error('이미 있는 관리자 아이디예요');
+    setAdminPw_(all, id, pw);
+    setJsonProp_('ADMINS', all);
+    return adminList_();
+  });
+}
+function removeAdmin_(p, me) {
+  var id = normId_(p.adminId);
+  return withLock_(function () {
+    var all = admins_();
+    if (!all[id]) throw new Error('없는 관리자예요');
+    if (Object.keys(all).length <= 1) throw new Error('마지막 관리자는 지울 수 없어요');
+    if (id === me) throw new Error('지금 로그인한 내 계정은 지울 수 없어요');
+    delete all[id];
+    setJsonProp_('ADMINS', all);
+    return adminList_();
+  });
+}
+function changePassword_(p, me) {
+  if (!me) throw new Error('관리자로 로그인해야 비밀번호를 바꿀 수 있어요');
+  var pw = String(p.password || '');
+  checkNewAdmin_(me, pw);
+  return withLock_(function () {
+    var all = admins_();
+    setAdminPw_(all, me, pw);
+    setJsonProp_('ADMINS', all);
+    return { adminId: me, token: makeToken_('a', me, all[me].v) };   // 다른 기기의 예전 로그인은 풀려요
+  });
+}
+
+// ---------- 학생 계정 (시트 「학생계정」) ----------
+function accSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName(ACCOUNT_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(ACCOUNT_SHEET);
+    sh.getRange(1, 1, 1000, 2).setNumberFormat('@');   // 아이디·비밀번호는 글자로 (「01」이 숫자 1로 바뀌지 않게)
+    sh.getRange(1, 1, 1, ACCOUNT_COLS.length).setValues([ACCOUNT_COLS]); sh.setFrozenRows(1);
+  }
+  return sh;
+}
+function accRows_() {
+  var sh = accSheet_(), n = sh.getLastRow() - 1;
+  if (n < 1) return [];
+  return sh.getRange(2, 1, n, ACCOUNT_COLS.length).getValues().map(function (v, i) {
+    var o = { _row: i + 2 };
+    ACCOUNT_COLS.forEach(function (c, j) { o[c] = v[j]; });
+    o.loginId = String(o.loginId); o.pin = String(o.pin);
+    return o;
+  });
+}
+function accWrite_(o) {
+  var sh = accSheet_();
+  var vals = [ACCOUNT_COLS.map(function (c) { return o[c] == null ? '' : o[c]; })];
+  if (o._row) sh.getRange(o._row, 1, 1, ACCOUNT_COLS.length).setValues(vals); else sh.appendRow(vals[0]);
+}
+function accFind_(id) {
+  var all = accRows_();
+  for (var i = 0; i < all.length; i++) if (all[i].loginId === id) return all[i];
+  return null;
+}
+function newPin_() { return String(1000 + Math.floor(Math.random() * 9000)); }
+function studentKeyOf_(id) { return 'id:' + id; }
+
+function accounts_() {
+  var subs = {};
+  rows_().forEach(function (o) { subs[o.studentKey] = o; });
+  return { accounts: accRows_().map(function (a) {
+    var s = subs[studentKeyOf_(a.loginId)];
+    return { loginId: a.loginId, pin: a.pin, createdAt: a.createdAt, lastLoginAt: a.lastLoginAt, draftAt: a.draftAt,
+      locked: Number(a.lockedUntil) > Date.now(), app: s ? { id: s.id, appName: s.appName, developer: s.developer, status: s.status, booth: s.booth === '' ? null : Number(s.booth) } : null };
+  }) };
+}
+// 한꺼번에 만들기: prefix + 번호(두 자리). 예) prefix '' · 1~25 → 01, 02, … 25
+function createAccounts_(p) {
+  var prefix = str_(p.prefix, 12).trim().toLowerCase();
+  var from = Math.max(1, Math.floor(Number(p.from)) || 1), count = Math.floor(Number(p.count)) || 0;
+  if (count < 1 || count > 60) throw new Error('한 번에 1~60개까지 만들 수 있어요');
+  if (prefix && !/^[A-Za-z0-9가-힣-]{1,12}$/.test(prefix)) throw new Error('앞글자는 영문·숫자·한글·- 로 12자까지 써 주세요');
+  return withLock_(function () {
+    var have = {};
+    accRows_().forEach(function (a) { have[a.loginId] = true; });
+    var made = [], skipped = [];
+    for (var n = from; n < from + count; n++) {
+      var id = prefix + (n < 10 ? '0' + n : String(n));
+      if (have[id]) { skipped.push(id); continue; }
+      var a = { loginId: id, pin: newPin_(), ver: 1, createdAt: new Date().toISOString(), fails: 0, lockedUntil: 0 };
+      accWrite_(a); made.push({ loginId: id, pin: a.pin });
+    }
+    return { made: made, skipped: skipped };
+  });
+}
+function resetPin_(p) {
+  return withLock_(function () {
+    var a = accFind_(normId_(p.loginId));
+    if (!a) throw new Error('없는 아이디예요');
+    a.pin = newPin_(); a.ver = (Number(a.ver) || 0) + 1; a.fails = 0; a.lockedUntil = 0;
+    accWrite_(a);
+    return { loginId: a.loginId, pin: a.pin };
+  });
+}
+function removeAccount_(p) {
+  return withLock_(function () {
+    var a = accFind_(normId_(p.loginId));
+    if (!a) throw new Error('없는 아이디예요');
+    saveText_(a.draftFileId, '', '');
+    accSheet_().deleteRow(a._row);
+    return { loginId: a.loginId };
+  });
+}
+
+// 학생 로그인 → 출입증
+function studentLogin_(p) {
+  var id = normId_(p.loginId), pin = str_(p.pin, 10).trim();
+  return withLock_(function () {
+    var a = accFind_(id);
+    if (!a) throw new Error('아이디 또는 비밀번호가 맞지 않아요');
+    if (Number(a.lockedUntil) > Date.now()) throw new Error('비밀번호를 여러 번 틀려서 잠시 잠겼어요. ' + LOCK_MINUTES + '분 뒤에 다시 하거나 선생님께 말해요');
+    if (a.pin !== pin) {
+      a.fails = (Number(a.fails) || 0) + 1;
+      if (a.fails >= MAX_FAILS) { a.fails = 0; a.lockedUntil = Date.now() + LOCK_MINUTES * 60000; }
+      accWrite_(a);
+      throw new Error('아이디 또는 비밀번호가 맞지 않아요');
+    }
+    a.fails = 0; a.lockedUntil = 0; a.lastLoginAt = new Date().toISOString();
+    accWrite_(a);
+    return { loginId: a.loginId, token: makeToken_('s', a.loginId, Number(a.ver) || 1), draftAt: a.draftAt || '' };
+  });
+}
+function studentFromToken_(t) {
+  var x = readToken_(t, 's');
+  if (!x) return null;
+  var a = accFind_(x.who);
+  return a && (Number(a.ver) || 1) === x.ver ? a : null;
+}
+function needStudent_(p) {
+  var a = studentFromToken_(p.token);
+  if (!a) throw new Error('다시 로그인해 주세요 (로그인 시간이 지났거나 비밀번호가 바뀌었어요)');
+  return a;
+}
+
+// 학생 작업 저장·불러오기 (드라이브 파일 하나를 계속 덮어써요)
+function saveDraft_(p) {
+  var a = needStudent_(p);
+  var text = typeof p.plan === 'string' ? p.plan : JSON.stringify(p.plan || null);
+  if (!text || text === 'null') throw new Error('저장할 내용이 없어요');
+  if (text.length > MAX_DRAFT) throw new Error('작업이 너무 커요. 큰 그림을 빼 보세요');
+  var at = new Date().toISOString();
+  if (a.draftFileId) {
+    try { DriveApp.getFileById(a.draftFileId).setContent(text); } catch (e) { a.draftFileId = ''; }
+  }
+  return withLock_(function () {
+    var cur = accFind_(a.loginId);
+    if (!cur) throw new Error('계정이 지워졌어요');
+    if (!cur.draftFileId || cur.draftFileId !== a.draftFileId) cur.draftFileId = saveText_(cur.draftFileId, 'draft_' + cur.loginId, text);
+    cur.draftAt = at;
+    accWrite_(cur);
+    return { draftAt: at };
+  });
+}
+function loadDraft_(p) {
+  var a = needStudent_(p);
+  var plan = null;
+  if (a.draftFileId) { try { plan = JSON.parse(readText_(a.draftFileId)); } catch (e) { plan = null; } }
+  return { loginId: a.loginId, plan: plan, draftAt: a.draftAt || '' };
 }
