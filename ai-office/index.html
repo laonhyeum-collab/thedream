@@ -7,7 +7,7 @@
 :root{
   --bg:#f3f1ea; --panel:#fffdf7; --ink:#2b2a33; --muted:#6c6878; --line:#e2ddcf;
   --accent:#e0794f; --accent-ink:#fff; --soft:#f8e6dc;
-  --edu:#4f9e7a; --media:#7b6cc9; --strat:#3f7fb8; --ceo:#c98a2b;
+  --edu:#4f9e7a; --media:#7b6cc9; --strat:#3f7fb8; --ceo:#c98a2b; --app:#d0703f;
   --ok:#3c9a5f; --warn:#d49a1f; --bad:#c9534a;
   --f-display:"Jua","Noto Sans KR",system-ui,sans-serif;
   --f-body:"Noto Sans KR",system-ui,-apple-system,sans-serif;
@@ -16,12 +16,12 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#1c1b22; --panel:#26252e; --ink:#eeeaf2; --muted:#a8a3b5; --line:#3a3845;
   --accent:#f08c62; --accent-ink:#1c1b22; --soft:#3b2c27;
-  --edu:#6cc39b; --media:#a597ef; --strat:#6ea8de; --ceo:#e6ad55;
+  --edu:#6cc39b; --media:#a597ef; --strat:#6ea8de; --ceo:#e6ad55; --app:#ef9465;
   --ok:#5cc282; --warn:#e8b544; --bad:#e3756b; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#1c1b22; --panel:#26252e; --ink:#eeeaf2; --muted:#a8a3b5; --line:#3a3845;
   --accent:#f08c62; --accent-ink:#1c1b22; --soft:#3b2c27;
-  --edu:#6cc39b; --media:#a597ef; --strat:#6ea8de; --ceo:#e6ad55;
+  --edu:#6cc39b; --media:#a597ef; --strat:#6ea8de; --ceo:#e6ad55; --app:#ef9465;
   --ok:#5cc282; --warn:#e8b544; --bad:#e3756b; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.55}
@@ -66,7 +66,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .empty{color:var(--muted);font-size:13px;padding:14px;border:2px dashed var(--line);border-radius:10px;text-align:center}
 
 .chip{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;color:#fff;white-space:nowrap}
-.d-edu{background:var(--edu)}.d-media{background:var(--media)}.d-strategy{background:var(--strat)}.d-ceo{background:var(--ceo)}
+.d-app{background:var(--app)}.d-edu{background:var(--edu)}.d-media{background:var(--media)}.d-strategy{background:var(--strat)}.d-ceo{background:var(--ceo)}
 .st{font-size:11px;padding:1px 7px;border-radius:999px;border:1.5px solid currentColor;white-space:nowrap}
 .st-proposed{color:var(--warn)}.st-approved{color:var(--strat)}.st-doing{color:var(--media)}.st-done{color:var(--ok)}.st-rejected{color:var(--bad)}.st-handoff{color:var(--media)}
 
@@ -91,7 +91,7 @@ form.order input,form.order select,form.order textarea{font:inherit;color:var(--
 form.order input{flex:1 1 220px}
 form.order textarea{width:100%;min-height:64px;resize:vertical}
 .note{font-size:12px;color:var(--muted)}
-.org{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.org{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
 @media (max-width:760px){.org{grid-template-columns:1fr}}
 .dept{border-radius:10px;border:2px solid var(--line);padding:12px;min-width:0}
 .dept h3{font-family:var(--f-display);font-weight:400;font-size:18px;margin:0 0 4px}
@@ -103,13 +103,23 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
 .sched .dd{font-family:var(--f-pixel);font-size:13px}
 .sched .dd.today{color:var(--accent)}
 .doc-view{white-space:pre-wrap;background:var(--bg);border-radius:8px;padding:12px;font-size:13.5px;max-height:480px;overflow:auto;overflow-wrap:anywhere}
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.app{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:6px;min-width:0}
+.app .nm{font-family:var(--f-display);font-size:17px}
+.app .meta{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere}
+.app .links{display:flex;gap:10px;flex-wrap:wrap;font-size:13px}
+.st-운영중{color:var(--ok)}.st-개선중{color:var(--media)}.st-점검필요{color:var(--bad)}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;min-width:560px;font-size:13px}
+.tbl th,.tbl td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl th{font-size:12px;color:var(--muted)}
 .status-line{font-size:12px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.bub{transition:none}}
 </style>
 
 <div class="wrap">
   <header class="top">
-    <h1>꿈터 AI 사무실<small>교육 콘텐츠 제작 회사 · 대표 1명, AI 직원 10명</small></h1>
+    <h1>꿈터 AI 사무실<small>교육 콘텐츠 제작 회사 · 대표 1명, AI 직원 13명</small></h1>
     <div class="clock" aria-live="polite">
       <div class="t" id="clk">--:--</div>
       <div class="s"><b id="officeStatus">출근 대기</b><span id="nextRun">평일 08:00 출근</span></div>
@@ -129,6 +139,7 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
     <button role="tab" data-tab="feed">업무 피드</button>
     <button role="tab" data-tab="sched">일정</button>
     <button role="tab" data-tab="docs">자료실</button>
+    <button role="tab" data-tab="apps">앱 관리</button>
     <button role="tab" data-tab="org">조직도</button>
   </nav>
 
@@ -156,6 +167,7 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
         <select id="orderDept" aria-label="담당 부서">
           <option value="edu">교육부서</option>
           <option value="strategy">전략부서</option>
+          <option value="app">앱개발부서</option>
           <option value="media">미디어부서</option>
         </select>
         <input id="orderTitle" placeholder="예: 초등 4학년 엔트리 미로 게임 4차시 수업" aria-label="지시 제목" required>
@@ -187,9 +199,29 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
     <div id="docView" hidden style="margin-top:12px"><div class="h" style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2 id="docTitle" style="margin:0"></h2><button class="btn ghost" id="docClose">닫기</button></div><div class="doc-view" id="docBody"></div></div>
   </section>
 
+  <section class="panel" data-pane="apps" hidden>
+    <h2>앱 관리</h2>
+    <p class="note" style="margin-top:-4px">지금까지 만든 앱을 앱개발부서가 관리해요. 출근할 때마다 배포 상태를 점검하고, 고칠 점은 결재함에 올려요.</p>
+    <div class="apps" id="appList"></div>
+  </section>
+
   <section class="panel" data-pane="org" hidden>
     <h2>조직도</h2>
     <div class="org" id="orgChart"></div>
+    <h2 style="margin-top:20px">부서 간 협업 규칙</h2>
+    <p class="note" style="margin-top:-4px">부서끼리 일을 넘길 때는 요청서를 업무로 올려요. 받는 부서가 처리하고 결과를 돌려줘요.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>보내는 부서</th><th>받는 부서</th><th>무엇을 넘기나</th><th>언제</th></tr></thead>
+      <tbody>
+        <tr><td>전략부서</td><td>모든 부서</td><td>오늘의 우선순위, 담당, 마감</td><td>매일 출근 직후</td></tr>
+        <tr><td>교육부서</td><td>앱개발부서</td><td>수업용 앱 요청서: 수업에서 필요한 기능, 학년, 차시</td><td>교안에 앱 활동이 들어갈 때</td></tr>
+        <tr><td>앱개발부서</td><td>교육부서</td><td>업데이트 노트와 수업 활용 가이드 (교안에 반영)</td><td>앱이 바뀐 날</td></tr>
+        <tr><td>교육부서</td><td>미디어부서</td><td>미디어 제작 요청서: 수업 핵심 메시지, 릴스·카드뉴스 아이디어</td><td>수업 자료 완성 후</td></tr>
+        <tr><td>앱개발부서</td><td>미디어부서</td><td>앱 소개 영상 요청서: 새 기능, 시연 순서, 캡처 목록</td><td>새 기능 배포 후</td></tr>
+        <tr><td>모든 부서</td><td>비서실</td><td>하루 한 일, 막힌 점, 대표 결재가 필요한 것</td><td>퇴근 전</td></tr>
+        <tr><td>대표</td><td>모든 부서</td><td>승인·반려, 직접 지시</td><td>대표 결재 탭에서 언제든</td></tr>
+      </tbody>
+    </table></div>
   </section>
 </div>
 
@@ -201,6 +233,7 @@ const DEPTS = {
   strategy:{name:"전략부서", color:"#3f7fb8", mission:"전체 운영 기획과 스케줄 관리"},
   edu:{name:"교육부서", color:"#4f9e7a", mission:"수업 기획과 강의 자료 제작"},
   media:{name:"미디어부서", color:"#7b6cc9", mission:"교육 콘텐츠 제작 (별도 창에서 운영 중)"},
+  app:{name:"앱개발부서", color:"#d0703f", mission:"수업·콘텐츠용 앱 기획, 개발, 점검과 배포 관리"},
   ceo:{name:"대표실 · 비서실", color:"#c98a2b", mission:"결재와 하루 브리핑"}
 };
 // hair, shirt colors for each member sprite
@@ -214,18 +247,22 @@ const MEMBERS = [
   {id:"ieum", name:"이음", dept:"edu", team:"품질검수팀", role:"학년 수준, 안전, 오류 검수", hair:"#5a3a5a", shirt:"#2f7a58", desk:[19,8]},
   {id:"dasom", name:"다솜", dept:"edu", team:"교안디자인팀", role:"교육 목적에 맞춘 PPT·지도안·활동지 디자인", hair:"#d9774a", shirt:"#86c9a5", desk:[14,8]},
   {id:"harang", name:"하랑", dept:"media", team:"협업창구", role:"완성 수업을 미디어부서 제작 요청서로 전달", hair:"#e0d6c8", shirt:"#7b6cc9", desk:[31,4]},
-  {id:"dodam", name:"도담", dept:"ceo", team:"비서실", role:"하루 업무 마감, 대표 브리핑 작성", hair:"#6a3b2a", shirt:"#c98a2b", desk:[33,19]}
+  {id:"haneul", name:"하늘", dept:"app", team:"앱기획팀", role:"앱 개선 기획, 수업 연계 요구사항 정리", hair:"#3b2b4a", shirt:"#d0703f", desk:[21,17]},
+  {id:"doyun", name:"도윤", dept:"app", team:"앱개발팀", role:"승인된 기능 개발, 버그 수정", hair:"#1f1f24", shirt:"#e08a5a", desk:[26,17]},
+  {id:"byeol", name:"별", dept:"app", team:"점검·배포팀", role:"테스트, 배포 상태 점검, 업데이트 노트", hair:"#b5652e", shirt:"#b85c30", desk:[21,21]},
+  {id:"dodam", name:"도담", dept:"ceo", team:"비서실", role:"하루 업무 마감, 대표 브리핑 작성", hair:"#6a3b2a", shirt:"#c98a2b", desk:[36,19]}
 ];
 const MEDIA_GHOSTS = [{x:35,y:4,hair:"#444",shirt:"#9b8fd9"},{x:35,y:8,hair:"#8a5a3a",shirt:"#8d80d0"}];
 const ROOMS = [
   {key:"strategy", x:0,y:0,w:12,h:10, floor:["#c9d8e8","#bccce0"], label:"전략부서"},
   {key:"edu", x:12,y:0,w:16,h:10, floor:["#d6e8d0","#c8dec1"], label:"교육부서"},
   {key:"media", x:28,y:0,w:12,h:10, floor:["#ddd6f0","#d0c8e8"], label:"미디어부서", media:true},
-  {key:"ceo", x:0,y:13,w:12,h:12, floor:["#d9b98a","#cfae7c"], label:"대표실"},
-  {key:"meet", x:12,y:13,w:14,h:12, floor:["#efe2c4","#e7d8b6"], label:"회의실"},
-  {key:"lounge", x:26,y:13,w:14,h:12, floor:["#cfe3e6","#c2d9dd"], label:"비서실 · 휴게실"}
+  {key:"ceo", x:0,y:13,w:9,h:12, floor:["#d9b98a","#cfae7c"], label:"대표실"},
+  {key:"meet", x:9,y:13,w:10,h:12, floor:["#efe2c4","#e7d8b6"], label:"회의실"},
+  {key:"app", x:19,y:13,w:13,h:12, floor:["#f3dccb","#ead0bd"], label:"앱개발부서"},
+  {key:"lounge", x:32,y:13,w:8,h:12, floor:["#cfe3e6","#c2d9dd"], label:"비서실"}
 ];
-const SPOTS = { meet:[[16,18],[19,18],[22,18],[16,21],[19,21],[22,21]], lounge:[[29,21],[36,21],[30,17]], ceo:[[6,19],[8,20]], hall:[[6,11],[14,11],[20,11],[26,11],[33,11]] };
+const SPOTS = { meet:[[11,18],[13.5,18],[16,18],[11,21],[13.5,21],[16,21]], lounge:[[34,21],[38,22],[34,17]], ceo:[[4,20],[6,20]], hall:[[6,11],[14,11],[20,11],[26,11],[33,11]] };
 
 // ---------- Helpers ----------
 const $ = s => document.querySelector(s);
@@ -240,14 +277,14 @@ function fmtTime(iso){ if(!iso) return ""; const d=new Date(iso); if(isNaN(d)) r
 function fmtDay(iso){ const d=new Date(iso); if(isNaN(d)) return ""; return new Intl.DateTimeFormat("ko-KR",{timeZone:KST,month:"long",day:"numeric",weekday:"short"}).format(d); }
 function kstDateOf(iso){ const d=new Date(iso); return isNaN(d)?"":kstParts(d).date; }
 const deptChip = k => `<span class="chip d-${DEPTS[k]?k:"ceo"}">${esc(DEPTS[k]?.name||"대표실")}</span>`;
-const STATUS = {proposed:"결재 대기",approved:"승인됨 · 제작 대기",doing:"제작 중",done:"완료",rejected:"반려",handoff:"미디어 전달"};
+const STATUS = {proposed:"결재 대기",approved:"승인됨 · 제작 대기",doing:"제작 중",done:"완료",rejected:"반려",handoff:"부서 전달"};
 const stChip = s => `<span class="st st-${esc(s)}">${esc(STATUS[s]||s)}</span>`;
 const safeUrl = u => /^(https:\/\/|\/_blob\/)/.test(u||"") ? u : "";
 const MEDIA_OFFICE = "https://claude.ai/artifact/8bxSJL6icMaJpRTJYe644q";
 const fileLinks = d => (Array.isArray(d.files)? d.files : []).filter(f=>safeUrl(f.url)).map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name||"파일")}</a>`).join(" · ");
 
 // ---------- State ----------
-let tasks=[], feed=[], schedule=[], docs=[], office={};
+let tasks=[], feed=[], schedule=[], docs=[], apps=[], office={};
 let canWrite = null;
 
 // ---------- Canvas office ----------
@@ -279,21 +316,24 @@ function drawBackground(){
   MEMBERS.forEach(m=>desk(m.desk[0],m.desk[1]));
   MEDIA_GHOSTS.forEach(p=>desk(p.x,p.y,"#4a3f7a"));
   // decorations
-  plant(1,1.4); plant(10,1.4); plant(26.6,8.2); plant(26,1.4); plant(38,8.2); plant(1,23); plant(38,14.2);
+  plant(1,1.4); plant(10,1.4); plant(26.6,8.2); plant(26,1.4); plant(38,8.2); plant(1,23);
   shelf(9,7.5); shelf(25,7.5); board(5,1.3,36); board(16,1.3,60);
   // CEO room: big desk + rug
-  g.fillStyle="#b04a3a"; g.fillRect(2*T,16*T,8*T,6*T); g.fillStyle="#c86450"; g.fillRect(2*T+4,16*T+4,8*T-8,6*T-8);
-  g.fillStyle="#5a3a22"; g.fillRect(4*T,17*T,4*T,T+6); g.fillStyle="#2b2a33"; g.fillRect(5.5*T,16.4*T,T,10); g.fillStyle="#f2c94c"; g.fillRect(4.3*T,17.3*T,8,6);
-  g.fillStyle="#3c3c46"; g.fillRect(5.6*T,18.6*T,12,10);
+  g.fillStyle="#b04a3a"; g.fillRect(1*T,16*T,7*T,6*T); g.fillStyle="#c86450"; g.fillRect(1*T+4,16*T+4,7*T-8,6*T-8);
+  g.fillStyle="#5a3a22"; g.fillRect(2.5*T,17*T,4*T,T+6); g.fillStyle="#2b2a33"; g.fillRect(4*T,16.4*T,T,10); g.fillStyle="#f2c94c"; g.fillRect(2.8*T,17.3*T,8,6);
+  g.fillStyle="#3c3c46"; g.fillRect(4.1*T,18.6*T,12,10);
   // meeting table
-  g.fillStyle="#7a5232"; g.fillRect(15*T,18.8*T,8.5*T,2.2*T); g.fillStyle="#936440"; g.fillRect(15*T+3,18.8*T+3,8.5*T-6,2.2*T-6);
-  for(let i=0;i<4;i++){ g.fillStyle="#d9534f"; g.fillRect((15.6+i*2.1)*T,17.6*T,12,10); g.fillRect((15.6+i*2.1)*T,21.4*T,12,10); }
-  board(14,14.4,90);
-  // lounge: sofa, water, secretary desk
-  g.fillStyle="#4f8f96"; g.fillRect(27.5*T,22.4*T,6*T,1.6*T); g.fillStyle="#6aaab0"; g.fillRect(27.5*T,21.8*T,6*T,0.8*T);
-  g.fillStyle="#d5e9f2"; g.fillRect(37*T,16*T,12,18); g.fillStyle="#7cc6e8"; g.fillRect(37*T+2,16*T+2,8,7);
-  desk(33,19);
-  g.fillStyle="#7a6a58"; g.fillRect(28*T,15.5*T,22,14); g.fillStyle="#f6efe0"; g.fillRect(28*T+3,15.5*T+3,16,8); // coffee machine
+  g.fillStyle="#7a5232"; g.fillRect(10.5*T,18.8*T,7*T,2.2*T); g.fillStyle="#936440"; g.fillRect(10.5*T+3,18.8*T+3,7*T-6,2.2*T-6);
+  for(let i=0;i<3;i++){ g.fillStyle="#d9534f"; g.fillRect((11.2+i*2.4)*T,17.6*T,12,10); g.fillRect((11.2+i*2.4)*T,21.4*T,12,10); }
+  board(10,14.4,80);
+  // app room: release board, server racks
+  board(23,14.4,70);
+  for(let i=0;i<2;i++){ const x=(29.6+i*1.2)*T, y=15.2*T; g.fillStyle="#2b2a33"; g.fillRect(x,y,16,40); for(let j=0;j<5;j++){ g.fillStyle=j%2?"#7fd1b9":"#f2c94c"; g.fillRect(x+3,y+4+j*7,3,2); g.fillStyle="#4a4a56"; g.fillRect(x+8,y+4+j*7,5,2);} }
+  plant(30.5,22.6); shelf(25.5,21.4);
+  // lounge: sofa, water, coffee
+  g.fillStyle="#4f8f96"; g.fillRect(33*T,22.4*T,4*T,1.6*T); g.fillStyle="#6aaab0"; g.fillRect(33*T,21.8*T,4*T,0.8*T);
+  g.fillStyle="#d5e9f2"; g.fillRect(38.5*T,16*T,12,18); g.fillStyle="#7cc6e8"; g.fillRect(38.5*T+2,16*T+2,8,7);
+  g.fillStyle="#7a6a58"; g.fillRect(33*T,15.5*T,22,14); g.fillStyle="#f6efe0"; g.fillRect(33*T+3,15.5*T+3,16,8); // coffee machine
   // media room sign
   g.fillStyle="rgba(123,108,201,.25)"; g.fillRect(28*T+3,T+4,12*T-6,9*T-7);
 }
@@ -442,7 +482,7 @@ function taskCard(t, withActs){
   const link = safeUrl(t.link) ? `<a href="${esc(t.link)}" target="_blank" rel="noopener">드라이브에서 열기</a>` : "";
   const docBtn = t.docId ? `<button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button>` : "";
   const acts = withActs && canWrite!==false ? `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}">승인</button><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>` : "";
-  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChip(t.status)}<span class="note">${esc(t.team||"")}${t.by==="대표"?" · 대표 지시":""}</span></div>
+  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChip(t.status)}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${t.by==="대표"?" · 대표 지시":""}</span></div>
     <div class="title">${esc(t.title)}</div>${t.detail?`<div class="det">${esc(t.detail)}</div>`:""}
     ${(acts||link||docBtn)?`<div class="acts">${acts}${docBtn}${link}</div>`:""}</div>`;
 }
@@ -463,6 +503,15 @@ function render(){
   const sc = schedule.filter(s=>s.date>=today).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
   $("#schedList").innerHTML = sc.length ? sc.map(s=>`<div class="d"><div class="dd ${s.date===today?"today":""}">${esc(s.date.slice(5).replace("-","/"))}${s.time?`<br>${esc(s.time)}`:""}</div><div>${deptChip(s.dept)} ${esc(s.title)}${s.note?`<div class="note">${esc(s.note)}</div>`:""}</div></div>`).join("") : `<div class="empty">아직 잡힌 일정이 없어요. 전략부서가 첫 출근 때 2주치 운영 일정을 짜요.</div>`;
   $("#docList").innerHTML = docs.length ? docs.map(d=>`<div class="item"><div class="h">${deptChip(d.dept)}<span class="note">${esc(d.team||"")} · ${esc(fmtDay(d.createdAt))}</span></div><div class="title">${esc(d.title)}</div><div class="acts"><button class="btn ghost" data-doc="${esc(d._id)}">자료 보기</button>${safeUrl(d.driveUrl)?`<a href="${esc(d.driveUrl)}" target="_blank" rel="noopener">구글 드라이브</a>`:""}</div>${fileLinks(d)?`<div class="note">디자인 미리보기(PDF): ${fileLinks(d)}</div>`:""}</div>`).join("") : `<div class="empty">아직 만든 자료가 없어요. 승인한 수업은 기획안, 강의 자료, 활동지로 이곳에 저장돼요.</div>`;
+  $("#appList").innerHTML = apps.length ? apps.map(a=>{
+    const st=(a.status||"운영 중"); const cls=st.replace(/\s/g,"");
+    const links=[safeUrl(a.liveUrl)?`<a href="${esc(a.liveUrl)}" target="_blank" rel="noopener">웹에서 열기</a>`:"", safeUrl(a.artifactUrl)?`<a href="${esc(a.artifactUrl)}" target="_blank" rel="noopener">Claude에서 열기</a>`:"", safeUrl(a.repoUrl)?`<a href="${esc(a.repoUrl)}" target="_blank" rel="noopener">코드</a>`:""].filter(Boolean).join("");
+    return `<div class="app"><div class="h" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="nm">${esc(a.name)}</span><span class="st st-${esc(cls)}">${esc(st)}</span></div>
+      <div class="meta">${esc(a.summary||"")}</div>
+      <div class="meta">${esc(a.kind||"")}${a.audience?" · "+esc(a.audience):""}${a.lastCheck?" · 점검 "+esc(fmtDay(a.lastCheck)):""}</div>
+      ${a.note?`<div class="meta">메모: ${esc(a.note)}</div>`:""}
+      ${links?`<div class="links">${links}</div>`:""}</div>`;
+  }).join("") : `<div class="empty">앱 목록을 불러오는 중이에요.</div>`;
   if(docLinkedOpen) openDoc(docLinkedOpen);
 }
 function openDoc(id){
@@ -475,7 +524,7 @@ $("#docClose").addEventListener("click",()=>{ $("#docView").hidden=true; docLink
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-doc]"); if(b) openDoc(b.dataset.doc); });
 
 // org chart
-$("#orgChart").innerHTML = ["strategy","edu","media"].map(k=>{
+$("#orgChart").innerHTML = ["strategy","edu","app","media"].map(k=>{
   const ms = MEMBERS.filter(m=>m.dept===k);
   return `<div class="dept" style="border-color:${DEPTS[k].color}"><h3 style="color:${DEPTS[k].color}">${DEPTS[k].name}</h3><div class="mission">${DEPTS[k].mission}</div>
   ${ms.map(m=>`<div class="team"><canvas class="ava" width="16" height="20" data-ava="${m.id}"></canvas><div><b>${m.team} · ${m.name}</b><div>${m.role}</div></div></div>`).join("")}
@@ -506,7 +555,7 @@ $("#orderForm").addEventListener("submit", async e=>{
   const title=$("#orderTitle").value.trim(); if(!title) return;
   if(!dbRef){ $("#orderMsg").textContent="사무실 데이터에 연결되지 않아 지시를 저장할 수 없어요."; return; }
   const dept=$("#orderDept").value;
-  const team = dept==="edu"?"수업기획팀":dept==="strategy"?"운영기획팀":"협업창구";
+  const team = dept==="edu"?"수업기획팀":dept==="strategy"?"운영기획팀":dept==="app"?"앱기획팀":"협업창구";
   try{
     const now=new Date().toISOString();
     await dbRef.collection("tasks").add({title, detail:$("#orderDetail").value.trim(), dept, team, status:"approved", by:"대표", createdAt:now, updatedAt:now});
@@ -530,6 +579,7 @@ $("#orderForm").addEventListener("submit", async e=>{
   db.collection("feed").orderBy("at","desc").limit(150).onSnapshot(s=>{ feed=rows(s); render(); }, err);
   db.collection("schedule").orderBy("date","asc").limit(200).onSnapshot(s=>{ schedule=rows(s); render(); }, err);
   db.collection("docs").orderBy("createdAt","desc").limit(100).onSnapshot(s=>{ docs=rows(s); render(); }, err);
+  db.collection("apps").orderBy("order","asc").limit(100).onSnapshot(s=>{ apps=rows(s); render(); }, err);
 })();
 
 render();
