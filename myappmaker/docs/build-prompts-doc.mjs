@@ -6,8 +6,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import {
-  CHIBI_LOOK, BUILDING_LOOK, BADGE_LOOK, worldPrompts, fullMapPrompt, mapWithSchoolNamePrompt, studentBoothPrompt, MAP_THEMES, PIXEL_STYLE, NO_TEXT, STUDENT_BOOTHS,
+  CHIBI_LOOK, BUILDING_LOOK, BADGE_LOOK, worldPrompts, fullMapPrompt, mapWithSchoolNamePrompt, MAP_THEMES, PIXEL_STYLE, NO_TEXT, STUDENT_BOOTHS, presetById,
 } from '../shared/worldart.js';
+import { emptyPlan, buildImagePrompts } from '../shared/plan.js';
 
 const require = createRequire(import.meta.url);
 const {
@@ -74,11 +75,11 @@ const children = [
   ], [2300, 2900, 3826]),
   gap(),
 
-  h1('2. 모든 그림에 공통으로 들어가는 말 (참고 화면의 컨셉)'),
-  p('선생님이 정한 「MY APP META WORLD」 참고 화면과 같은 세계로 보이도록, 월드 그림과 학생 그림 프롬프트에 모두 같은 그림체 문장이 들어 있어요. 직접 프롬프트를 고칠 때도 이 문장은 남겨 두세요.'),
+  h1('2. 모든 그림에 공통으로 들어가는 말 (앱 월드 지도의 컨셉)'),
+  p('앱에 들어 있는 지도 그림 3장(별빛 성 섬·사계절 모험 섬·강물 다리 섬)과 같은 세계로 보이도록, 월드 그림과 학생 그림 프롬프트에 모두 같은 그림체 문장이 들어 있어요. 지도는 교사 앱 「🗺️ 앱 월드 지도 고르기」에서 고르면 되고, 아래 프롬프트는 지도를 직접 새로 만들고 싶을 때만 써요. 직접 프롬프트를 고칠 때도 그림체 문장은 남겨 두세요.'),
   promptBox(`그림체: ${PIXEL_STYLE}`),
   gap(),
-  table(['그림', '참고 화면과 맞추는 모습'], [
+  table(['그림', '앱 월드 지도와 맞추는 모습'], [
     ['건물(선생님·부스)', BUILDING_LOOK],
     ['사람 캐릭터(학생 주인공)', CHIBI_LOOK],
     ['아이콘', BADGE_LOOK],
@@ -125,12 +126,13 @@ const children = [
 
   new Paragraph({ children: [new PageBreak()] }),
   h1('5. 학생이 만드는 그림 (참고)'),
-  p('학생 앱이 학생마다 기획서에 맞춰 프롬프트를 만들어 줘요. 모두 참고 화면과 같은 컨셉이에요: 게임 배경은 「앱 월드 안의 한 장소」, 주인공은 앱 월드 아이들과 같은 2등신 캐릭터, 아이콘은 건물 위 동그란 문장 모양, 부스는 앱 월드 건물과 같은 모습.'),
-  bullet([b('게임 그림: '), '「4. 내 앱 → 🖼️ 내 그림 넣기」 — 배경(16:9), 주인공, 아이콘 최대 3개']),
-  bullet([b('내 부스 건물: '), '「5. 입점 → 🏠 내 부스」 — 방식 B(또는 그림 없이)일 때 앱 월드의 내 부스로 보여요']),
-  bullet([b('내 캐릭터: '), '그림 AI 없이 앱에서 머리·피부·옷·소품을 골라 만들어요']),
-  p('예) 「공룡 화석 발굴대」 학생의 부스 건물 프롬프트:'),
-  promptBox(studentBoothPrompt({ appName: '공룡 화석 발굴대', topicName: '보물섬 탐험', cat: 'adventure', summary: '섬 곳곳에 묻힌 화석 조각을 찾아 공룡 뼈대를 완성해요', hero: '아기 티라노' })),
+  p('학생 앱이 학생마다 기획서에 맞춰 그림 프롬프트를 만들어 줘요. 선생님이 고른 앱 월드 지도의 세계관(섬 모습)과 그림체가 프롬프트에 들어가서, 학생 그림이 지도 속 한 곳처럼 이어져 보여요.'),
+  bullet([b('게임 배경: '), '학생이 쓴 장소·주제 낱말로 지도 속 구역(해변·숲·벚꽃 언덕·수정 동굴·화산·눈 덮인 산 등)을 찾아 「그 구역으로 들어가 가까이 본 장면」으로 그려 달라고 해요. 맞는 구역이 없으면 「섬에 새로 생긴 작은 구역」으로. 지도 소품(크림색 돌길, 둥근 나무, 벚꽃, 보라 별 깃발 가로등, 꽃 화단)도 1~2개 넣어요.']),
+  bullet([b('주인공: '), '앱 월드를 걸어 다니는 아이들과 같은 2등신 픽셀 캐릭터, 하얀 배경 → 앱이 배경을 지워요']),
+  bullet([b('아이콘: '), '지도 속 건물 지붕의 동그란 문장 모양']),
+  bullet([b('내 캐릭터: '), '그림 AI 없이 앱에서 머리·피부·옷·소품을 골라 만들어요 (부스 건물은 지도에 그려져 있어서 따로 만들지 않아요)']),
+  p('예) 「사계절 모험 섬」 지도에서, 장소를 「화산이 보이는 공룡 섬」으로 쓴 학생의 배경 프롬프트:'),
+  promptBox((() => { const pl = emptyPlan('treasure-island'); Object.assign(pl.f, { appName: '공룡 화석 발굴대', place: '화산이 보이는 공룡 섬', charName: '디노', charLook: '초록 모자를 쓴 아기 티라노' }); return buildImagePrompts(pl, { preset: presetById('seasons') }).find((x) => x.key === 'background').text; })()),
   gap(),
 
   h1('6. 잘 만드는 요령'),
@@ -151,7 +153,7 @@ const children = [
     ['분야별 부스 5종 (모험·액션·창작·추리·생활)', '1:1', '—', '선택'],
     ['광장 분수', '1:1', '—', '선택'],
     ['입구 아치', '2:1', '—', '선택'],
-    ['학생 게임 그림·부스 그림', '학생 앱', '선택', '선택'],
+    ['학생 게임 그림', '학생 앱', '선택', '선택'],
   ], [4426, 1200, 1700, 1700]),
 ];
 

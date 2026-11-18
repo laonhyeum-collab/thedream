@@ -186,3 +186,12 @@ test('준비된 지도: 그림 파일·문 자리 12곳이 맞고, 백엔드와 
   assert.equal(cleanWorldSettings({}).mapPreset, 'castle');
   assert.equal(cleanWorldSettings({ mapPreset: 'pixel' }).mapPreset, 'pixel');
 });
+
+test('지도 속 구역 찾기: 낱말 첫머리만, 장소 글이 먼저', async () => {
+  const { worldSpot, presetById } = await import('../shared/worldart.js');
+  const S = presetById('seasons'), R = presetById('river');
+  assert.equal(worldSpot('화산이 보이는 공룡 섬', '공룡 화석 발굴대', S), '용암이 흐르는 화산');
+  assert.equal(worldSpot('우주 정거장', '행성 순서', R), '', '「행성」 속 「성」은 성터가 아님');
+  assert.equal(worldSpot('', '바다 생물 도감', R), '야자수와 파라솔이 있는 모래 해변', '「생물」 속 「물」은 폭포가 아님');
+  assert.equal(worldSpot('눈 내리는 마을', '', S), '눈 덮인 산과 얼음집');
+});

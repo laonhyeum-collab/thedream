@@ -167,7 +167,7 @@ test('요청 5: 개인정보는 받지 않음 — 학년·반 칸 없음, 개인
   assert.ok(recommend('제 이름은 박지호고 공룡이 좋아요').notices.some((n) => n.kind === 'privacy'));
 });
 
-test('그림 프롬프트는 모두 앱 월드 참고 화면과 같은 컨셉 (쿼터뷰 픽셀아트·2등신 캐릭터·동그란 문장·건물 모습)', async () => {
+test('그림 프롬프트는 모두 앱 월드 지도와 같은 컨셉 (쿼터뷰 픽셀아트·2등신 캐릭터·동그란 문장·건물 모습)', async () => {
   const { studentBoothPrompt, worldPrompts, PIXEL_STYLE, CHIBI_LOOK, BADGE_LOOK, BUILDING_LOOK } = await import('../shared/worldart.js');
   const { buildImagePrompts } = await import('../shared/plan.js');
   const p = emptyPlan('fruit-bomb');
@@ -177,7 +177,15 @@ test('그림 프롬프트는 모두 앱 월드 참고 화면과 같은 컨셉 (�
     assert.ok(x.text.includes(PIXEL_STYLE), `${x.title}: 같은 그림체 문장`);
     assert.match(x.text, /앱 월드 지도 그림이 있으면 그 그림의 그림체/, `${x.title}: 지도 그림 따라 하기`);
   }
-  assert.match(imgs.find((x) => x.key === 'background').text, /앱 월드」 안의 한 장소/);
+  const { MAP_PRESETS, presetById } = await import('../shared/worldart.js');
+  assert.ok(imgs.every((x) => x.key.startsWith('icon') || x.text.includes(MAP_PRESETS[0].world)), '배경·주인공에 기본 지도 세계관');
+  // 선생님이 고른 지도의 구역과 이어지기
+  p.f.place = '용암이 흐르는 화산 마을';
+  const bg = (id) => buildImagePrompts(p, { preset: presetById(id) }).find((x) => x.key === 'background').text;
+  assert.match(bg('seasons'), /「용암이 흐르는 화산」 구역/);
+  assert.ok(bg('seasons').includes(presetById('seasons').world));
+  assert.match(bg('castle'), /새로 생긴 작은 구역/, '그 지도에 없는 구역이면 새 구역으로');
+  assert.match(bg('river'), /노란 별이 달린 보라색 깃발 가로등/, '지도 소품을 넣어 같은 섬처럼');
   assert.ok(imgs.find((x) => x.key === 'hero').text.includes(CHIBI_LOOK), '주인공은 앱 월드 아이들과 같은 2등신');
   assert.ok(imgs.filter((x) => x.key.startsWith('icon')).every((x) => x.text.includes(BADGE_LOOK)), '아이콘은 동그란 문장 모양');
   const booth = studentBoothPrompt({ appName: '과일 비', topicName: '과일 폭탄 잡기', cat: 'action', summary: '과일 받기' });

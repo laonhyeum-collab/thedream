@@ -12,7 +12,7 @@ import { extractHtml, looksLikeApp, mountApp, isHttpUrl, MAX_APP_BYTES } from '.
 import { applyImages, findImagesBlock, imagesSize } from '../shared/images.js';
 import { processPicture } from '../shared/picture.js';
 import { avatarBuilder, avatarFromText } from '../shared/avatar.js';
-import { studentBoothPrompt, BOOTH_IMAGE_SLOT, presetById, presetUrl, cleanWorldSettings } from '../shared/worldart.js';
+import { presetById, presetUrl, cleanWorldSettings, MAP_PRESETS } from '../shared/worldart.js';
 import { h, $, toast, copyText } from '../shared/ui.js';
 
 const store = createStore();
@@ -339,6 +339,7 @@ function printPlan() {
 
 // ---------- 3. 프롬프트 ----------
 function renderPrompts() {
+  loadWorldPreset();
   const miss = missingRequired(plan);
   const box = $('#missingBox');
   box.hidden = miss.length === 0;
@@ -356,7 +357,7 @@ function renderPrompts() {
       h('button', { class: 'chip small', type: 'button', onclick: () => { part = SECTIONS.find((x) => x.n === it.n).part; go('plan'); } }, '고치러 가기')))));
   $('#appPrompt').textContent = buildAppPrompt(plan);
   renderRefTips();
-  $('#imagePrompts').replaceChildren(...buildImagePrompts(plan).map((p) => h('div', { class: 'img-prompt' },
+  $('#imagePrompts').replaceChildren(...imagePrompts().map((p) => h('div', { class: 'img-prompt' },
     h('div', { class: 'row' }, h('b', { class: 'grow' }, p.title), h('button', { class: 'small', type: 'button', onclick: () => safeCopy(p.text, '📋 복사했어요') }, '📋 복사')),
     h('p', { class: 'small' }, p.text))));
 }
@@ -431,7 +432,8 @@ function runApp() {
 function renderPictures() {
   renderRefTips();
   const slots = imageSlots(plan);
-  const prompts = Object.fromEntries(buildImagePrompts(plan).map((p) => [p.key, p.text]));
+  const prompts = Object.fromEntries(imagePrompts().map((p) => [p.key, p.text]));
+  loadWorldPreset();
   const imgs = plan.app.images || {};
   const block = plan.app.html ? findImagesBlock(plan.app.html) : null;
   const st = $('#picStatus');
@@ -553,32 +555,24 @@ function refTip() {
 }
 function renderRefTips() { document.querySelectorAll('[data-ref]').forEach((el) => el.replaceChildren(refTip())); }
 
-// 내 캐릭터 + 내 부스 건물 그림
+// 내 캐릭터 (부스 건물은 앱 월드 지도에 그려져 있어서 따로 만들지 않아요)
 function renderMyBooth() {
   if (!plan.avatar) plan.avatar = avatarFromText(plan.f.developer || plan.id);
   $('#avatarBox').replaceChildren(avatarBuilder(h, plan.avatar, (a) => { plan.avatar = a; touch(); }));
-  const t = topicView(plan);
-  const prompt = studentBoothPrompt({ appName: plan.f.appName, topicName: t ? t.name : '', cat: t ? t.cat : '', summary: plan.f.intro || (t ? t.summary : ''), hero: plan.f.charLook || plan.f.charName });
-  const file = h('input', { type: 'file', accept: 'image/*', hidden: true, id: 'boothFile' });
-  file.onchange = async (e) => {
-    const f = e.target.files[0]; e.target.value = '';
-    if (!f) return;
-    toast('🪄 부스 그림을 다듬는 중…');
-    try {
-      plan.boothImage = (await processPicture(f, BOOTH_IMAGE_SLOT, { maxChars: 190_000 })).dataUrl;
-      saveNow(); renderMyBooth(); toast('🏠 내 부스 그림을 넣었어요');
-    } catch (err) { toast(err.message, 4500); }
-  };
-  $('#boothSlot').replaceChildren(
-    h('b', {}, '🏠 내 부스 건물 ', h('span', { class: 'muted small' }, '(선택 · 1:1)')),
-    h('div', { class: 'pic-thumb' }, plan.boothImage ? h('img', { src: plan.boothImage, alt: '내 부스 그림' }) : '🏠'),
-    h('div', { class: 'row' },
-      h('button', { type: 'button', onclick: () => safeCopy(prompt, '📋 부스 그림 프롬프트를 복사했어요') }, '📋 프롬프트'),
-      h('label', { class: 'btn primary', for: 'boothFile' }, plan.boothImage ? '🔁 바꾸기' : '📷 그림 올리기'), file,
-      plan.boothImage ? h('button', { type: 'button', class: 'ghost', 'aria-label': '부스 그림 빼기', onclick: () => { plan.boothImage = ''; saveNow(); renderMyBooth(); } }, '✕') : ''),
-    h('span', { class: 'small muted' }, '하얀 배경은 앱이 지워요. 게임 내용이 보이게 지붕과 장식을 꾸며 달라고 해요.'),
-    refTip());
 }
+
+// 선생님이 고른 앱 월드 지도 (그림 프롬프트가 그 지도 속 구역과 이어지게). 모르면 기본 지도.
+let worldPreset = MAP_PRESETS[0];
+let worldPresetAsked = false;
+async function loadWorldPreset() {
+  if (worldPresetAsked || !api.enabled) return;
+  worldPresetAsked = true;
+  try {
+    const p = presetById(cleanWorldSettings((await api.world()).settings).mapPreset);
+    if (p && p.id !== worldPreset.id) { worldPreset = p; renderPrompts(); renderPictures(); }
+  } catch { /* 기본 지도로 */ }
+}
+const imagePrompts = () => buildImagePrompts(plan, { preset: worldPreset });
 
 function renderSubmit() {
   renderMyBooth();
