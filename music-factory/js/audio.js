@@ -366,7 +366,8 @@ export class Player {
     for (const g of this.schedule.groups) {
       const chord = chordFor(g.index);
       const t = passStart + g.start * beat;
-      for (const m of g.items) this.engine.playVoice(this.bus, this.voiceOf(m.ing), t, m.beats, beat, chord);
+      // m.voice 가 있으면 그 소리로 (따라 만들기의 정답 노래), 없으면 재료에 정해진 소리로
+      for (const m of g.items) this.engine.playVoice(this.bus, m.voice || this.voiceOf(m.ing), t, m.beats, beat, chord);
     }
     this.scheduledPasses = pass + 1;
   }

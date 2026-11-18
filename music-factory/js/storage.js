@@ -112,6 +112,21 @@ export function loadMissionDone(store = defaultStore()) {
   return new Set(Array.isArray(v) ? v : []);
 }
 
+// 노래 따라 만들기 성공 기록: "노래id:단계" 모음
+const SONG_KEY = 'musicPlayFactory.songs.v1';
+
+export function loadSongDone(store = defaultStore()) {
+  const v = readJSON(store, SONG_KEY, []);
+  return new Set(Array.isArray(v) ? v : []);
+}
+
+export function markSongDone(songId, level, store = defaultStore()) {
+  const done = loadSongDone(store);
+  done.add(`${songId}:${level}`);
+  writeJSON(store, SONG_KEY, [...done]);
+  return done;
+}
+
 export function markMissionDone(id, store = defaultStore()) {
   const done = loadMissionDone(store);
   done.add(id);
