@@ -56,7 +56,7 @@
         <span aria-hidden="true">🐇</span>
         <output id="bpmOut">100</output>
       </label>
-      <button type="button" class="chip" id="btnLoop" aria-pressed="false">🔁 반복</button>
+      <button type="button" class="chip" id="btnLoop" aria-pressed="false" aria-label="반복">🔁<span class="lbl"> 반복</span></button>
       <button type="button" class="round" id="btnHelp" aria-label="사용 방법">❓</button>
     </div>
   </header>
@@ -64,7 +64,7 @@
   <aside class="palette" aria-label="재료">
     <h3>재료 고르기</h3>
     <p class="tip">누르면 소리를 들을 수 있어요.<br>컵으로 끌어다 놓아요!</p>
-    <button type="button" class="voice-btn" id="btnVoices">🎚️ 재료마다 악기 고르기</button>
+    <button type="button" class="voice-btn" id="btnVoices">🎚️<span class="lbl"> 재료마다 악기 고르기</span><span class="lbl-short">악기<br>고르기</span></button>
     <div id="palette" class="palette-grid"></div>
     <div class="trash" aria-hidden="true">🗑️<br>여기에 놓으면<br>재료를 빼요</div>
   </aside>
@@ -94,10 +94,10 @@
             <div class="item-inst" id="itemInst"></div>
           </div>
         </div>
-        <button type="button" class="voice-btn small" id="btnItemVoice">🎚️ 악기 바꾸기</button>
+        <button type="button" class="voice-btn small" id="btnItemVoice" aria-label="악기 바꾸기">🎚️<span class="lbl"> 악기 바꾸기</span></button>
         <p class="panel-label">크기 = 박자</p>
         <div class="size-btns" id="sizeBtns"></div>
-        <button type="button" class="wide-btn danger" id="btnRemove">🗑️ 이 재료 빼기</button>
+        <button type="button" class="wide-btn danger" id="btnRemove" aria-label="이 재료 빼기">🗑️<span class="lbl"> 이 재료 빼기</span></button>
       </div>
     </div>
     <div class="panel mission-panel" id="missionPanel" hidden></div>

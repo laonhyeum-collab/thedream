@@ -41,6 +41,9 @@ const state = {
 const soundFor = (ingId) => soundOf(state.theme, ingId, state.voices);
 
 const createScreen = $('#create');
+// 폰·세로 화면에서는 컵 그림 대신 화면을 꽉 채우는 컵을 써요 (칸을 크게)
+const narrowScreen = window.matchMedia('(max-width: 820px), (max-aspect-ratio: 4/5)');
+narrowScreen.addEventListener?.('change', () => applyCupShape());
 const audio = new AudioEngine();
 const player = new Player(audio, {
   voiceOf: (ingId) => soundFor(ingId)?.voice,
@@ -296,7 +299,7 @@ function buildCup() {
 function applyCupShape() {
   const cup = $('#cup');
   const shape = state.theme.cupShape;
-  const hasImg = Boolean(shape) && $('.cup-img', cup).classList.contains('loaded');
+  const hasImg = Boolean(shape) && !narrowScreen.matches && $('.cup-img', cup).classList.contains('loaded');
   cup.classList.toggle('has-img', hasImg);
   if (!hasImg) return;
   const { top, bottom, topInset, bottomInset } = shape;

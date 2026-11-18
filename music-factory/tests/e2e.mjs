@@ -264,15 +264,67 @@ await tp.tap(slot(4, 0));
 check(await tp.evaluate(() => window.__mpf.state.items.some((i) => i.ing === 'cereal' && i.row === 4)), '재료를 누르고 빈 칸을 눌러도 놓임');
 await tp.screenshot({ path: path.join(OUT, '7-tablet.png') });
 
-// 세로 폰 화면도 깨지지 않는지
-const pctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+// 태블릿 가로(주소창 뺀 낮은 화면)에서 재료 10개가 스크롤 없이 다 보이는지
+const lctx = await browser.newContext({ viewport: { width: 1024, height: 690 }, hasTouch: true });
+const lp = await lctx.newPage();
+await lp.goto(URL_);
+await lp.tap('text=음악 만들기');
+await lp.tap('.theme-card[data-theme="bingsu"]');
+const shownTab = await lp.evaluate(() => {
+  const pr = document.querySelector('#palette').getBoundingClientRect();
+  return [...document.querySelectorAll('#palette .ing')].filter((e) => { const q = e.getBoundingClientRect(); return q.top >= pr.top - 1 && q.bottom <= pr.bottom + 1; }).length;
+});
+check(shownTab === 10, `태블릿 가로: 재료 10개 모두 보임 (${shownTab}개)`);
+
+// 폰: 한 화면(스크롤 없음)에 컵 · 재료 · 버튼, 재료 띠에서 위로 끌어 컵에 놓기
+const pctx = await browser.newContext({ viewport: { width: 390, height: 664 }, hasTouch: true, isMobile: true });
 const pp = await pctx.newPage();
+pp.on('pageerror', (e) => errors.push(String(e)));
 await pp.goto(URL_);
 await pp.tap('text=음악 만들기');
 await pp.tap('.theme-card[data-theme="bingsu"]');
-const overflow = await pp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-check(overflow <= 0, `폰 화면 가로 넘침 없음 (${overflow}px)`);
-await pp.screenshot({ path: path.join(OUT, '8-phone.png'), fullPage: true });
+const phone = await pp.evaluate(() => {
+  const vh = window.innerHeight;
+  const inView = (s) => { const q = document.querySelector(s).getBoundingClientRect(); return q.top >= 0 && q.bottom <= vh + 1; };
+  return {
+    scrollX: document.documentElement.scrollWidth - window.innerWidth,
+    scrollY: document.documentElement.scrollHeight - vh,
+    all: ['#cup', '#palette', '.controls'].every(inView),
+  };
+});
+check(phone.scrollX <= 0 && phone.scrollY <= 0, `폰: 화면이 위아래·옆으로 넘치지 않음 (${phone.scrollY}px, ${phone.scrollX}px)`);
+check(phone.all, '폰: 컵 · 재료 · 재생 버튼이 한 화면에');
+const pcdp = await pctx.newCDPSession(pp);
+async function phoneDrag(fromSel, toSel) {
+  const a = await pp.locator(fromSel).boundingBox();
+  const b = await pp.locator(toSel).boundingBox();
+  const p0 = { x: a.x + a.width / 2, y: a.y + a.height / 2 };
+  const p1 = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+  await pcdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [p0] });
+  for (let i = 1; i <= 12; i++) {
+    await pcdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: p0.x + (p1.x - p0.x) * i / 12, y: p0.y + (p1.y - p0.y) * i / 12 }] });
+  }
+  await pcdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+}
+await phoneDrag('#palette .ing[data-ing="mango"]', slot(0, 1));
+check(await pp.evaluate(() => window.__mpf.state.items.some((i) => i.ing === 'mango' && i.row === 0 && i.col === 1)), '폰: 재료 띠에서 위로 끌어 컵에 놓기');
+// 재료 띠를 옆으로 밀면 넘어가서 뒤쪽 재료(아이스크림)가 보임
+const stripBefore = await pp.evaluate(() => document.querySelector('.palette-grid').scrollLeft);
+const strip = await pp.locator('.palette-grid').boundingBox();
+{
+  const y = strip.y + strip.height / 2, x0 = strip.x + strip.width * 0.8;
+  await pcdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] });
+  for (let i = 1; i <= 15; i++) {
+    await pcdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 - i * 15, y }] });
+    await pp.waitForTimeout(16);
+  }
+  await pcdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await pp.waitForTimeout(300);
+}
+const after = await pp.evaluate(() => document.querySelector('.palette-grid').scrollLeft);
+check(await pp.evaluate(() => window.__mpf.state.items.length) === 1, '폰: 옆으로 밀 때는 재료가 컵에 들어가지 않음');
+check(after > stripBefore + 50, `폰: 재료 띠를 옆으로 밀어 넘기기 (${stripBefore} → ${after})`);
+await pp.screenshot({ path: path.join(OUT, '8-phone.png') });
 
 check(errors.length === 0, `스크립트 오류 없음${errors.length ? `: ${errors.join(' | ')}` : ''}`);
 
