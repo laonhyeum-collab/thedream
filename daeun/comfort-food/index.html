@@ -127,6 +127,7 @@ ol.rx-list li::before{counter-increment:n;content:counter(n);width:20px;height:2
 .cont-card h3 small{font-family:var(--sans);font-size:13px;color:var(--muted);font-weight:500}
 .cont-card .subs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
 .cont-card .subs .chip{font-size:13px;padding:2px 10px}
+.cont-card .subs .chip:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .cont-card .meta{font-size:14px;color:var(--muted)}
 
 /* ---------- continent page ---------- */
@@ -821,14 +822,14 @@ function drawMap(el, mode, contKey, focusSub) {
     .on('mousemove', (e, d) => {
       const c = d.properties.c; if (!inCont(c)) return hideTip();
       const k = contOf(c), has = !!STATE.countries[c];
-      showTip(e, `<b>${h(contInfo(k).name)}</b> · ${h(SUBS[subOf(c)].name)}<br>${h(nameOf(c))}${has ? ' <small>· 📌 자료 있음</small>' : ''}${mode === 'world' ? '' : `<br><small>클릭하면 ${focusSub === subOf(c) ? '대륙 전체 보기' : h(SUBS[subOf(c)].name) + '만 보기'}</small>`}`);
+      showTip(e, `<b>${h(contInfo(k).name)}</b> · ${h(SUBS[subOf(c)].name)}<br>${h(nameOf(c))}${has ? ' <small>· 📌 자료 있음</small>' : ''}${mode === 'world' ? `<br><small>클릭하면 ${h(SUBS[subOf(c)].name)} 보기</small>` : `<br><small>클릭하면 ${focusSub === subOf(c) ? '대륙 전체 보기' : h(SUBS[subOf(c)].name) + '만 보기'}</small>`}`);
       if (mode === 'world') gz.selectAll('.cty').classed('dim', x => contOf(x.properties.c) !== k);
       else gz.selectAll('.cty').classed('hot', x => x.properties.c === c);
     })
     .on('mouseleave', () => { hideTip(); gz.selectAll('.cty').classed('dim', false).classed('hot', false); })
     .on('click', (e, d) => {
       const c = d.properties.c; if (!inCont(c)) return;
-      if (mode === 'world') go('/c/' + contOf(c));
+      if (mode === 'world') go('/c/' + contOf(c) + '/' + subOf(c));
       else go(focusSub === subOf(c) ? '/c/' + contKey : '/c/' + contKey + '/' + subOf(c));
     });
   const meshF = f => topojson.mesh(WORLD_TOPO, TOPO_OBJ, f);
@@ -969,14 +970,14 @@ function renderHome() {
     <section class="card map-card">
       <div class="map-wrap" id="worldMap"></div>
       <div class="map-tools"><button data-z="in" title="확대">+</button><button data-z="out" title="축소">−</button><button data-z="reset" title="원래 크기">⟲</button></div>
-      <p class="map-hint">대륙을 클릭하면 그 대륙의 식문화 화면으로 이동합니다 · 굵은 선 = 대륙 경계, 점선 = 소지역 경계 · 📍 표시 = 자료가 있는 나라</p>
+      <p class="map-hint">지역을 클릭하면 그 소지역 화면으로, 대륙 이름표를 클릭하면 대륙 전체 화면으로 이동합니다 · 굵은 선 = 대륙 경계, 점선 = 소지역 경계 · 📍 표시 = 자료가 있는 나라</p>
     </section>
     <section class="cont-grid">
       ${CONT_ORDER.map(k => {
         const ci = contInfo(k), n = countriesIn(k).length;
         return `<div class="card cont-card" style="--c:${ci.color}" data-go="/c/${k}">
           <h3>${h(ci.name)} <small>${h(ci.en)}</small></h3>
-          <div class="subs">${subsOfCont(k).map(s => `<span class="chip"><i class="dot" style="background:${subColor(s.key)}"></i>${h(s.name)}</span>`).join('')}</div>
+          <div class="subs">${subsOfCont(k).map(s => `<a class="chip" data-go="/c/${k}/${s.key}" title="${h(s.name)}만 보기"><i class="dot" style="background:${subColor(s.key)}"></i>${h(s.name)}</a>`).join('')}</div>
           <div class="meta">조사한 나라 ${n}곳 →</div></div>`;
       }).join('')}
     </section></div>`;
