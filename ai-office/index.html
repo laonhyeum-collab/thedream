@@ -109,7 +109,7 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
 
 <div class="wrap">
   <header class="top">
-    <h1>꿈터 AI 사무실<small>교육 콘텐츠 제작 회사 · 대표 1명, AI 직원 9명</small></h1>
+    <h1>꿈터 AI 사무실<small>교육 콘텐츠 제작 회사 · 대표 1명, AI 직원 10명</small></h1>
     <div class="clock" aria-live="polite">
       <div class="t" id="clk">--:--</div>
       <div class="s"><b id="officeStatus">출근 대기</b><span id="nextRun">평일 09:00 출근</span></div>
@@ -212,6 +212,7 @@ const MEMBERS = [
   {id:"raon", name:"라온", dept:"edu", team:"교안제작팀", role:"슬라이드 원고, 강의 대본", hair:"#2c2c3a", shirt:"#68b48f", desk:[19,4]},
   {id:"boram", name:"보람", dept:"edu", team:"활동지·평가팀", role:"학생 활동지, 퀴즈, 평가 기준", hair:"#c9a14a", shirt:"#3d8a66", desk:[24,4]},
   {id:"ieum", name:"이음", dept:"edu", team:"품질검수팀", role:"학년 수준, 안전, 오류 검수", hair:"#5a3a5a", shirt:"#2f7a58", desk:[19,8]},
+  {id:"dasom", name:"다솜", dept:"edu", team:"교안디자인팀", role:"교육 목적에 맞춘 PPT·지도안·활동지 디자인", hair:"#d9774a", shirt:"#86c9a5", desk:[14,8]},
   {id:"harang", name:"하랑", dept:"media", team:"협업창구", role:"완성 수업을 미디어부서 제작 요청서로 전달", hair:"#e0d6c8", shirt:"#7b6cc9", desk:[31,4]},
   {id:"dodam", name:"도담", dept:"ceo", team:"비서실", role:"하루 업무 마감, 대표 브리핑 작성", hair:"#6a3b2a", shirt:"#c98a2b", desk:[33,19]}
 ];
@@ -241,7 +242,9 @@ function kstDateOf(iso){ const d=new Date(iso); return isNaN(d)?"":kstParts(d).d
 const deptChip = k => `<span class="chip d-${DEPTS[k]?k:"ceo"}">${esc(DEPTS[k]?.name||"대표실")}</span>`;
 const STATUS = {proposed:"결재 대기",approved:"승인됨 · 제작 대기",doing:"제작 중",done:"완료",rejected:"반려",handoff:"미디어 전달"};
 const stChip = s => `<span class="st st-${esc(s)}">${esc(STATUS[s]||s)}</span>`;
-const safeUrl = u => /^https:\/\//.test(u||"") ? u : "";
+const safeUrl = u => /^(https:\/\/|\/_blob\/)/.test(u||"") ? u : "";
+const MEDIA_OFFICE = "https://claude.ai/artifact/8bxSJL6icMaJpRTJYe644q";
+const fileLinks = d => (Array.isArray(d.files)? d.files : []).filter(f=>safeUrl(f.url)).map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name||"파일")}</a>`).join(" · ");
 
 // ---------- State ----------
 let tasks=[], feed=[], schedule=[], docs=[], office={};
@@ -276,7 +279,7 @@ function drawBackground(){
   MEMBERS.forEach(m=>desk(m.desk[0],m.desk[1]));
   MEDIA_GHOSTS.forEach(p=>desk(p.x,p.y,"#4a3f7a"));
   // decorations
-  plant(1,1.4); plant(10,1.4); plant(13,8.2); plant(26,1.4); plant(38,8.2); plant(1,23); plant(38,14.2);
+  plant(1,1.4); plant(10,1.4); plant(26.6,8.2); plant(26,1.4); plant(38,8.2); plant(1,23); plant(38,14.2);
   shelf(9,7.5); shelf(25,7.5); board(5,1.3,36); board(16,1.3,60);
   // CEO room: big desk + rug
   g.fillStyle="#b04a3a"; g.fillRect(2*T,16*T,8*T,6*T); g.fillStyle="#c86450"; g.fillRect(2*T+4,16*T+4,8*T-8,6*T-8);
@@ -459,7 +462,7 @@ function render(){
   $("#taskList").innerHTML = rest.length ? rest.map(t=>taskCard(t,false)).join("") : `<div class="empty">아직 진행 중인 업무가 없어요. 위에서 지시를 내리거나 기획안을 승인해 보세요.</div>`;
   const sc = schedule.filter(s=>s.date>=today).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
   $("#schedList").innerHTML = sc.length ? sc.map(s=>`<div class="d"><div class="dd ${s.date===today?"today":""}">${esc(s.date.slice(5).replace("-","/"))}${s.time?`<br>${esc(s.time)}`:""}</div><div>${deptChip(s.dept)} ${esc(s.title)}${s.note?`<div class="note">${esc(s.note)}</div>`:""}</div></div>`).join("") : `<div class="empty">아직 잡힌 일정이 없어요. 전략부서가 첫 출근 때 2주치 운영 일정을 짜요.</div>`;
-  $("#docList").innerHTML = docs.length ? docs.map(d=>`<div class="item"><div class="h">${deptChip(d.dept)}<span class="note">${esc(d.team||"")} · ${esc(fmtDay(d.createdAt))}</span></div><div class="title">${esc(d.title)}</div><div class="acts"><button class="btn ghost" data-doc="${esc(d._id)}">자료 보기</button>${safeUrl(d.driveUrl)?`<a href="${esc(d.driveUrl)}" target="_blank" rel="noopener">구글 드라이브</a>`:""}</div></div>`).join("") : `<div class="empty">아직 만든 자료가 없어요. 승인한 수업은 기획안, 강의 자료, 활동지로 이곳에 저장돼요.</div>`;
+  $("#docList").innerHTML = docs.length ? docs.map(d=>`<div class="item"><div class="h">${deptChip(d.dept)}<span class="note">${esc(d.team||"")} · ${esc(fmtDay(d.createdAt))}</span></div><div class="title">${esc(d.title)}</div><div class="acts"><button class="btn ghost" data-doc="${esc(d._id)}">자료 보기</button>${safeUrl(d.driveUrl)?`<a href="${esc(d.driveUrl)}" target="_blank" rel="noopener">구글 드라이브</a>`:""}</div>${fileLinks(d)?`<div class="note">디자인 미리보기(PDF): ${fileLinks(d)}</div>`:""}</div>`).join("") : `<div class="empty">아직 만든 자료가 없어요. 승인한 수업은 기획안, 강의 자료, 활동지로 이곳에 저장돼요.</div>`;
   if(docLinkedOpen) openDoc(docLinkedOpen);
 }
 function openDoc(id){
@@ -476,7 +479,7 @@ $("#orgChart").innerHTML = ["strategy","edu","media"].map(k=>{
   const ms = MEMBERS.filter(m=>m.dept===k);
   return `<div class="dept" style="border-color:${DEPTS[k].color}"><h3 style="color:${DEPTS[k].color}">${DEPTS[k].name}</h3><div class="mission">${DEPTS[k].mission}</div>
   ${ms.map(m=>`<div class="team"><canvas class="ava" width="16" height="20" data-ava="${m.id}"></canvas><div><b>${m.team} · ${m.name}</b><div>${m.role}</div></div></div>`).join("")}
-  ${k==="media"?`<div class="team"><span></span><div><div>콘텐츠 제작팀은 다른 창에서 운영 중이에요. 하랑이 완성된 수업을 제작 요청서로 넘겨줘요.</div></div></div>`:""}</div>`;
+  ${k==="media"?`<div class="team"><span></span><div><div>콘텐츠 제작팀은 <a href="${MEDIA_OFFICE}" target="_blank" rel="noopener">아하랩 AI 사무실</a>에서 운영 중이에요. 하랑이 완성된 수업을 제작 요청서로 넘겨줘요.</div></div></div>`:""}</div>`;
 }).join("") + `<div class="dept" style="border-color:${DEPTS.ceo.color}"><h3 style="color:${DEPTS.ceo.color}">대표실 · 비서실</h3><div class="mission">대표는 결재와 지시만, 정리는 비서가</div>
   <div class="team"><span></span><div><b>대표 · 나</b><div>기획안 승인·반려, 직접 지시</div></div></div>
   <div class="team"><canvas class="ava" width="16" height="20" data-ava="dodam"></canvas><div><b>비서실 · 도담</b><div>하루 업무 마감, 브리핑 작성</div></div></div></div>`;
