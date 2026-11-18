@@ -38,6 +38,8 @@ strong{font-weight:800;color:var(--ink)}
 .crumbs b{color:var(--ink);font-weight:700}
 .spacer{flex:1}
 .save-state{font-size:13px;color:var(--muted);white-space:nowrap}
+.save-state[data-st=err]{color:#B03A2E}
+.save-state[data-st=ok]{color:#2E7D4F}
 
 main{max-width:1320px;margin:0 auto;padding:28px 24px 80px}
 .fade{animation:fade .35s ease}
@@ -719,7 +721,7 @@ async function cacheFlag(c) {
   if (SAMPLE_FLAGS[a2] || STATE.flagCache[a2]) return;
   try {
     const r = await fetch(`https://flagcdn.com/w320/${a2}.png`); if (!r.ok) return;
-    STATE.flagCache[a2] = await blobToDataURL(await r.blob()); save();
+    STATE.flagCache[a2] = await blobToDataURL(await r.blob()); Store.set(STATE);
   } catch { /* 오프라인이면 이모지 국기로 표시 */ }
 }
 const blobToDataURL = b => new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(b); });
@@ -729,14 +731,171 @@ const blobToDataURL = b => new Promise(res => { const fr = new FileReader(); fr.
    ===================================================================== */
 let saveTimer = null;
 function save() {
+  STATE.updatedAt = Date.now();
   $('#saveState').textContent = '저장 중…';
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
     const ok = await Store.set(STATE);
-    $('#saveState').textContent = ok ? '✓ 자동 저장됨' : '⚠ 저장 실패 (용량 초과?)';
-    if (!ok) toast('저장 공간이 부족합니다. 사진 크기를 줄이거나 백업 후 정리해 주세요.');
+    if (!ok) { $('#saveState').textContent = '⚠ 저장 실패 (용량 초과?)'; toast('저장 공간이 부족합니다. 사진 크기를 줄이거나 백업 후 정리해 주세요.'); return; }
+    if (Sync.token) Sync.schedulePush(2500);
+    else $('#saveState').textContent = '✓ 이 기기에만 저장됨';
   }, 350);
 }
+
+/* =====================================================================
+   자동 동기화 (깃허브 저장소의 daeun-data 브랜치에 자료 보관)
+   ===================================================================== */
+const Sync = (() => {
+  const OWNER = 'laonhyeum-collab', REPO = 'thedream', BRANCH = 'daeun-data', DIR = 'daeun/comfort-food/data';
+  const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
+  const RAW = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${DIR}`;
+  const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
+  const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, String(v)); } catch { } };
+  const S = {
+    token: lsGet('cf-gh-token') || '',
+    baseRev: +(lsGet('cf-base-rev') || 0),
+    status: '', lastOk: 0,
+  };
+  let pushTimer = null, pushing = false, again = false, branchReady = false, pulling = false;
+
+  const status = (msg, st) => { S.status = msg; const el = $('#saveState'); if (el) { el.textContent = msg; el.dataset.st = st || ''; } const el2 = $('#syncStatus'); if (el2) el2.textContent = msg; };
+  const setBase = v => { S.baseRev = v || 0; lsSet('cf-base-rev', S.baseRev); };
+  const dirty = () => (STATE.updatedAt || 0) > S.baseRev;
+  const b64 = str => { const b = new TextEncoder().encode(str); let bin = ''; for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(bin); };
+  const unb64 = t => new TextDecoder().decode(Uint8Array.from(atob(t.replace(/\s/g, '')), c => c.charCodeAt(0)));
+  const hash = str => { let h1 = 0xdeadbeef, h2 = 0x41c6ce57; for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677); } h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909); h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909); return (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0') + str.length.toString(36); };
+
+  function gh(path, opt = {}, tok = S.token) {
+    return fetch(API + path, { ...opt, cache: 'no-store', headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + tok, 'X-GitHub-Api-Version': '2022-11-28', ...(opt.body ? { 'Content-Type': 'application/json' } : {}) } });
+  }
+  async function fetchRemote() {
+    if (S.token) {
+      const r = await gh(`/contents/${DIR}/data.json?ref=${BRANCH}`);
+      if (r.status === 404) return { data: null, sha: null };
+      if (r.status === 401) throw new Error('토큰이 만료되었거나 올바르지 않습니다');
+      if (!r.ok) throw new Error('깃허브 응답 ' + r.status);
+      const j = await r.json();
+      let text = j.content ? unb64(j.content) : null;
+      if (text == null) { const r2 = await gh(`/git/blobs/${j.sha}`); text = unb64((await r2.json()).content); }
+      return { data: JSON.parse(text), sha: j.sha };
+    }
+    const r = await fetch(`${RAW}/data.json?v=${Math.floor(Date.now() / 30000)}`, { cache: 'no-store' });
+    if (r.status === 404) return { data: null };
+    if (!r.ok) throw new Error('응답 ' + r.status);
+    return { data: await r.json() };
+  }
+  function adopt(remote) {
+    const keep = STATE.flagCache;
+    STATE = normalize(remote); STATE.flagCache = { ...(remote.flagCache || {}), ...keep };
+    setBase(STATE.updatedAt); Store.set(STATE);
+    const y = scrollY; render(); requestAnimationFrame(() => window.scrollTo(0, y));
+  }
+  async function pull(manual) {
+    if (pulling || pushing) return;
+    pulling = true;
+    try {
+      const rem = await fetchRemote();
+      S.lastOk = Date.now();
+      if (!rem.data) { if (S.token && dirty()) schedulePush(0); else status(S.token ? '☁️ 동기화됨' : '', 'ok'); return; }
+      const rRev = rem.data.updatedAt || 0;
+      if (rRev > S.baseRev) {
+        if (S.token && dirty()) {
+          if (confirm('다른 기기에서 바뀐 자료가 있습니다.\n\n[확인] 다른 기기의 자료 불러오기 (이 기기에서 방금 고친 내용은 사라짐)\n[취소] 이 기기의 자료로 덮어쓰기')) { adopt(rem.data); toast('다른 기기의 자료를 불러왔습니다'); }
+          else { setBase(rRev); schedulePush(0); return; }
+        } else { adopt(rem.data); if (manual) toast('최신 자료를 불러왔습니다'); }
+      } else if (S.token && dirty()) { schedulePush(0); return; }
+      status(S.token ? '☁️ 동기화됨' : '☁️ 최신 자료', 'ok');
+    } catch (e) {
+      status(navigator.onLine === false ? '오프라인 (이 기기에 저장 중)' : '⚠ 동기화 확인 실패', 'err');
+      if (manual) toast(e.message);
+    } finally { pulling = false; }
+  }
+  async function ensureBranch() {
+    if (branchReady) return;
+    let r = await gh(`/git/ref/heads/${BRANCH}`);
+    if (r.status === 404) {
+      const m = await (await gh(`/git/ref/heads/main`)).json();
+      r = await gh(`/git/refs`, { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${BRANCH}`, sha: m.object.sha }) });
+      if (!r.ok && r.status !== 422) throw new Error('저장 공간(브랜치)을 만들 수 없습니다 (' + r.status + ')');
+    } else if (r.status === 401) throw new Error('토큰이 만료되었거나 올바르지 않습니다');
+    else if (!r.ok) throw new Error('깃허브 응답 ' + r.status);
+    branchReady = true;
+  }
+  function imageSlots() {
+    const out = [];
+    for (const k of CONT_ORDER) for (const im of STATE.continents[k]?.images || []) out.push([im, 'src']);
+    for (const d of Object.values(STATE.countries)) {
+      for (const im of d.images || []) out.push([im, 'src']);
+      for (const f of d.foods || []) out.push([f, 'image']);
+      out.push([d, 'flag']);
+    }
+    return out.filter(([o, k]) => typeof o[k] === 'string' && o[k].startsWith('data:'));
+  }
+  async function uploadImages() {
+    const slots = imageSlots(); let n = 0;
+    for (const [o, k] of slots) {
+      const m = o[k].match(/^data:([^;]+);base64,(.*)$/); if (!m) continue;
+      const ext = (m[1].split('/')[1] || 'png').replace('jpeg', 'jpg').replace('svg+xml', 'svg');
+      const name = `images/${hash(m[2])}.${ext}`;
+      status(`☁️ 사진 올리는 중… (${++n}/${slots.length})`, 'busy');
+      const r = await gh(`/contents/${DIR}/${name}`, { method: 'PUT', body: JSON.stringify({ message: '사진 추가', content: m[2], branch: BRANCH }) });
+      if (!r.ok && r.status !== 422) throw new Error('사진을 올리지 못했습니다 (' + r.status + ')');
+      o[k] = `${RAW}/${name}`;
+    }
+    if (slots.length) Store.set(STATE);
+  }
+  async function push() {
+    pushTimer = null;
+    if (!S.token) return;
+    if (pushing) { again = true; return; }
+    pushing = true; status('☁️ 동기화 중…', 'busy');
+    try {
+      await ensureBranch();
+      await uploadImages();
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const rem = await fetchRemote();
+        if (rem.data && (rem.data.updatedAt || 0) > S.baseRev && (rem.data.updatedAt || 0) !== STATE.updatedAt) {
+          if (confirm('다른 기기에서 더 최근에 바뀐 자료가 있습니다.\n\n[확인] 이 기기의 자료로 덮어쓰기\n[취소] 다른 기기의 자료 불러오기 (이 기기에서 고친 내용은 사라짐)')) setBase(rem.data.updatedAt);
+          else { adopt(rem.data); status('☁️ 동기화됨', 'ok'); return; }
+        }
+        const out = { ...STATE }; delete out.flagCache;
+        const r = await gh(`/contents/${DIR}/data.json`, { method: 'PUT', body: JSON.stringify({ message: '자료 업데이트', content: b64(JSON.stringify(out)), branch: BRANCH, ...(rem.sha ? { sha: rem.sha } : {}) }) });
+        if (r.ok) { setBase(STATE.updatedAt); S.lastOk = Date.now(); status('☁️ 동기화됨', 'ok'); return; }
+        if (r.status === 401 || r.status === 403) throw new Error('토큰에 쓰기 권한이 없거나 만료되었습니다');
+        if (r.status !== 409 && r.status !== 422) throw new Error('깃허브 응답 ' + r.status);
+      }
+      throw new Error('잠시 후 다시 시도해 주세요');
+    } catch (e) {
+      status(navigator.onLine === false ? '오프라인 — 연결되면 다시 올립니다' : '⚠ 동기화 실패', 'err');
+      toast('동기화 실패: ' + e.message);
+    } finally {
+      pushing = false;
+      if (again) { again = false; schedulePush(800); }
+    }
+  }
+  function schedulePush(ms) { clearTimeout(pushTimer); status('☁️ 곧 동기화…', 'busy'); pushTimer = setTimeout(push, ms); }
+  async function connect(tok) {
+    tok = tok.trim(); if (!tok) throw new Error('토큰을 붙여 넣어 주세요');
+    const r = await gh('', {}, tok);
+    if (r.status === 401) throw new Error('토큰이 올바르지 않습니다');
+    if (!r.ok) throw new Error('저장소에 접근할 수 없습니다 (' + r.status + ')');
+    S.token = tok; branchReady = false;
+    try { await ensureBranch(); } catch (e) { S.token = ''; throw new Error('쓰기 권한이 없습니다. 토큰의 Contents 권한을 Read and write 로 설정해 주세요'); }
+    lsSet('cf-gh-token', tok);
+    const rem = await fetchRemote();
+    if (!rem.data) { STATE.updatedAt = Date.now(); Store.set(STATE); await push(); return '이 기기의 자료를 저장소에 올렸습니다'; }
+    if (confirm('저장소에 이미 저장된 자료가 있습니다.\n\n[확인] 저장소 자료 불러오기 (추천)\n[취소] 이 기기의 자료로 덮어쓰기')) { adopt(rem.data); return '저장소 자료를 불러왔습니다'; }
+    STATE.updatedAt = Date.now(); setBase(rem.data.updatedAt || 0); Store.set(STATE); await push(); return '이 기기의 자료로 덮어썼습니다';
+  }
+  function disconnect() { S.token = ''; lsSet('cf-gh-token', null); status('', ''); }
+  function start() {
+    pull();
+    setInterval(() => { if (document.visibilityState === 'visible' && !pushing && !pushTimer) pull(); }, S.token ? 20000 : 60000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pull(); });
+    window.addEventListener('online', () => pull());
+  }
+  return { get token() { return S.token; }, get status() { return S.status; }, pull, push, connect, disconnect, start, schedulePush };
+})();
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2400); }
 
 /* =====================================================================
@@ -1186,7 +1345,8 @@ function renderAdmin() {
 function renderNav() {
   const nb = (sel, inner, cls = '') => `<button class="nb ${cls} ${SEL === sel ? 'sel' : ''}" data-sel="${sel}">${inner}</button>`;
   $('#admNav').innerHTML = `
-    ${nb('settings', '⚙️ 기본 설정 · 백업')}
+    ${Sync.token ? '' : `<button class="nb" data-sel="settings" style="color:#B03A2E;font-weight:700">☁️ 동기화 꺼짐 — 연결하기</button>`}
+    ${nb('settings', '⚙️ 기본 설정 · 백업 · 동기화')}
     ${nb('guide', '📖 사용 방법')}
     <hr>
     ${CONT_ORDER.map(k => {
@@ -1241,6 +1401,19 @@ function renderEditor() {
         <button class="btn" data-act="sample">↺ 예시 자료로 되돌리기</button>
         <button class="btn danger" data-act="wipe">🗑 모든 자료 지우기</button>
       </div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:22px 0">
+      <h2>☁️ 자동 동기화</h2>
+      ${Sync.token ? `<p class="lead-note"><b style="color:#2E7D4F">● 이 기기는 동기화가 켜져 있습니다.</b> 여기서 고친 내용이 핸드폰·노트북·학생 화면에 자동으로 반영됩니다.<br>상태: <span id="syncStatus">${h(Sync.status || '확인 중')}</span></p>
+        <div class="actions"><button class="btn primary" data-act="syncnow">⟳ 지금 동기화</button><button class="btn danger" data-act="syncoff">이 기기에서 연결 끊기</button></div>`
+      : `<p class="lead-note"><b style="color:#B03A2E">● 이 기기는 아직 연결되지 않았습니다.</b> 연결 전에는 다른 기기에서 고친 자료를 <b>받아 보기만</b> 하고, 여기서 고친 내용은 이 기기에만 남습니다.</p>
+        <div class="help">자료를 고치는 기기(핸드폰, 노트북)마다 <b>한 번씩</b> 아래처럼 연결해 주세요.<br>
+        1. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">깃허브 토큰 만들기 페이지</a>를 엽니다 (깃허브 로그인 필요).<br>
+        2. <b>Token name</b>: 아무 이름 (예: comfort-food) · <b>Expiration</b>: 원하는 기간 (예: 1년)<br>
+        3. <b>Repository access</b> → <b>Only select repositories</b> → <code>thedream</code> 선택<br>
+        4. <b>Permissions → Repository permissions → Contents</b> → <b>Read and write</b><br>
+        5. 맨 아래 <b>Generate token</b> → 나온 토큰(github_pat_…)을 복사해 아래에 붙여 넣고 <b>연결</b>을 누릅니다.<br>
+        ※ 토큰은 이 기기에만 저장되고 화면에 다시 보이지 않습니다. 같은 토큰을 다른 기기에 붙여 넣어도 됩니다.</div>
+        <div class="fld" style="display:flex;gap:8px"><input type="password" id="tokenIn" placeholder="github_pat_… 토큰 붙여 넣기" autocomplete="off" style="flex:1"><button class="btn primary" data-act="syncon">연결</button></div>`}
       <hr style="border:0;border-top:1px solid var(--line);margin:22px 0">
       <h2>🔒 잠금</h2><p class="lead-note">발표 중 다른 사람이 자료를 바꾸지 못하도록 관리 화면을 잠급니다. 브라우저 창을 닫아도 다시 잠깁니다.</p>
       <div class="actions"><button class="btn" data-act="lock">🔒 지금 잠그기</button></div></div>`;
@@ -1397,6 +1570,13 @@ $('#view').addEventListener('click', async e => {
     case 'delsub': { const k = b.dataset.k; if (!confirm('이 소지역을 삭제할까요? 속한 나라는 원래 소지역으로 돌아갑니다.')) return; STATE.customSubs = STATE.customSubs.filter(s => s.key !== k); delete STATE.subColors[k]; for (const c in STATE.subAssign) if (STATE.subAssign[c] === k) delete STATE.subAssign[c]; SUBS = allSubs(); rerender(); break; }
     case 'resetname': delete STATE.subNames[b.dataset.k]; delete STATE.subColors[b.dataset.k]; SUBS = allSubs(); rerender(); break;
     case 'resetassign': { const k = b.dataset.k; if (!confirm('이 대륙 나라들의 소지역 배치를 원래대로 되돌릴까요?')) return; for (const c in STATE.subAssign) if (SUB_BASE[META[c].s][0] === k || SUBS[STATE.subAssign[c]]?.c === k) delete STATE.subAssign[c]; SUBS = allSubs(); rerender(); break; }
+    case 'syncon': {
+      const v = $('#tokenIn').value; b.disabled = true; b.textContent = '연결 중…';
+      try { const msg = await Sync.connect(v); toast('연결되었습니다 · ' + msg); } catch (err) { toast(err.message); }
+      renderEditor(); break;
+    }
+    case 'syncnow': Sync.pull(true); break;
+    case 'syncoff': if (!confirm('이 기기의 동기화 연결을 끊을까요? (저장소의 자료는 그대로 남습니다)')) return; Sync.disconnect(); renderEditor(); toast('연결을 끊었습니다'); break;
     case 'lock': adminOK = false; try { sessionStorage.removeItem('cf-admin'); } catch { } go('/'); toast('관리 화면을 잠갔습니다'); break;
     case 'export': {
       const blob = new Blob([JSON.stringify(STATE)], { type: 'application/json' });
@@ -1466,9 +1646,10 @@ function normalize(d) {
 (async () => {
   const saved = await Store.get();
   STATE = saved ? normalize(saved) : sampleData();
-  if (!saved) Store.set(STATE);
+  if (!saved) { STATE.updatedAt = 0; Store.set(STATE); }
   $('#saveState').textContent = '';
   render();
+  Sync.start();
 })();
 })();
 </script>
