@@ -9,4 +9,4 @@
 
 ### daeun
 
-- [daeun/comfort-food/](daeun/comfort-food/) — 「대륙별 Comfort Food」 수업 발표 앱: 세계 지도 → 대륙 → 나라, 관리자 화면에서 자료·사진 입력 (파일 하나로 동작)
+- [daeun/comfort-food/](daeun/comfort-food/) — 「대륙별 Comfort Food」 수업 발표 앱: 세계 지도 → 대륙 → 나라, 관리자 화면에서 자료·사진 입력 (파일 하나로 동작) · QR코드: [발표용 카드](daeun/comfort-food/qr-card.png), [QR만](daeun/comfort-food/qr.png)
