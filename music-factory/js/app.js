@@ -4,7 +4,7 @@ import {
   buildSchedule, activeAt, clampBpm, clampLevel, sizeOf, beatSeconds, BEATS_PER_BAR,
 } from './engine.js';
 import {
-  THEMES, INSTRUMENTS, INSTRUMENT_ORDER, VOICE_LIST, getTheme, ingredientOf, imagePath, soundOf, voiceInfo, normalizeVoices,
+  THEMES, INSTRUMENTS, ENSEMBLES, ENSEMBLE_ORDER, VOICE_LIST, getTheme, ensembleOf, ingredientOf, imagePath, soundOf, voiceInfo, normalizeVoices,
 } from './themes.js';
 import { AudioEngine, Player } from './audio.js';
 import { MISSIONS, getMission, checkMission } from './missions.js';
@@ -41,6 +41,8 @@ const state = {
 
 // 재료가 지금 내는 소리 (학생이 고른 악기 반영)
 const soundFor = (ingId) => soundOf(state.theme, ingId, state.voices);
+// 지금 테마 악단의 화음 흐름 (국악은 5음, 재즈는 재즈 화음…)
+const progOf = (theme = state.theme) => ensembleOf(theme).progression;
 
 const createScreen = $('#create');
 // 폰·세로 화면에서는 컵 그림 대신 화면을 꽉 채우는 컵을 써요 (칸을 크게)
@@ -113,7 +115,8 @@ for (const im of $$('img[data-optional]')) {
     im.classList.add('loaded');
     if (im.classList.contains('cup-img')) applyCupShape();
   };
-  if (im.complete) show(); else im.addEventListener('load', show);
+  if (im.complete) show();
+  im.addEventListener('load', show); // 테마를 바꾸면 그림 주소가 바뀌어요
 }
 
 // ---------- 화면 이동 ----------
@@ -176,7 +179,9 @@ function renderThemes() {
     card.disabled = !t.ready;
     card.append(pic(`assets/images/themes/${t.id}.png`, t.emoji, 'theme-pic'));
     card.append(el('strong', '', t.name));
+    const e = ensembleOf(t);
     card.append(el('span', 'tag', `${t.method} · ${t.learn}`));
+    card.append(el('span', 'ens-tag', `${e.emoji} ${e.name}`));
     if (!t.ready) card.append(el('span', 'soon', '🔒 곧 열려요'));
     grid.append(card);
   }
@@ -208,7 +213,7 @@ function openCreate({ themeId = 'bingsu', work = null, mission = null, song = nu
     state.createdAt = work.createdAt;
     state.voices = { ...work.voices };
   } else {
-    const draft = !fresh && !mission ? store.loadDraft() : null;
+    const draft = !fresh && !mission ? store.loadDraft(themeId) : null;
     const useDraft = draft && draft.theme === themeId;
     state.items = useDraft ? draft.items : [];
     state.bpm = useDraft ? draft.bpm : DEFAULT_BPM;
@@ -217,13 +222,14 @@ function openCreate({ themeId = 'bingsu', work = null, mission = null, song = nu
     state.title = useDraft ? draft.title : '';
     state.createdAt = useDraft ? draft.createdAt : null;
     state.voices = useDraft ? { ...draft.voices } : {};
-    if (useDraft && draft.items.length) setTimeout(() => toast('🍧 만들던 빙수를 다시 열었어요'), 300);
+    if (useDraft && draft.items.length) setTimeout(() => toast(`${state.theme.emoji} 만들던 작품을 다시 열었어요`), 300);
     if (song) {
       state.bpm = song.song.bpm;
       setTimeout(() => toast('🎧 먼저 「정답 듣기」로 노래를 들어 봐요'), 300);
     }
   }
   preloadImages();
+  setupContainer();
   buildCup();
   $('#bpm').value = state.bpm;
   $('#bpmOut').textContent = state.bpm;
@@ -252,7 +258,7 @@ function renderHeader() {
     ? `도전: ${state.mission.title}`
     : state.song
       ? '노래를 듣고 컵에 똑같이 쌓아 봐요!'
-      : `재료를 ${t.container}에 쌓으면 음악이 돼요!`;
+      : t.hint;
 }
 
 function changed() {
@@ -314,23 +320,37 @@ function buildCup() {
   applyCupShape();
 }
 
-// 컵 그림이 있으면, 칸을 컵 안쪽 모양(아래로 좁아지는 모양)에 맞춰 줄마다 폭을 줄여요.
+// 테마마다 그릇 모양이 달라요 (빙수컵, 피자 도우, 햄버거, 케이크, 콘, 무대, 우주)
+function setupContainer() {
+  const t = state.theme;
+  const cup = $('#cup');
+  cup.className = `cup theme-${t.id}`;
+  const img = $('.cup-img', cup);
+  img.classList.remove('loaded');
+  if (t.containerImage) img.src = `assets/images/${t.id}/${t.containerImage}`;
+  else img.removeAttribute('src');
+}
+
+// 칸을 그릇 안쪽 모양에 맞춰요. 줄마다 양옆 여백이 달라서(위가 좁거나 아래가 좁거나) 모양을 따라가요.
 function applyCupShape() {
   const cup = $('#cup');
-  const shape = state.theme.cupShape;
-  const hasImg = Boolean(shape) && !narrowScreen.matches && $('.cup-img', cup).classList.contains('loaded');
+  const t = state.theme;
+  const hasImg = Boolean(t.cupShape) && !narrowScreen.matches && $('.cup-img', cup).classList.contains('loaded');
+  const shape = hasImg ? t.cupShape : t.cssShape;
   cup.classList.toggle('has-img', hasImg);
-  if (!hasImg) return;
+  cup.classList.toggle('shaped', Boolean(shape));
+  const rows = $$('#cupRows .row');
+  if (!shape) { rows.forEach((row) => row.style.removeProperty('--inset')); return; }
   const { top, bottom, topInset, bottomInset } = shape;
+  const base = Math.min(topInset, bottomInset);
   cup.style.setProperty('--ct', `${top}%`);
   cup.style.setProperty('--cb', `${bottom}%`);
-  cup.style.setProperty('--ci', `${topInset}%`);
-  const rows = $$('#cupRows .row');
-  const width = 100 - 2 * topInset;
+  cup.style.setProperty('--ci', `${base}%`);
+  const width = 100 - 2 * base;
   rows.forEach((row, k) => {
     const f = (k + 0.5) / rows.length; // 위(0) → 아래(1)
     const edge = topInset + f * (bottomInset - topInset);
-    row.style.setProperty('--inset', `${((edge - topInset) / width) * 100}%`);
+    row.style.setProperty('--inset', `${((edge - base) / width) * 100}%`);
   });
 }
 
@@ -456,10 +476,17 @@ function removeItem(id) {
 // ---------- 악기 고르기 ----------
 // 재료마다 어울리는 악기를 학생이 직접 골라요. 고른 악기는 작품과 함께 저장돼요.
 let voiceIng = null; // 악기 고르기 창에서 지금 고른 재료
+let voiceEns = 'band'; // 악기 고르기 창에서 보고 있는 악단
+
+// 재료가 지금 내는 소리의 악단을 펼쳐 보여 줘요
+function showEnsembleOf(ingId) {
+  voiceEns = INSTRUMENTS[soundFor(ingId).instrument].ensemble;
+}
 
 function openVoiceDialog(ingId) {
   if (!guardEdit()) return;
   voiceIng = ingId || state.selectedId && getItem(state.selectedId)?.ing || state.theme.ingredients[0].id;
+  showEnsembleOf(voiceIng);
   renderVoiceDialog();
   $('#voiceDialog').showModal();
 }
@@ -480,9 +507,21 @@ function renderVoiceDialog() {
   const ing = ingredientOf(state.theme, voiceIng);
   const cur = soundFor(voiceIng);
   $('#voiceFor').textContent = `${ing.emoji} ${ing.name}에 어울리는 악기를 골라요`;
+  // 악단 고르기: 이 테마의 악단이 먼저, 다른 악단 악기도 빌려 올 수 있어요
+  const ensBox = $('#voiceEns');
+  ensBox.replaceChildren();
+  const mine = state.theme.ensemble;
+  for (const id of [mine, ...ENSEMBLE_ORDER.filter((e) => e !== mine)]) {
+    const e = ENSEMBLES[id];
+    const b = el('button', `chip ens-chip${id === voiceEns ? ' on' : ''}`, `${e.emoji} ${e.name}${id === mine ? ' (이 테마)' : ''}`);
+    b.type = 'button';
+    b.dataset.ens = id;
+    b.setAttribute('aria-pressed', String(id === voiceEns));
+    ensBox.append(b);
+  }
   const grid = $('#voiceChoices');
   grid.replaceChildren();
-  for (const v of VOICE_LIST) {
+  for (const v of VOICE_LIST.filter((x) => x.ensemble === voiceEns)) {
     const inst = INSTRUMENTS[v.instrument];
     const b = el('button', `vc${v.id === cur.voice ? ' on' : ''}`);
     b.type = 'button';
@@ -503,7 +542,7 @@ function setVoice(ingId, voiceId) {
   renderPalette();
   changed();
   renderVoiceDialog();
-  audio.preview(soundFor(ingId).voice, 1, state.bpm);
+  audio.preview(soundFor(ingId).voice, 1, state.bpm, progOf());
   const v = voiceInfo(voiceId);
   toast(`${ing.emoji} ${ing.name} → ${INSTRUMENTS[v.instrument].emoji} ${INSTRUMENTS[v.instrument].name}`, 1400);
 }
@@ -514,8 +553,15 @@ $('#voiceIngs').addEventListener('click', (e) => {
   const b = e.target.closest('.vi');
   if (!b) return;
   voiceIng = b.dataset.ing;
+  showEnsembleOf(voiceIng);
   renderVoiceDialog();
-  audio.preview(soundFor(voiceIng).voice, 1, state.bpm);
+  audio.preview(soundFor(voiceIng).voice, 1, state.bpm, progOf());
+});
+$('#voiceEns').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ens]');
+  if (!b) return;
+  voiceEns = b.dataset.ens;
+  renderVoiceDialog();
 });
 $('#voiceChoices').addEventListener('click', (e) => {
   const b = e.target.closest('.vc');
@@ -530,12 +576,16 @@ $('#voiceResetAll').addEventListener('click', () => {
 });
 $('#voiceClose').addEventListener('click', () => $('#voiceDialog').close());
 
-// ---------- 우리 밴드 ----------
+// ---------- 우리 악단 ----------
 function renderBand() {
   const used = new Set(state.items.map((it) => soundFor(it.ing)?.instrument));
+  const ens = ensembleOf(state.theme);
+  $('#bandLabel').textContent = `우리 ${ens.name} ${ens.emoji}`;
   const band = $('#band');
   band.replaceChildren();
-  for (const id of INSTRUMENT_ORDER) {
+  // 이 테마 악단의 악기 + 다른 악단에서 빌려 온 악기
+  const list = [...ens.instruments, ...[...used].filter((id) => id && !ens.instruments.includes(id))];
+  for (const id of list) {
     const inst = INSTRUMENTS[id];
     const m = el('div', `member${used.has(id) ? ' used' : ''}`);
     m.dataset.inst = id;
@@ -566,7 +616,7 @@ function previewIng(ingId, beats = 1) {
   if (player.state === 'paused') { player.stop(); updatePlayUI(); }
   if (player.state === 'playing') return; // 연주 중엔 섞이지 않게
   const snd = soundFor(ingId);
-  audio.preview(snd.voice, beats, state.bpm);
+  audio.preview(snd.voice, beats, state.bpm, progOf());
   const m = $(`#band .member[data-inst="${snd.instrument}"]`);
   if (m) { m.classList.remove('hit'); void m.offsetWidth; m.classList.add('hit'); }
 }
@@ -811,7 +861,7 @@ function togglePlay() {
 
 function startPlay() {
   if (!state.items.length) {
-    toast(`🍧 재료를 먼저 ${state.theme.container}에 담아요`);
+    toast(`${state.theme.emoji} 재료를 먼저 ${state.theme.container}에 올려요`);
     return;
   }
   state.armedIng = null;
@@ -819,7 +869,7 @@ function startPlay() {
   renderPalette();
   renderCup();
   renderItemPanel();
-  const ok = player.play(state.items, { bpm: state.bpm, loop: state.loop, onEnd: onPlayEnd });
+  const ok = player.play(state.items, { bpm: state.bpm, loop: state.loop, onEnd: onPlayEnd, progression: progOf() });
   if (!ok) { toast('😢 이 기기에서는 소리를 낼 수 없어요'); return; }
   $('#cup').classList.remove('finished');
   updatePlayUI();
@@ -1092,7 +1142,7 @@ function playSong(song) {
   player.stop();
   clearPlayVisuals();
   const theme = getTheme(song.theme);
-  const ok = player.play(songItems(song, theme), { bpm: song.bpm, loop: false, onEnd: () => { updatePlayUI(); } });
+  const ok = player.play(songItems(song, theme), { bpm: song.bpm, loop: false, onEnd: () => { updatePlayUI(); }, progression: progOf(theme) });
   if (!ok) { toast('😢 이 기기에서는 소리를 낼 수 없어요'); return; }
   toast(`🎧 정답 노래 「${song.title}」`, 1600);
   updatePlayUI();
@@ -1228,9 +1278,23 @@ $('#missionList').addEventListener('click', (e) => {
 
 // ---------- 악기 소리 체험 ----------
 let demoLevel = DEFAULT_LEVEL;
+let demoEns = 'band'; // 악기 소리 체험: 보고 있는 악단
 
 function renderInstruments() {
-  const theme = getTheme('bingsu');
+  // 악단 고르기 (테마마다 악단이 달라요)
+  const tabs = $('#ensTabs');
+  tabs.replaceChildren();
+  for (const id of ENSEMBLE_ORDER) {
+    const e = ENSEMBLES[id];
+    const t = THEMES.find((x) => x.ensemble === id);
+    const b = el('button', `ens-tab${id === demoEns ? ' on' : ''}`);
+    b.type = 'button';
+    b.dataset.ens = id;
+    b.setAttribute('aria-pressed', String(id === demoEns));
+    b.append(el('span', 'et-emoji', e.emoji), el('b', '', e.name), el('span', 'et-theme', `${t.emoji} ${t.name.replace(' 만들기', '')}`));
+    tabs.append(b);
+  }
+  const theme = THEMES.find((x) => x.ensemble === demoEns);
   const lp = $('#lenPick');
   lp.replaceChildren();
   for (const s of SIZES) {
@@ -1241,7 +1305,7 @@ function renderInstruments() {
   }
   const grid = $('#instGrid');
   grid.replaceChildren();
-  for (const id of INSTRUMENT_ORDER) {
+  for (const id of ENSEMBLES[demoEns].instruments) {
     const inst = INSTRUMENTS[id];
     const card = el('div', 'inst-card');
     card.style.setProperty('--c', inst.color);
@@ -1261,6 +1325,13 @@ function renderInstruments() {
   }
 }
 
+$('#ensTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ens]');
+  if (!b) return;
+  demoEns = b.dataset.ens;
+  renderInstruments();
+});
+
 $('#lenPick').addEventListener('click', (e) => {
   const b = e.target.closest('[data-level]');
   if (!b) return;
@@ -1271,7 +1342,7 @@ $('#lenPick').addEventListener('click', (e) => {
 $('#instGrid').addEventListener('click', (e) => {
   const b = e.target.closest('.inst-ing');
   if (!b) return;
-  audio.preview(b.dataset.voice, sizeOf(demoLevel).beats, DEFAULT_BPM);
+  audio.preview(b.dataset.voice, sizeOf(demoLevel).beats, DEFAULT_BPM, ENSEMBLES[demoEns].progression);
   const card = b.closest('.inst-card');
   card.classList.remove('hit');
   void card.offsetWidth;

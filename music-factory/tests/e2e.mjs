@@ -76,7 +76,7 @@ await page.screenshot({ path: path.join(OUT, '1-home.png') });
 check(await page.locator('#home .menu-btn').count() === 5, '메인 메뉴 5개');
 await page.click('text=음악 만들기');
 check(await page.locator('.theme-card').count() === 7, '테마 7개');
-check(await page.locator('.theme-card:not([disabled])').count() === 1, '빙수만 열려 있음');
+check(await page.locator('.theme-card:not([disabled])').count() === 7, '테마 7개 모두 열림');
 await page.screenshot({ path: path.join(OUT, '2-themes.png') });
 await page.click('.theme-card[data-theme="bingsu"]');
 check(await page.locator('#create').isVisible(), '창작 화면 열림');
@@ -286,11 +286,46 @@ check(await page.locator('.song-card[data-song="berry-march"] .song-level.done[d
 // ---------- 7. 악기 소리 체험 ----------
 await page.click('[data-go="home"] >> visible=true');
 await page.click('#home [data-go="instruments"]');
-check(await page.locator('.inst-card').count() === 7, '악기 7가지');
+check(await page.locator('.ens-tab').count() === 7, '악단 7개 (밴드 · 오케스트라 · 재즈 · 오르골 · 타악기 · 국악 · 전자)');
+check(await page.locator('.inst-card').count() === 7, '밴드 악기 7가지');
 check(await page.locator('.inst-ing').count() === 10, '재료 버튼 10개');
 await page.click('#lenPick [data-level="4"]');
 for (const b of await page.locator('.inst-ing').all()) await b.click();
+await page.click('.ens-tab[data-ens="gugak"]');
+check(/가야금/.test(await page.textContent('#instGrid')) && await page.locator('.inst-card').count() === 8, '국악단: 국악기 8가지');
+await attachMeter();
+await page.click('.inst-ing >> nth=0');
+let gugakLv = 0;
+for (let i = 0; i < 20; i++) { gugakLv = Math.max(gugakLv, await page.evaluate(() => window.__level())); await page.waitForTimeout(25); }
+check(gugakLv > 0.02, `국악기 소리가 남 (${gugakLv.toFixed(3)})`);
 await page.screenshot({ path: path.join(OUT, '6-instruments.png') });
+
+// ---------- 7-1. 테마마다 다른 악단 ----------
+const ENS = { bingsu: '밴드', pizza: '오케스트라', burger: '재즈', cake: '오르골', icecream: '타악기', animals: '국악단', space: '전자 음악단' };
+for (const [themeId, ensName] of Object.entries(ENS)) {
+  await page.click('[data-go="home"] >> visible=true');
+  await page.click('#home [data-go="themes"]');
+  await page.click(`.theme-card[data-theme="${themeId}"]`);
+  await attachMeter();
+  const first = await page.getAttribute('#palette .ing >> nth=0', 'data-ing');
+  await dragTo(`#palette .ing[data-ing="${first}"]`, slot(0, 0));
+  await page.click('#btnPlay');
+  let lv = 0;
+  for (let i = 0; i < 30; i++) { lv = Math.max(lv, await page.evaluate(() => window.__level())); await page.waitForTimeout(25); }
+  await page.click('#btnStop');
+  const label = await page.textContent('#bandLabel');
+  check(label.includes(ensName) && lv > 0.02, `${themeId}: ${label.trim()} 연주 (${lv.toFixed(3)})`);
+  if (themeId === 'pizza') {
+    // 다른 악단 악기도 빌려 올 수 있어요: 피자(오케스트라) 도우를 국악 장구로
+    await page.click('#btnVoices');
+    await page.click('#voiceEns [data-ens="gugak"]');
+    await page.click('#voiceChoices .vc[data-voice="janggu"]');
+    await page.click('#voiceClose');
+    check(/장구/.test(await page.textContent('#palette .ing[data-ing="dough"]')), '다른 악단 악기 빌려 오기 (도우 → 장구)');
+    check(await page.locator('#band .member.used[data-inst="janggu"]').count() === 1, '빌려 온 악기도 우리 악단에 보임');
+  }
+  await page.click('#btnBack');
+}
 
 // ---------- 8. 태블릿 터치로 끌어다 놓기 ----------
 const tctx = await browser.newContext({ viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true, deviceScaleFactor: 1 });

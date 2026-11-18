@@ -91,20 +91,24 @@ export function deleteWork(id, store = defaultStore()) {
   writeJSON(store, WORKS_KEY, list);
 }
 
-export function loadDraft(store = defaultStore()) {
-  const d = readJSON(store, DRAFT_KEY, null);
-  if (!d) return null;
+// 만들던 작품은 테마마다 따로 기억해요 (피자를 만들어도 빙수가 지워지지 않게)
+const draftKey = (themeId) => `${DRAFT_KEY}.${themeId}`;
+
+export function loadDraft(themeId = 'bingsu', store = defaultStore()) {
+  let d = readJSON(store, draftKey(themeId), null);
+  if (!d && themeId === 'bingsu') d = readJSON(store, DRAFT_KEY, null); // 예전 저장 방식
+  if (!d || d.theme !== themeId) return null;
   const work = normalizeWork({ ...d, id: d.id || 'draft' });
   if (!work) return null;
   return { ...work, id: d.id || null, title: d.title || '' };
 }
 
 export function saveDraft(draft, store = defaultStore()) {
-  writeJSON(store, DRAFT_KEY, draft);
+  writeJSON(store, draftKey(draft.theme), draft);
 }
 
-export function clearDraft(store = defaultStore()) {
-  try { store?.removeItem(DRAFT_KEY); } catch { /* 무시 */ }
+export function clearDraft(themeId = 'bingsu', store = defaultStore()) {
+  try { store?.removeItem(draftKey(themeId)); } catch { /* 무시 */ }
 }
 
 export function loadMissionDone(store = defaultStore()) {
