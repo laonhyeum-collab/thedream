@@ -389,6 +389,11 @@ function renderCup() {
     const barText = !rest ? `${whole}마디` : whole ? `${whole}마디 + ${fmtBeats(rest)}박` : `1마디가 안 돼요`;
     info.textContent = `${schedule.groups.length}층 · 전체 길이 ${fmtBeats(schedule.totalBeats)}박 (${barText}) · 약 ${secs.toFixed(1)}초`;
   }
+  if (state.song) {
+    info.textContent = schedule.groups.length
+      ? `📜 컵 오른쪽 악보를 보며 쌓아요 · 지금 ${schedule.groups.length}층 / 악보 ${state.song.song.steps.length}층`
+      : '📜 컵 오른쪽 악보를 보며 1층부터 쌓아요';
+  }
 }
 
 function fmtBeats(b) {
@@ -1144,6 +1149,12 @@ function renderInlineScore() {
     box.className = `row-score${res ? (res.ok ? ' ok' : ' bad') : ''}`;
     box.dataset.reason = res ? `${i + 1}층 ${res.ok ? '✅ ' : '❌ '}${reasonText(res)}` : '';
     if (res) row.classList.add(res.ok ? 'res-ok' : 'res-bad');
+    // 맨 위 악보 줄 위에 "📜 악보" 제목
+    const top = Math.max(s.song.steps.length, r ? r.steps.length : 0) - 1;
+    if (i === top) box.append(el('span', 'rs-head', '📜 악보'));
+    const no = el('span', 'rs-no', String(i + 1));
+    no.append(el('small', '', '층'));
+    box.append(no);
     if (res) box.append(el('span', 'rs-mark', res.ok ? '✅' : '❌'));
     if (!step) { box.append(el('span', 'rs-q', '없는 층')); continue; }
     for (const [ingId, size] of step) {
