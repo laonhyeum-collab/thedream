@@ -266,8 +266,8 @@ ol.rx-list li::before{counter-increment:n;content:counter(n);width:20px;height:2
 .reg-table td,.reg-table th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
 .reg-table select{width:100%;padding:5px 8px;border:1px solid var(--line2);border-radius:8px;background:#fff}
 .reg-table tr.changed td{background:#FFF6E2}
-.sub-ed{display:grid;grid-template-columns:22px 1fr auto auto;gap:10px;align-items:center;margin-bottom:8px}
-.sub-ed .sw{width:22px;height:22px;border-radius:6px;border:1px solid rgba(0,0,0,.15)}
+.sub-ed{display:grid;grid-template-columns:46px 1fr auto auto;gap:10px;align-items:center;margin-bottom:8px}
+.sub-ed .sw{width:46px;height:36px;padding:2px;border-radius:9px;border:1px solid var(--line2);background:#fff;cursor:pointer}
 .sub-ed input{border:1px solid var(--line2);border-radius:9px;padding:6px 10px;width:100%}
 .pick-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;max-height:460px;overflow:auto;padding:2px}
 .pick-list button{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;text-align:left;font-size:15px}
@@ -590,7 +590,7 @@ function sampleData() {
 - 이민 문화: 파이, 로스트, 비스킷 등 영국식 가정 요리
 - 공동체 의식: 음식을 준비하고 나누는 과정 자체가 축제이다`, '땅속 오븐, 해산물, 파이, 공동체'),
     },
-    subNames: {}, subIntro: {}, customSubs: [], subAssign: {},
+    subNames: {}, subIntro: {}, subColors: {}, customSubs: [], subAssign: {},
     countries, flagCache: {},
   };
 }
@@ -612,6 +612,7 @@ const subOf = c => { const s = STATE.subAssign[c]; return s && SUBS[s] ? s : MET
 const contOf = c => SUBS[subOf(c)].c;
 const subsOfCont = k => Object.values(SUBS).filter(s => s.c === k);
 function subColor(key) {
+  if (STATE.subColors[key]) return STATE.subColors[key];
   const s = SUBS[key]; const list = subsOfCont(s.c); const i = list.findIndex(x => x.key === key); const n = list.length;
   const base = d3.hsl(contInfo(s.c).color);
   const t = n > 1 ? i / (n - 1) - 0.5 : 0;
@@ -1254,11 +1255,11 @@ function renderEditor() {
     const members = Object.keys(META).filter(c => contOf(c) === key || META[c].s && SUB_BASE[META[c].s]?.[0] === key).sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'ko'));
     main.innerHTML = `<div class="card editor" style="--c:${ci.color}">
       <h2>🗺️ ${h(ci.name)} 소지역 구분</h2>
-      <p class="lead-note">소지역 이름을 바꾸거나 새로 만들 수 있습니다. 지도에서 색과 점선 경계로 구분되어 나타납니다.</p>
-      ${subs.map(s => `<div class="sub-ed"><span class="sw" style="background:${subColor(s.key)}"></span>
+      <p class="lead-note">왼쪽 색 상자를 눌러 소지역 색을 고르고, 이름을 바꾸거나 새 소지역을 만들 수 있습니다. 지도에서 색과 점선 경계로 구분되어 나타납니다.</p>
+      ${subs.map(s => `<div class="sub-ed"><input type="color" class="sw" data-subcolor="${s.key}" value="${subColor(s.key)}" title="${h(s.name)} 색 고르기">
         <input type="text" data-subname="${s.key}" value="${h(s.name)}">
         <span class="hint" style="font-size:13px;color:var(--muted)">${Object.keys(META).filter(c => subOf(c) === s.key).length}개국</span>
-        ${s.custom ? `<button class="btn sm danger" data-act="delsub" data-k="${s.key}">삭제</button>` : `<button class="btn sm" data-act="resetname" data-k="${s.key}" title="원래 이름으로">↺</button>`}</div>
+        ${s.custom ? `<button class="btn sm danger" data-act="delsub" data-k="${s.key}">삭제</button>` : `<button class="btn sm" data-act="resetname" data-k="${s.key}" title="원래 이름과 색으로">↺ 원래대로</button>`}</div>
         <div class="fld" style="margin:0 0 16px 32px"><textarea class="short" data-bind="subIntro.${s.key}" placeholder="${h(s.name)} 식문화 소개 (선택) — 소지역 화면 위쪽에 표시됩니다">${h(STATE.subIntro[s.key] || '')}</textarea></div>`).join('')}
       <div class="actions" style="margin-top:12px"><button class="btn" data-act="addsub" data-k="${key}">＋ 새 소지역 만들기</button><button class="btn" data-act="resetassign" data-k="${key}">↺ 나라 배치 원래대로</button></div>
       <h3 style="font-size:19px;margin:20px 0 8px">나라별 소지역 배치</h3>
@@ -1331,6 +1332,7 @@ function updatePreview() {
 $('#view').addEventListener('input', e => {
   const t = e.target;
   if (t.dataset.bind) { setPath(t.dataset.bind, t.value); save(); updatePreview(); }
+  if (t.dataset.subcolor) { STATE.subColors[t.dataset.subcolor] = t.value; save(); }
   if (t.dataset.subname) { const k = t.dataset.subname; const cs = STATE.customSubs.find(s => s.key === k); if (cs) cs.name = t.value; else STATE.subNames[k] = t.value; save(); }
 });
 $('#view').addEventListener('change', e => {
@@ -1338,6 +1340,7 @@ $('#view').addEventListener('change', e => {
   if (t.dataset.bind && /\.(name|color|en)$/.test(t.dataset.bind) && !/foods/.test(t.dataset.bind)) { SUBS = allSubs(); renderNav(); }
   if (t.dataset.bind && /foods\.\d+\.name$/.test(t.dataset.bind)) updatePreview();
   if (t.dataset.subname) { SUBS = allSubs(); renderNav(); }
+  if (t.dataset.subcolor) toast('소지역 색을 바꿨습니다');
   if (t.dataset.assign) {
     const c = t.dataset.assign;
     if (t.value === META[c].s) delete STATE.subAssign[c]; else STATE.subAssign[c] = t.value;
@@ -1368,8 +1371,8 @@ $('#view').addEventListener('click', async e => {
     case 'url': { const u = prompt('이미지 주소(https://…)를 붙여 넣으세요'); if (!u) return; getPath(path).push({ src: u.trim(), caption: '' }); rerender(); break; }
     case 'foodimgurl': { const u = prompt('음식 사진 주소(https://…)를 붙여 넣으세요'); if (!u) return; getPath(path).image = u.trim(); rerender(); break; }
     case 'addsub': { const k = b.dataset.k; const key = 'x' + Date.now().toString(36); STATE.customSubs.push({ key, c: k, name: '새 소지역' }); rerender(); toast('새 소지역을 만들었습니다. 아래 표에서 나라를 옮겨 주세요'); break; }
-    case 'delsub': { const k = b.dataset.k; if (!confirm('이 소지역을 삭제할까요? 속한 나라는 원래 소지역으로 돌아갑니다.')) return; STATE.customSubs = STATE.customSubs.filter(s => s.key !== k); for (const c in STATE.subAssign) if (STATE.subAssign[c] === k) delete STATE.subAssign[c]; SUBS = allSubs(); rerender(); break; }
-    case 'resetname': delete STATE.subNames[b.dataset.k]; SUBS = allSubs(); rerender(); break;
+    case 'delsub': { const k = b.dataset.k; if (!confirm('이 소지역을 삭제할까요? 속한 나라는 원래 소지역으로 돌아갑니다.')) return; STATE.customSubs = STATE.customSubs.filter(s => s.key !== k); delete STATE.subColors[k]; for (const c in STATE.subAssign) if (STATE.subAssign[c] === k) delete STATE.subAssign[c]; SUBS = allSubs(); rerender(); break; }
+    case 'resetname': delete STATE.subNames[b.dataset.k]; delete STATE.subColors[b.dataset.k]; SUBS = allSubs(); rerender(); break;
     case 'resetassign': { const k = b.dataset.k; if (!confirm('이 대륙 나라들의 소지역 배치를 원래대로 되돌릴까요?')) return; for (const c in STATE.subAssign) if (SUB_BASE[META[c].s][0] === k || SUBS[STATE.subAssign[c]]?.c === k) delete STATE.subAssign[c]; SUBS = allSubs(); rerender(); break; }
     case 'lock': adminOK = false; try { sessionStorage.removeItem('cf-admin'); } catch { } go('/'); toast('관리 화면을 잠갔습니다'); break;
     case 'export': {
@@ -1426,7 +1429,7 @@ function normalize(d) {
   const base = sampleData();
   const s = { ...base, ...d };
   for (const k of CONT_ORDER) s.continents[k] = { intro: '', keywords: '', images: [], ...(d.continents?.[k] || {}) };
-  s.subNames ||= {}; s.subIntro ||= {}; s.customSubs ||= []; s.subAssign ||= {}; s.flagCache ||= {}; s.countries ||= {};
+  s.subNames ||= {}; s.subIntro ||= {}; s.subColors ||= {}; s.customSubs ||= []; s.subAssign ||= {}; s.flagCache ||= {}; s.countries ||= {};
   for (const c of Object.keys(s.countries)) {
     if (!META[c]) { delete s.countries[c]; continue; }
     s.countries[c] = { summary: '', culture: '', foods: [], images: [], sources: '', flag: '', created: 0, ...s.countries[c] };
