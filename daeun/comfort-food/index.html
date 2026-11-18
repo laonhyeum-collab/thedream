@@ -4,20 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>대륙별 Comfort Food</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
 :root{
   --ivory:#FBF7EC; --paper:#FFFDF7; --cream:#F4EEDD; --line:#E6DCC6; --line2:#D8CBAE;
   --ink:#2F2922; --ink2:#4A4136; --muted:#7D7262; --accent:#A55B34; --ocean:#E3ECE8;
-  --serif:'Gowun Batang','Nanum Myeongjo',serif; --sans:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --sans:'Pretendard Variable',Pretendard,-apple-system,'Apple SD Gothic Neo','Malgun Gothic','맑은 고딕',sans-serif; --serif:var(--sans);
   --r:18px; --shadow:0 1px 0 rgba(80,60,30,.04),0 8px 24px -12px rgba(80,60,30,.18);
   --c:#A55B34;
 }
 *{box-sizing:border-box}
 html{background:var(--ivory)}
-body{margin:0;background:var(--ivory);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.7;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--ivory);color:var(--ink);font-family:var(--sans);font-size:17.5px;line-height:1.75;letter-spacing:-.01em;word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased}
 button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer}
 a{color:inherit}
@@ -47,7 +45,7 @@ main{max-width:1320px;margin:0 auto;padding:28px 24px 80px}
 
 /* ---------- shared ---------- */
 .eyebrow{letter-spacing:.22em;font-size:13px;font-weight:700;color:var(--accent);margin:0 0 6px;text-transform:uppercase}
-h1,h2,h3{font-family:var(--serif);line-height:1.3;margin:0}
+h1,h2,h3{font-family:var(--sans);font-weight:800;line-height:1.3;margin:0;letter-spacing:-.025em}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
 .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 12px;border-radius:999px;font-size:14px;font-weight:500;background:var(--cream);border:1px solid var(--line);white-space:nowrap;text-decoration:none}
 .chip .dot{width:10px;height:10px;border-radius:50%}
@@ -71,7 +69,7 @@ a.chip:hover{border-color:var(--c)}
 
 /* ---------- rich text ---------- */
 .rx p{margin:0 0 .85em}
-.rx p.lead{font-size:1.12em;color:var(--ink);font-family:var(--serif);line-height:1.8}
+.rx p.lead{font-size:1.1em;color:var(--ink);font-weight:500;line-height:1.85}
 .rx-list{margin:.2em 0 1em;padding:0;list-style:none}
 .rx-list li{position:relative;padding:4px 0 4px 26px}
 .rx-list li::before{content:'';position:absolute;left:6px;top:.95em;width:8px;height:8px;border-radius:50%;background:var(--c)}
@@ -136,6 +134,9 @@ ol.rx-list li::before{counter-increment:n;content:counter(n);width:20px;height:2
 .cp-hero h1{font-size:clamp(40px,5vw,64px)}
 .cp-hero h1 small{display:block;font-family:var(--sans);font-size:16px;letter-spacing:.24em;text-transform:uppercase;color:var(--c);font-weight:700;margin-bottom:4px}
 .cp-hero .subs{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.sub-nav .chip{font-size:15px;padding:5px 14px;cursor:pointer}
+.sub-nav .chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.sub-nav .chip.on .dot{box-shadow:0 0 0 2px var(--paper)}
 .cp-map{padding:8px}
 .cp-map svg{display:block;width:100%;height:auto;border-radius:12px}
 .common{padding:30px 34px;border-left:8px solid var(--c);margin-bottom:44px}
@@ -148,7 +149,15 @@ ol.rx-list li::before{counter-increment:n;content:counter(n);width:20px;height:2
 .sub-group{margin-bottom:30px}
 .sub-group h3{font-size:19px;display:flex;align-items:center;gap:10px;margin:0 0 14px;color:var(--ink2)}
 .sub-group h3 .dot{width:14px;height:14px;border-radius:4px}
-.nations{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
+.nations{display:flex;flex-direction:column;gap:18px}
+.nation.row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:26px;align-items:start}
+.nation .n-info{display:flex;flex-direction:column;gap:10px;min-height:100%}
+.n-foods{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.n-foods figure{margin:0;border-radius:12px;overflow:hidden;background:var(--paper);border:1px solid var(--line)}
+.n-foods .ph{display:grid;place-items:center;width:100%;aspect-ratio:4/3;object-fit:cover;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 30%,#fff),color-mix(in srgb,var(--c) 10%,#fff));font-size:40px;font-weight:800;color:color-mix(in srgb,var(--c) 70%,#3A3027)}
+.n-foods img.ph{cursor:zoom-in}
+.n-foods figcaption{padding:7px 10px;font-size:15px;text-align:center}
+.n-foods .noimg{font-size:12px;color:var(--muted);font-weight:500;display:block}
 .nation{padding:20px 22px;display:flex;flex-direction:column;gap:10px;border-top:4px solid var(--sc,var(--c));transition:transform .15s,box-shadow .15s}
 .nation:hover{transform:translateY(-3px);box-shadow:0 14px 30px -14px rgba(80,60,30,.35)}
 .nation-head{display:flex;align-items:center;gap:14px}
@@ -159,7 +168,7 @@ ol.rx-list li::before{counter-increment:n;content:counter(n);width:20px;height:2
 .nation-head .en{font-size:13px;color:var(--muted)}
 .nation .foods-line{font-size:16px}
 .nation .foods-line span{color:var(--muted);font-size:14px;margin-right:6px}
-.nation .excerpt{font-size:15.5px;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.nation .excerpt{font-size:16px;color:var(--ink2);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
 .nation .excerpt p{margin:0 0 .4em}
 .nation .more{margin-top:auto;font-size:14px;font-weight:700;color:var(--accent);cursor:pointer;background:none;border:0;padding:0;text-align:left}
 
@@ -173,7 +182,7 @@ ol.rx-list li::before{counter-increment:n;content:counter(n);width:20px;height:2
 .np-id h1{font-size:clamp(40px,4.6vw,60px)}
 .np-id .en{color:var(--muted);font-size:16px;letter-spacing:.06em}
 .np-id .chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 16px}
-.np-id .summary{font-family:var(--serif);font-size:21px;line-height:1.65;margin:0 0 18px;padding-left:16px;border-left:4px solid var(--c)}
+.np-id .summary{font-weight:500;font-size:21px;line-height:1.65;margin:0 0 18px;padding-left:16px;border-left:4px solid var(--c)}
 .glance{padding:16px 20px}
 .glance h4{margin:0 0 8px;font-size:13px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
 .glance .row{display:grid;grid-template-columns:90px 1fr;gap:12px;padding:6px 0;border-top:1px dashed var(--line2);font-size:16px}
@@ -265,12 +274,21 @@ ol.rx-list li::before{counter-increment:n;content:counter(n);width:20px;height:2
 .pick-list .flag{width:26px;height:19px}
 .pick-list small{color:var(--muted);font-size:12px;display:block}
 
+.lock{display:grid;place-items:center;min-height:60vh}
+.lock-box{width:min(380px,100%);padding:34px 30px;text-align:center}
+.lock-ic{font-size:40px}
+.lock-box h2{font-size:26px;margin:6px 0 4px}
+.lock-box p{margin:0 0 16px;color:var(--muted)}
+.lock-box input{width:100%;font-size:24px;letter-spacing:.4em;text-align:center;padding:10px;border:1px solid var(--line2);border-radius:12px;background:#fff}
+.lock-box input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 18%,transparent)}
+.lock-err{color:#B03A2E!important;min-height:1.5em;margin:8px 0 10px!important;font-size:14px}
+.lock-box .btn{width:100%;justify-content:center;padding:11px}
 @media (max-width:1100px){.adm-main{grid-template-columns:1fr}.preview{position:static;max-height:none}}
 @media (max-width:860px){
   .cp-hero,.np-head{grid-template-columns:1fr}
   .admin{grid-template-columns:1fr}.adm-nav{position:static;max-height:none}
   .crumbs,.brand span{display:none}
-  .nations{grid-template-columns:1fr}
+  .nation.row{grid-template-columns:1fr}
 }
 @media (max-width:560px){
   main{padding:18px 16px 60px}
@@ -571,7 +589,7 @@ function sampleData() {
 - 이민 문화: 파이, 로스트, 비스킷 등 영국식 가정 요리
 - 공동체 의식: 음식을 준비하고 나누는 과정 자체가 축제이다`, '땅속 오븐, 해산물, 파이, 공동체'),
     },
-    subNames: {}, customSubs: [], subAssign: {},
+    subNames: {}, subIntro: {}, customSubs: [], subAssign: {},
     countries, flagCache: {},
   };
 }
@@ -744,7 +762,7 @@ function render() {
   $('#btnBack').disabled = false;
   let m;
   window.scrollTo(0, 0);
-  if ((m = r.match(/^\/c\/(\w+)/)) && CONT_BASE[m[1]]) return renderContinent(m[1]);
+  if ((m = r.match(/^\/c\/(\w+)(?:\/(\w+))?/)) && CONT_BASE[m[1]]) return renderContinent(m[1], m[2] && SUBS[m[2]] && SUBS[m[2]].c === m[1] ? m[2] : null);
   if ((m = r.match(/^\/n\/(\w+)/)) && META[m[1]]) return renderCountry(m[1]);
   if (r.startsWith('/admin')) return renderAdmin();
   return renderHome();
@@ -780,7 +798,7 @@ function subLabelPos(key) {
   return p ? d3.geoCentroid(p) : null;
 }
 
-function drawMap(el, mode, contKey) {
+function drawMap(el, mode, contKey, focusSub) {
   const W = 1200, H = mode === 'world' ? 600 : 760;
   let proj;
   if (mode === 'world') proj = d3.geoNaturalEarth1().fitExtent([[6, 6], [W - 6, H - 6]], boxPoints([[-180, -57], [180, 83]]));
@@ -796,22 +814,22 @@ function drawMap(el, mode, contKey) {
   const gz = root.append('g');
   gz.append('path').attr('class', 'grat').attr('d', path(d3.geoGraticule10()));
   const inCont = c => mode === 'world' || contOf(c) === contKey;
-  const fillOf = c => inCont(c) ? subColor(subOf(c)) : '#ECE6D8';
+  const fillOf = c => !inCont(c) ? '#ECE6D8' : focusSub && subOf(c) !== focusSub ? d3.interpolateRgb(subColor(subOf(c)), '#F4EFE3')(0.65) : subColor(subOf(c));
   gz.append('g').selectAll('path').data(FEATURES).join('path')
     .attr('class', d => 'cty' + (inCont(d.properties.c) ? '' : ' off'))
     .attr('d', path).attr('fill', d => fillOf(d.properties.c))
     .on('mousemove', (e, d) => {
       const c = d.properties.c; if (!inCont(c)) return hideTip();
       const k = contOf(c), has = !!STATE.countries[c];
-      showTip(e, `<b>${h(contInfo(k).name)}</b> · ${h(SUBS[subOf(c)].name)}<br>${h(nameOf(c))}${has ? ' <small>· 📌 자료 있음</small>' : ''}`);
+      showTip(e, `<b>${h(contInfo(k).name)}</b> · ${h(SUBS[subOf(c)].name)}<br>${h(nameOf(c))}${has ? ' <small>· 📌 자료 있음</small>' : ''}${mode === 'world' ? '' : `<br><small>클릭하면 ${focusSub === subOf(c) ? '대륙 전체 보기' : h(SUBS[subOf(c)].name) + '만 보기'}</small>`}`);
       if (mode === 'world') gz.selectAll('.cty').classed('dim', x => contOf(x.properties.c) !== k);
       else gz.selectAll('.cty').classed('hot', x => x.properties.c === c);
     })
     .on('mouseleave', () => { hideTip(); gz.selectAll('.cty').classed('dim', false).classed('hot', false); })
     .on('click', (e, d) => {
       const c = d.properties.c; if (!inCont(c)) return;
-      if (mode === 'world') go('/c/' + contOf(c)); else if (STATE.countries[c]) go('/n/' + c);
-      else toast(`${nameOf(c)}: 아직 입력된 자료가 없습니다`);
+      if (mode === 'world') go('/c/' + contOf(c));
+      else go(focusSub === subOf(c) ? '/c/' + contKey : '/c/' + contKey + '/' + subOf(c));
     });
   const meshF = f => topojson.mesh(WORLD_TOPO, TOPO_OBJ, f);
   const C = g => g.properties.c;
@@ -847,7 +865,7 @@ function drawMap(el, mode, contKey) {
       items.push({ node: g, xy, group: true });
     }
   }
-  const pinList = Object.keys(STATE.countries).filter(c => META[c] && inCont(c));
+  const pinList = Object.keys(STATE.countries).filter(c => META[c] && inCont(c) && (!focusSub || subOf(c) === focusSub));
   for (const c of pinList) {
     const xy = proj([META[c].ll[1], META[c].ll[0]]); if (!xy) continue;
     const g = gl.append('g').attr('class', 'pin').on('click', () => go('/n/' + c))
@@ -977,47 +995,62 @@ function galleryHTML(images, group) {
   if (!list.length) return '';
   return `<div class="gallery">${list.map((im, i) => `<figure><img src="${h(im.src)}" alt="${h(im.caption || '')}" data-lb="${group}" data-i="${i}" data-cap="${h(im.caption || '')}" loading="lazy">${im.caption ? `<figcaption>${inline(im.caption)}</figcaption>` : ''}</figure>`).join('')}</div>`;
 }
-function renderContinent(k) {
+function renderContinent(k, sub) {
   const ci = contInfo(k), d = STATE.continents[k] || {};
-  crumbs([['홈', '/'], [ci.name, '/c/' + k]]);
-  const list = countriesIn(k);
+  crumbs(sub ? [['홈', '/'], [ci.name, '/c/' + k], [SUBS[sub].name, `/c/${k}/${sub}`]] : [['홈', '/'], [ci.name, '/c/' + k]]);
+  const all = countriesIn(k);
+  const list = sub ? all.filter(c => subOf(c) === sub) : all;
   const subs = subsOfCont(k);
-  const groups = subs.map(s => ({ s, cs: list.filter(c => subOf(c) === s.key) })).filter(g => g.cs.length);
+  const groups = subs.filter(s => !sub || s.key === sub).map(s => ({ s, cs: list.filter(c => subOf(c) === s.key) })).filter(g => g.cs.length);
   const kws = splitList(d.keywords);
-  view.innerHTML = `<div class="fade" style="--c:${ci.color}">
-    <section class="cp-hero">
-      <div>
-        <h1><small>${h(ci.en)}</small>${h(ci.name)}</h1>
-        <p style="margin:12px 0 0;color:var(--ink2);font-size:18px">${list.length ? `조사한 나라 <strong>${list.length}</strong>곳 · ` : ''}소지역 ${subs.length}곳</p>
-        <div class="subs">${subs.map(s => `<span class="chip"><i class="dot" style="background:${subColor(s.key)}"></i>${h(s.name)}</span>`).join('')}</div>
-      </div>
-      <div class="card cp-map" id="contMap"></div>
-    </section>
-    <section class="block">
-      <div class="sec-title"><span class="num">01</span><h2>식문화 공통점</h2><span class="rule"></span></div>
+  const subIntro = sub ? (STATE.subIntro[sub] || '') : '';
+  const chipNav = `<div class="subs sub-nav">
+      <a class="chip ${sub ? '' : 'on'}" data-go="/c/${k}">전체</a>
+      ${subs.map(s => `<a class="chip ${s.key === sub ? 'on' : ''}" data-go="/c/${k}/${s.key}"><i class="dot" style="background:${subColor(s.key)}"></i>${h(s.name)}</a>`).join('')}</div>`;
+  let n = 0; const num = () => String(++n).padStart(2, '0');
+  const commonSec = sub
+    ? (subIntro.trim() ? `<section class="block"><div class="sec-title"><span class="num">${num()}</span><h2>${h(SUBS[sub].name)} 식문화</h2><span class="rule"></span></div>
+        <div class="card common" style="border-left-color:${subColor(sub)}">${rich(subIntro, { lead: true })}</div></section>` : '')
+    : `<section class="block">
+      <div class="sec-title"><span class="num">${num()}</span><h2>식문화 공통점</h2><span class="rule"></span></div>
       <div class="card common">
         ${kws.length ? `<div class="kw">${kws.map(x => `<span class="chip"># ${h(x)}</span>`).join('')}</div>` : ''}
         ${rich(d.intro, { lead: true }) || `<p style="color:var(--muted)">아직 작성된 내용이 없습니다. <a data-go="/admin" style="color:var(--accent);cursor:pointer">자료 관리</a>에서 이 대륙의 식문화 공통점을 입력해 주세요.</p>`}
         ${galleryHTML(d.images, 'cont-' + k)}
+      </div></section>`;
+  view.innerHTML = `<div class="fade" style="--c:${ci.color}">
+    <section class="cp-hero">
+      <div>
+        <h1><small>${sub ? h(ci.name) + ' · ' + h(ci.en) : h(ci.en)}</small>${h(sub ? SUBS[sub].name : ci.name)}</h1>
+        <p style="margin:12px 0 0;color:var(--ink2);font-size:18px">${list.length ? `조사한 나라 <strong>${list.length}</strong>곳` : '아직 조사한 나라가 없습니다'}${sub ? '' : ` · 소지역 ${subs.length}곳`}</p>
+        ${chipNav}
+        <p class="map-hint" style="text-align:left;margin-top:10px">지도나 위 버튼에서 소지역을 누르면 그 지역만 볼 수 있어요</p>
       </div>
+      <div class="card cp-map" id="contMap"></div>
     </section>
+    ${commonSec}
     <section class="block">
-      <div class="sec-title"><span class="num">02</span><h2>나라별 Comfort Food</h2><span class="rule"></span></div>
-      ${groups.length ? groups.map(g => `<div class="sub-group"><h3><i class="dot" style="background:${subColor(g.s.key)}"></i>${h(g.s.name)}</h3>
+      <div class="sec-title"><span class="num">${num()}</span><h2>${sub ? h(SUBS[sub].name) + ' 나라별' : '나라별'} Comfort Food</h2><span class="rule"></span></div>
+      ${groups.length ? groups.map(g => `<div class="sub-group">${sub ? '' : `<h3><i class="dot" style="background:${subColor(g.s.key)}"></i><a data-go="/c/${k}/${g.s.key}" style="cursor:pointer;text-decoration:none">${h(g.s.name)}</a></h3>`}
         <div class="nations">${g.cs.map(c => nationCard(c, subColor(g.s.key))).join('')}</div></div>`).join('')
-        : `<div class="empty">아직 이 대륙에 입력된 나라가 없습니다.<br><button class="btn primary" data-go="/admin">＋ 자료 관리에서 나라 추가하기</button></div>`}
+        : `<div class="empty">아직 ${sub ? '이 소지역에' : '이 대륙에'} 입력된 나라가 없습니다.<br><button class="btn primary" data-go="/admin">＋ 자료 관리에서 나라 추가하기</button></div>`}
     </section></div>`;
-  drawMap($('#contMap'), 'continent', k);
+  drawMap($('#contMap'), 'continent', k, sub);
 }
 function nationCard(c, sc) {
   const d = STATE.countries[c]; const foods = (d.foods || []).filter(f => f.name);
   const ex = d.summary ? `<p>${inline(d.summary)}</p>` : '';
   const fp = firstPara(d.culture);
-  return `<article class="card nation" style="--sc:${sc}">
-    <div class="nation-head">${flagHTML(c)}<div><a class="nation-name" data-go="/n/${c}">${h(nameOf(c))}</a><div class="en">${h(META[c].en)}</div></div></div>
-    ${foods.length ? `<div class="foods-line"><span>대표 음식</span>${foods.map(f => `<strong>${h(f.name)}</strong>`).join(' · ')}</div>` : ''}
-    <div class="excerpt rx">${ex}${fp ? `<p>${inline(tidy(fp))}</p>` : ''}</div>
-    <button class="more" data-go="/n/${c}">자세히 보기 →</button>
+  return `<article class="card nation row" style="--sc:${sc}">
+    <div class="n-info">
+      <div class="nation-head">${flagHTML(c)}<div><a class="nation-name" data-go="/n/${c}">${h(nameOf(c))}</a><div class="en">${h(META[c].en)}</div></div></div>
+      ${foods.length ? `<div class="foods-line"><span>대표 음식</span>${foods.map(f => `<strong>${h(f.name)}</strong>`).join(' · ')}</div>` : ''}
+      <div class="excerpt rx">${ex}${fp ? `<p>${inline(tidy(fp))}</p>` : ''}</div>
+      <button class="more" data-go="/n/${c}">자세히 보기 →</button>
+    </div>
+    ${foods.length ? `<div class="n-foods">${foods.map((f, j) => `<figure>${f.image
+      ? `<img class="ph" src="${h(f.image)}" alt="${h(f.name)}" data-lb="card-${c}" data-i="${j}" data-cap="${h(f.name)}" loading="lazy">`
+      : `<div class="ph">${h((f.name || '?').slice(0, 1))}</div>`}<figcaption><strong>${h(f.name)}</strong></figcaption></figure>`).join('')}</div>` : ''}
   </article>`;
 }
 
@@ -1101,7 +1134,25 @@ let SEL = 'settings';
 function getPath(path) { return path.split('.').reduce((o, k) => o?.[k], STATE); }
 function setPath(path, val) { const ks = path.split('.'); const last = ks.pop(); const o = ks.reduce((o, k) => o[k], STATE); o[last] = val; }
 
+const ADMIN_PW = '0715';
+let adminOK = false;
+try { adminOK = sessionStorage.getItem('cf-admin') === '1'; } catch { }
+function renderLock() {
+  crumbs([['홈', '/'], ['자료 관리', '/admin']]);
+  view.innerHTML = `<div class="fade lock"><form class="card lock-box" id="lockForm">
+    <div class="lock-ic">🔒</div><h2>자료 관리</h2><p>관리자 비밀번호를 입력하세요</p>
+    <input type="password" id="pw" inputmode="numeric" autocomplete="off" placeholder="비밀번호" aria-label="비밀번호">
+    <p class="lock-err" id="pwErr"></p>
+    <button class="btn primary" type="submit">들어가기</button></form></div>`;
+  const pw = $('#pw'); pw.focus();
+  $('#lockForm').onsubmit = e => {
+    e.preventDefault();
+    if (pw.value === ADMIN_PW) { adminOK = true; try { sessionStorage.setItem('cf-admin', '1'); } catch { } renderAdmin(); }
+    else { $('#pwErr').textContent = '비밀번호가 맞지 않습니다'; pw.value = ''; pw.focus(); }
+  };
+}
 function renderAdmin() {
+  if (!adminOK) return renderLock();
   crumbs([['홈', '/'], ['자료 관리', '/admin']]);
   if (SEL.startsWith('country:') && !STATE.countries[SEL.slice(8)]) SEL = 'settings';
   view.innerHTML = `<div class="admin fade"><aside class="card adm-nav" id="admNav"></aside><section class="adm-main" id="admMain"></section></div>`;
@@ -1164,7 +1215,10 @@ function renderEditor() {
         <button class="btn" data-act="import">⬆ 백업 불러오기</button>
         <button class="btn" data-act="sample">↺ 예시 자료로 되돌리기</button>
         <button class="btn danger" data-act="wipe">🗑 모든 자료 지우기</button>
-      </div></div>`;
+      </div>
+      <hr style="border:0;border-top:1px solid var(--line);margin:22px 0">
+      <h2>🔒 잠금</h2><p class="lead-note">발표 중 다른 사람이 자료를 바꾸지 못하도록 관리 화면을 잠급니다. 브라우저 창을 닫아도 다시 잠깁니다.</p>
+      <div class="actions"><button class="btn" data-act="lock">🔒 지금 잠그기</button></div></div>`;
     return;
   }
   if (type === 'guide') {
@@ -1203,7 +1257,8 @@ function renderEditor() {
       ${subs.map(s => `<div class="sub-ed"><span class="sw" style="background:${subColor(s.key)}"></span>
         <input type="text" data-subname="${s.key}" value="${h(s.name)}">
         <span class="hint" style="font-size:13px;color:var(--muted)">${Object.keys(META).filter(c => subOf(c) === s.key).length}개국</span>
-        ${s.custom ? `<button class="btn sm danger" data-act="delsub" data-k="${s.key}">삭제</button>` : `<button class="btn sm" data-act="resetname" data-k="${s.key}" title="원래 이름으로">↺</button>`}</div>`).join('')}
+        ${s.custom ? `<button class="btn sm danger" data-act="delsub" data-k="${s.key}">삭제</button>` : `<button class="btn sm" data-act="resetname" data-k="${s.key}" title="원래 이름으로">↺</button>`}</div>
+        <div class="fld" style="margin:0 0 16px 32px"><textarea class="short" data-bind="subIntro.${s.key}" placeholder="${h(s.name)} 식문화 소개 (선택) — 소지역 화면 위쪽에 표시됩니다">${h(STATE.subIntro[s.key] || '')}</textarea></div>`).join('')}
       <div class="actions" style="margin-top:12px"><button class="btn" data-act="addsub" data-k="${key}">＋ 새 소지역 만들기</button><button class="btn" data-act="resetassign" data-k="${key}">↺ 나라 배치 원래대로</button></div>
       <h3 style="font-size:19px;margin:20px 0 8px">나라별 소지역 배치</h3>
       <p class="lead-note">드롭다운에서 다른 소지역(다른 대륙 포함)을 고르면 그 나라가 옮겨집니다.</p>
@@ -1315,6 +1370,7 @@ $('#view').addEventListener('click', async e => {
     case 'delsub': { const k = b.dataset.k; if (!confirm('이 소지역을 삭제할까요? 속한 나라는 원래 소지역으로 돌아갑니다.')) return; STATE.customSubs = STATE.customSubs.filter(s => s.key !== k); for (const c in STATE.subAssign) if (STATE.subAssign[c] === k) delete STATE.subAssign[c]; SUBS = allSubs(); rerender(); break; }
     case 'resetname': delete STATE.subNames[b.dataset.k]; SUBS = allSubs(); rerender(); break;
     case 'resetassign': { const k = b.dataset.k; if (!confirm('이 대륙 나라들의 소지역 배치를 원래대로 되돌릴까요?')) return; for (const c in STATE.subAssign) if (SUB_BASE[META[c].s][0] === k || SUBS[STATE.subAssign[c]]?.c === k) delete STATE.subAssign[c]; SUBS = allSubs(); rerender(); break; }
+    case 'lock': adminOK = false; try { sessionStorage.removeItem('cf-admin'); } catch { } go('/'); toast('관리 화면을 잠갔습니다'); break;
     case 'export': {
       const blob = new Blob([JSON.stringify(STATE)], { type: 'application/json' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -1369,7 +1425,7 @@ function normalize(d) {
   const base = sampleData();
   const s = { ...base, ...d };
   for (const k of CONT_ORDER) s.continents[k] = { intro: '', keywords: '', images: [], ...(d.continents?.[k] || {}) };
-  s.subNames ||= {}; s.customSubs ||= []; s.subAssign ||= {}; s.flagCache ||= {}; s.countries ||= {};
+  s.subNames ||= {}; s.subIntro ||= {}; s.customSubs ||= []; s.subAssign ||= {}; s.flagCache ||= {}; s.countries ||= {};
   for (const c of Object.keys(s.countries)) {
     if (!META[c]) { delete s.countries[c]; continue; }
     s.countries[c] = { summary: '', culture: '', foods: [], images: [], sources: '', flag: '', created: 0, ...s.countries[c] };
