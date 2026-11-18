@@ -154,3 +154,8 @@ details[open] > summary::before { content: "▾ "; }
 .bad-box { background: var(--coral-soft); box-shadow: none; color: #a61e1e; }
 .learn-inline { color: #087f5b; font-weight: 600; }
 .bad-box ul { margin: 8px 0 0; padding-left: 20px; }
+
+/* 로그인 */
+.login-card { max-width: 440px; margin: 40px auto; display: grid; gap: 12px; }
+.login-card h1 { margin: 0; }
+#cloudStatus { cursor: pointer; border: 0; font: inherit; }

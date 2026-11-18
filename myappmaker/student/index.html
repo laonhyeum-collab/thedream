@@ -25,10 +25,25 @@
         <a href="#submit" data-step="submit"><b>5</b><span>입점</span></a>
       </nav>
       <span id="saveStatus" class="pill" role="status" aria-live="polite">저장 준비</span>
+      <button id="cloudStatus" type="button" class="pill" hidden></button>
+      <button id="userBtn" type="button" class="ghost small" hidden></button>
     </div>
   </header>
 
   <main class="wrap no-print">
+    <!-- 로그인 (우리 반 저장소가 연결되어 있을 때) -->
+    <section id="login" class="screen" hidden>
+      <div class="card login-card">
+        <h1>🔑 로그인</h1>
+        <p class="lead">선생님이 주신 카드의 <b>아이디</b>와 <b>비밀번호(숫자 4자리)</b>를 넣어요.</p>
+        <label class="field"><span>아이디</span><input id="loginId" type="text" maxlength="20" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="예) 07"></label>
+        <label class="field"><span>비밀번호</span><input id="loginPin" type="password" inputmode="numeric" maxlength="10" autocomplete="current-password" placeholder="숫자 4자리"></label>
+        <button id="loginBtn" type="button" class="primary big">🚪 들어가기</button>
+        <p id="loginMsg" class="small" role="status" aria-live="polite"></p>
+        <p class="muted small">로그인하면 내가 쓴 기획서와 앱이 우리 반 저장소에 저장돼서, 다른 노트북에서도 같은 아이디로 이어서 할 수 있어요. 비밀번호를 잊으면 선생님께 말해요. 다 쓰면 꼭 「나가기」를 눌러요.</p>
+      </div>
+    </section>
+
     <!-- 첫 화면 -->
     <section id="home" class="screen">
       <div class="hero card">
@@ -51,7 +66,7 @@
       </div>
       <div class="card notice">
         <h3>💾 저장은 이렇게 돼요</h3>
-        <p class="small">쓰는 내용은 <b>이 기기의 이 브라우저</b>에 자동 저장돼요. 다른 기기에서 이어 하거나 브라우저 기록을 지우면 사라질 수 있으니, 기획서 화면의 <b>「백업 내려받기」</b>로 파일을 꼭 챙겨 두세요. </p>
+        <p id="saveNote" class="small"></p>
         <p class="small">🔒 <b>진짜 이름·학교·반·전화번호·주소는 어디에도 쓰지 않아요.</b> 개발자 이름은 별명으로 써요.</p>
         <p id="classInfo" class="small muted"></p>
       </div>
