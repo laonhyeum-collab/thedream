@@ -3,7 +3,9 @@ import {
   SIZES, MIN_LEVEL, MAX_LEVEL, DEFAULT_LEVEL, DEFAULT_BPM,
   buildSchedule, activeAt, clampBpm, clampLevel, sizeOf, beatSeconds, BEATS_PER_BAR,
 } from './engine.js';
-import { THEMES, INSTRUMENTS, INSTRUMENT_ORDER, getTheme, ingredientOf, imagePath } from './themes.js';
+import {
+  THEMES, INSTRUMENTS, INSTRUMENT_ORDER, VOICE_LIST, getTheme, ingredientOf, imagePath, soundOf, voiceInfo, normalizeVoices,
+} from './themes.js';
 import { AudioEngine, Player } from './audio.js';
 import { MISSIONS, getMission, checkMission } from './missions.js';
 import * as store from './storage.js';
@@ -32,12 +34,16 @@ const state = {
   createdAt: null,
   mission: null,
   backTo: 'themes',
+  voices: {}, // 학생이 고른 재료별 악기 { 재료 id: 소리 id } (기본과 다른 것만)
 };
+
+// 재료가 지금 내는 소리 (학생이 고른 악기 반영)
+const soundFor = (ingId) => soundOf(state.theme, ingId, state.voices);
 
 const createScreen = $('#create');
 const audio = new AudioEngine();
 const player = new Player(audio, {
-  voiceOf: (ingId) => ingredientOf(state.theme, ingId)?.voice,
+  voiceOf: (ingId) => soundFor(ingId)?.voice,
 });
 
 let uidSeq = 0;
@@ -191,6 +197,7 @@ function openCreate({ themeId = 'bingsu', work = null, mission = null, fresh = f
     state.workId = work.id;
     state.title = work.title;
     state.createdAt = work.createdAt;
+    state.voices = { ...work.voices };
   } else {
     const draft = !fresh && !mission ? store.loadDraft() : null;
     const useDraft = draft && draft.theme === themeId;
@@ -200,6 +207,7 @@ function openCreate({ themeId = 'bingsu', work = null, mission = null, fresh = f
     state.workId = useDraft ? draft.id : null;
     state.title = useDraft ? draft.title : '';
     state.createdAt = useDraft ? draft.createdAt : null;
+    state.voices = useDraft ? { ...draft.voices } : {};
     if (useDraft && draft.items.length) setTimeout(() => toast('🍧 만들던 빙수를 다시 열었어요'), 300);
   }
   preloadImages();
@@ -238,7 +246,7 @@ function changed() {
   if (!state.mission) {
     store.saveDraft({
       id: state.workId, title: state.title, theme: state.theme.id, bpm: state.bpm,
-      loop: state.loop, items: state.items, createdAt: state.createdAt,
+      loop: state.loop, items: state.items, voices: state.voices, createdAt: state.createdAt,
     });
   }
 }
@@ -248,8 +256,9 @@ function renderPalette() {
   const p = $('#palette');
   p.replaceChildren();
   for (const ing of state.theme.ingredients) {
-    const inst = INSTRUMENTS[ing.instrument];
-    const b = el('button', `ing${state.armedIng === ing.id ? ' armed' : ''}`);
+    const snd = soundFor(ing.id);
+    const inst = INSTRUMENTS[snd.instrument];
+    const b = el('button', `ing${state.armedIng === ing.id ? ' armed' : ''}${snd.custom ? ' custom' : ''}`);
     b.type = 'button';
     b.dataset.ing = ing.id;
     b.style.setProperty('--c', ing.color || '#fff');
@@ -337,7 +346,7 @@ function renderCup() {
     d.setAttribute('aria-label', `${ing.name} ${size.short}`);
     d.append(ingPic(ing, 'item-body'));
     d.append(el('span', 'beat', size.short));
-    d.append(el('span', 'inst', INSTRUMENTS[ing.instrument].emoji));
+    d.append(el('span', 'inst', INSTRUMENTS[soundFor(it.ing).instrument].emoji));
     if (it.id === state.selectedId) {
       const grip = el('span', 'grip');
       grip.title = '끌어서 크기 바꾸기';
@@ -371,10 +380,12 @@ function renderItemPanel() {
   $('#itemEdit').hidden = !it;
   if (!it) return;
   const ing = ingredientOf(state.theme, it.ing);
-  const inst = INSTRUMENTS[ing.instrument];
+  const snd = soundFor(it.ing);
+  const inst = INSTRUMENTS[snd.instrument];
   $('#itemPic').replaceChildren(ingPic(ing, 'pic'));
   $('#itemName').textContent = ing.name;
-  $('#itemInst').textContent = `${inst.emoji} ${inst.name} · ${ing.sound}`;
+  $('#itemInst').textContent = `${inst.emoji} ${inst.name} · ${snd.sound}`;
+  $('#btnItemVoice').dataset.ing = ing.id;
   const box = $('#sizeBtns');
   box.replaceChildren();
   for (const s of SIZES) {
@@ -415,9 +426,86 @@ function removeItem(id) {
   changed();
 }
 
+// ---------- 악기 고르기 ----------
+// 재료마다 어울리는 악기를 학생이 직접 골라요. 고른 악기는 작품과 함께 저장돼요.
+let voiceIng = null; // 악기 고르기 창에서 지금 고른 재료
+
+function openVoiceDialog(ingId) {
+  if (!guardEdit()) return;
+  voiceIng = ingId || state.selectedId && getItem(state.selectedId)?.ing || state.theme.ingredients[0].id;
+  renderVoiceDialog();
+  $('#voiceDialog').showModal();
+}
+
+function renderVoiceDialog() {
+  const tabs = $('#voiceIngs');
+  tabs.replaceChildren();
+  for (const ing of state.theme.ingredients) {
+    const snd = soundFor(ing.id);
+    const b = el('button', `vi${ing.id === voiceIng ? ' on' : ''}${snd.custom ? ' custom' : ''}`);
+    b.type = 'button';
+    b.dataset.ing = ing.id;
+    b.setAttribute('aria-pressed', String(ing.id === voiceIng));
+    b.style.setProperty('--c', ing.color || '#fff');
+    b.append(ingPic(ing, 'vi-pic'), el('span', 'vi-name', ing.name), el('span', 'vi-inst', INSTRUMENTS[snd.instrument].emoji));
+    tabs.append(b);
+  }
+  const ing = ingredientOf(state.theme, voiceIng);
+  const cur = soundFor(voiceIng);
+  $('#voiceFor').textContent = `${ing.emoji} ${ing.name}에 어울리는 악기를 골라요`;
+  const grid = $('#voiceChoices');
+  grid.replaceChildren();
+  for (const v of VOICE_LIST) {
+    const inst = INSTRUMENTS[v.instrument];
+    const b = el('button', `vc${v.id === cur.voice ? ' on' : ''}`);
+    b.type = 'button';
+    b.dataset.voice = v.id;
+    b.setAttribute('aria-pressed', String(v.id === cur.voice));
+    b.style.setProperty('--c', inst.color);
+    b.append(instPic(v.instrument, 'vc-pic'), el('strong', '', inst.name), el('span', 'vc-sound', v.sound));
+    if (v.id === ing.voice) b.append(el('span', 'vc-default', '처음 악기'));
+    grid.append(b);
+  }
+  $('#voiceResetAll').disabled = Object.keys(state.voices).length === 0;
+}
+
+function setVoice(ingId, voiceId) {
+  const ing = ingredientOf(state.theme, ingId);
+  const next = { ...state.voices, [ingId]: voiceId };
+  state.voices = normalizeVoices(next, state.theme);
+  renderPalette();
+  changed();
+  renderVoiceDialog();
+  audio.preview(soundFor(ingId).voice, 1, state.bpm);
+  const v = voiceInfo(voiceId);
+  toast(`${ing.emoji} ${ing.name} → ${INSTRUMENTS[v.instrument].emoji} ${INSTRUMENTS[v.instrument].name}`, 1400);
+}
+
+$('#btnVoices').addEventListener('click', () => { audio.ensure(); openVoiceDialog(); });
+$('#btnItemVoice').addEventListener('click', (e) => openVoiceDialog(e.currentTarget.dataset.ing));
+$('#voiceIngs').addEventListener('click', (e) => {
+  const b = e.target.closest('.vi');
+  if (!b) return;
+  voiceIng = b.dataset.ing;
+  renderVoiceDialog();
+  audio.preview(soundFor(voiceIng).voice, 1, state.bpm);
+});
+$('#voiceChoices').addEventListener('click', (e) => {
+  const b = e.target.closest('.vc');
+  if (b) setVoice(voiceIng, b.dataset.voice);
+});
+$('#voiceResetAll').addEventListener('click', () => {
+  state.voices = {};
+  renderPalette();
+  changed();
+  renderVoiceDialog();
+  toast('모든 재료가 처음 악기로 돌아갔어요', 1500);
+});
+$('#voiceClose').addEventListener('click', () => $('#voiceDialog').close());
+
 // ---------- 우리 밴드 ----------
 function renderBand() {
-  const used = new Set(state.items.map((it) => ingredientOf(state.theme, it.ing)?.instrument));
+  const used = new Set(state.items.map((it) => soundFor(it.ing)?.instrument));
   const band = $('#band');
   band.replaceChildren();
   for (const id of INSTRUMENT_ORDER) {
@@ -436,7 +524,7 @@ function renderMissionPanel() {
   const m = state.mission;
   p.hidden = !m;
   if (!m) return;
-  const ok = checkMission(m, state.theme, state.items);
+  const ok = checkMission(m, state.theme, state.items, state.voices);
   p.classList.toggle('ok', ok);
   p.replaceChildren(
     el('p', 'panel-label', `🏆 도전 ${'⭐'.repeat(m.stars)}`),
@@ -450,9 +538,9 @@ function renderMissionPanel() {
 function previewIng(ingId, beats = 1) {
   if (player.state === 'paused') { player.stop(); updatePlayUI(); }
   if (player.state === 'playing') return; // 연주 중엔 섞이지 않게
-  const ing = ingredientOf(state.theme, ingId);
-  audio.preview(ing.voice, beats, state.bpm);
-  const m = $(`#band .member[data-inst="${ing.instrument}"]`);
+  const snd = soundFor(ingId);
+  audio.preview(snd.voice, beats, state.bpm);
+  const m = $(`#band .member[data-inst="${snd.instrument}"]`);
   if (m) { m.classList.remove('hit'); void m.offsetWidth; m.classList.add('hit'); }
 }
 
@@ -722,7 +810,7 @@ function onPlayEnd() {
   updatePlayUI();
   sparkle();
   const m = state.mission;
-  if (m && checkMission(m, state.theme, state.items)) {
+  if (m && checkMission(m, state.theme, state.items, state.voices)) {
     store.markMissionDone(m.id);
     showDone('🏆 미션 성공!', `「${m.title}」 도전을 해냈어요! ${'⭐'.repeat(m.stars)}`, { mission: true });
   }
@@ -785,7 +873,7 @@ function animate() {
     for (const d of $$('#cupRows .item')) {
       const on = ids.has(d.dataset.id);
       d.classList.toggle('playing', on);
-      if (on) playingInst.add(ingredientOf(state.theme, d.dataset.ing).instrument);
+      if (on) playingInst.add(soundFor(d.dataset.ing).instrument);
     }
     for (const m of $$('#band .member')) m.classList.toggle('playing', playingInst.has(m.dataset.inst));
     const total = player.schedule.totalBeats;
@@ -840,6 +928,7 @@ $('#saveDialog').addEventListener('close', () => {
     bpm: state.bpm,
     loop: state.loop,
     items: state.items,
+    voices: state.voices,
     createdAt: state.createdAt,
   });
   if (!saved) { toast('😢 저장하지 못했어요. 저장 공간을 확인해 주세요'); return; }

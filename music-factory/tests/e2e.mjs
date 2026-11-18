@@ -165,6 +165,26 @@ await page.waitForTimeout(300);
 const quiet = await page.evaluate(() => window.__level());
 check(quiet < 0.002, `멈추면 소리가 남지 않음 (${quiet.toFixed(4)})`);
 
+// ---------- 4-1. 재료마다 악기 고르기 ----------
+await page.click('#btnVoices');
+check(await page.locator('#voiceDialog[open]').count() === 1, '악기 고르기 창 열림');
+check(await page.locator('#voiceIngs .vi').count() === 10 && await page.locator('#voiceChoices .vc').count() === 10, '재료 10개 · 악기 소리 10가지');
+await page.click('#voiceIngs .vi[data-ing="strawberry"]');
+await page.click('#voiceChoices .vc[data-voice="synthFun"]');
+check(await page.locator('#voiceChoices .vc.on[data-voice="synthFun"]').count() === 1, '고른 악기 표시');
+await page.click('#voiceClose');
+check(/신시사이저/.test(await page.textContent('#palette .ing[data-ing="strawberry"] .ing-inst')), '재료 목록에 바뀐 악기 표시');
+check(await page.locator('#band .member.used[data-inst="synth"]').count() === 1, '우리 밴드에 신시사이저 불 켜짐');
+await page.click('#btnPlay');
+let sawSynth = false;
+for (let i = 0; i < 120 && !sawSynth; i++) {
+  sawSynth = await page.evaluate(() => [...document.querySelectorAll('#cupRows .item.playing')].some((d) => d.dataset.ing === 'strawberry')
+    && document.querySelector('#band .member[data-inst="synth"]').classList.contains('playing'));
+  await page.waitForTimeout(25);
+}
+check(sawSynth, '딸기가 연주될 때 신시사이저가 움직임');
+await page.click('#btnStop');
+
 // ---------- 5. 저장 → 새로 열어 불러오기 ----------
 const savedItems = await itemsState();
 await page.click('#btnSave');
@@ -180,6 +200,7 @@ await page.click('#workList .work [data-act="edit"]');
 await attachMeter();
 check(JSON.stringify(await itemsState()) === JSON.stringify(savedItems), '불러오면 위치·크기 그대로');
 check(await page.inputValue('#bpm') === '150', '빠르기도 그대로');
+check(JSON.stringify(await page.evaluate(() => window.__mpf.state.voices)) === '{"strawberry":"synthFun"}', '고른 악기도 그대로');
 check(/시험 빙수 노래/.test(await page.textContent('#createTitle')), '제목 표시');
 
 // 초기화

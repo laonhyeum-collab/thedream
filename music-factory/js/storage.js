@@ -1,6 +1,6 @@
 // 작품 저장 (브라우저 로컬 저장소). 나중에 계정 저장으로 바꿀 때 이 파일만 고치면 됩니다.
 import { clampBpm, clampLevel } from './engine.js';
-import { getTheme } from './themes.js';
+import { getTheme, normalizeVoices } from './themes.js';
 
 const WORKS_KEY = 'musicPlayFactory.works.v1';
 const DRAFT_KEY = 'musicPlayFactory.draft.v1';
@@ -56,6 +56,7 @@ export function normalizeWork(raw) {
     bpm: clampBpm(raw.bpm),
     loop: Boolean(raw.loop),
     items: normalizeItems(raw.items, theme),
+    voices: normalizeVoices(raw.voices, theme), // 학생이 고른 재료별 악기
     createdAt: Number(raw.createdAt) || Date.now(),
     updatedAt: Number(raw.updatedAt) || Date.now(),
   };

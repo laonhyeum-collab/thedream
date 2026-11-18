@@ -16,6 +16,24 @@ export const INSTRUMENTS = {
 
 export const INSTRUMENT_ORDER = ['drum', 'snare', 'cymbal', 'bass', 'guitar', 'keys', 'synth'];
 
+// 고를 수 있는 악기 소리 10가지 (id = audio.js 의 소리 이름)
+export const VOICE_LIST = [
+  { id: 'drum', instrument: 'drum', name: '드럼', sound: '쿵쿵 기본 리듬' },
+  { id: 'snare', instrument: 'snare', name: '스네어 드럼', sound: '탁탁 리듬 강조' },
+  { id: 'cymbal', instrument: 'cymbal', name: '심벌즈', sound: '차앙~ 경쾌한 소리' },
+  { id: 'bass', instrument: 'bass', name: '베이스 기타', sound: '둥둥 낮은 소리' },
+  { id: 'guitarClean', instrument: 'guitar', name: '일렉트릭 기타', sound: '맑고 선명한 소리' },
+  { id: 'guitarRock', instrument: 'guitar', name: '일렉트릭 기타', sound: '지글지글 강한 소리' },
+  { id: 'keysBright', instrument: 'keys', name: '키보드', sound: '밝은 멜로디' },
+  { id: 'keysSoft', instrument: 'keys', name: '키보드', sound: '부드러운 화음' },
+  { id: 'synthFun', instrument: 'synth', name: '신시사이저', sound: '뿅뿅 전자음' },
+  { id: 'synthPad', instrument: 'synth', name: '신시사이저', sound: '몽글몽글 마무리' },
+];
+
+export function voiceInfo(id) {
+  return VOICE_LIST.find((v) => v.id === id) || null;
+}
+
 const bingsu = {
   id: 'bingsu',
   name: '빙수 만들기',
@@ -91,6 +109,27 @@ export function getTheme(id) {
 
 export function ingredientOf(theme, ingId) {
   return theme.ingredients.find((i) => i.id === ingId) || null;
+}
+
+// 재료가 지금 내는 소리: 학생이 고른 악기(voices[재료 id])가 있으면 그것, 없으면 테마의 기본 악기
+export function soundOf(theme, ingId, voices = {}) {
+  const ing = ingredientOf(theme, ingId);
+  if (!ing) return null;
+  const chosen = voices && voiceInfo(voices[ingId]);
+  const custom = Boolean(chosen) && chosen.id !== ing.voice;
+  const v = custom ? chosen : voiceInfo(ing.voice);
+  return { voice: v.id, instrument: v.instrument, name: INSTRUMENTS[v.instrument].name, sound: custom ? v.sound : ing.sound, custom };
+}
+
+// 저장된 악기 선택 정리: 있는 재료·있는 소리만, 기본과 같은 것은 빼고
+export function normalizeVoices(raw, theme) {
+  const out = {};
+  if (!raw || typeof raw !== 'object' || !theme) return out;
+  for (const ing of theme.ingredients) {
+    const v = voiceInfo(raw[ing.id]);
+    if (v && v.id !== ing.voice) out[ing.id] = v.id;
+  }
+  return out;
 }
 
 export function imagePath(themeId, ingId) {

@@ -64,6 +64,7 @@
   <aside class="palette" aria-label="재료">
     <h3>재료 고르기</h3>
     <p class="tip">누르면 소리를 들을 수 있어요.<br>컵으로 끌어다 놓아요!</p>
+    <button type="button" class="voice-btn" id="btnVoices">🎚️ 재료마다 악기 고르기</button>
     <div id="palette" class="palette-grid"></div>
     <div class="trash" aria-hidden="true">🗑️<br>여기에 놓으면<br>재료를 빼요</div>
   </aside>
@@ -93,6 +94,7 @@
             <div class="item-inst" id="itemInst"></div>
           </div>
         </div>
+        <button type="button" class="voice-btn small" id="btnItemVoice">🎚️ 악기 바꾸기</button>
         <p class="panel-label">크기 = 박자</p>
         <div class="size-btns" id="sizeBtns"></div>
         <button type="button" class="wide-btn danger" id="btnRemove">🗑️ 이 재료 빼기</button>
@@ -185,12 +187,25 @@
   </div>
 </dialog>
 
+<dialog id="voiceDialog" class="dlg voice-dlg">
+  <h3>🎚️ 재료마다 악기 고르기</h3>
+  <p class="voice-lead">① 재료를 고르고 ② 어울리는 악기를 눌러요. 누르면 소리가 나요.</p>
+  <div class="voice-ings" id="voiceIngs"></div>
+  <p class="voice-for" id="voiceFor"></p>
+  <div class="voice-choices" id="voiceChoices"></div>
+  <div class="dlg-btns">
+    <button type="button" class="wide-btn ghost" id="voiceResetAll">↩️ 모두 처음 악기로</button>
+    <button type="button" class="wide-btn" id="voiceClose">다 골랐어요</button>
+  </div>
+</dialog>
+
 <dialog id="helpDialog" class="dlg help">
   <h3>🍧 이렇게 만들어요</h3>
   <ol class="help-steps">
     <li><span class="hs">👆</span><b>재료 누르기</b> — 어떤 악기 소리인지 들어 봐요.</li>
     <li><span class="hs">✋</span><b>컵으로 끌어다 놓기</b> — 아래에 놓은 재료부터 먼저 연주해요.</li>
     <li><span class="hs">↔️</span><b>같은 줄에 나란히</b> — 함께(동시에) 연주해요.</li>
+    <li><span class="hs">🎚️</span><b>악기 고르기</b> — 재료마다 어울리는 악기를 내가 바꿀 수 있어요.</li>
     <li><span class="hs">🔍</span><b>크기 바꾸기</b> — 작게 ½박, 1박, 2박, 크게 4박! 클수록 길게 연주해요.</li>
     <li><span class="hs">▶️</span><b>재생</b> — 내가 만든 빙수가 음악이 돼요. 고치고 싶으면 멈춘 다음 고쳐요.</li>
   </ol>

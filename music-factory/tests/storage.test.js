@@ -63,3 +63,11 @@ test('미션 성공 기록', () => {
   store.markMissionDone('drum3', s);
   assert.deepEqual([...store.loadMissionDone(s)], ['drum3']);
 });
+
+test('재료별 악기 선택도 저장된다', () => {
+  const s = memory();
+  store.saveWork({ id: 'w1', title: '악기 바꾼 노래', theme: 'bingsu', items, voices: { ice: 'cymbal', mango: 'keysBright' } }, s);
+  assert.deepEqual(store.getWork('w1', s).voices, { ice: 'cymbal' }, '기본과 같은 망고는 빼고 저장');
+  store.saveWork({ id: 'w2', title: '예전 작품', theme: 'bingsu', items }, s);
+  assert.deepEqual(store.getWork('w2', s).voices, {}, '예전 작품은 기본 악기');
+});

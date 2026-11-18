@@ -1,9 +1,14 @@
 // 음악 만들기 도전 미션 (조건 검사는 순수 함수라 시험하기 쉬워요)
 import { beatsOf, buildSchedule } from './engine.js';
-import { ingredientOf } from './themes.js';
+import { soundOf } from './themes.js';
 
-function instrumentsOf(theme, items) {
-  return items.map((it) => ingredientOf(theme, it.ing)?.instrument).filter(Boolean);
+// voices = 학생이 고른 재료별 악기 (없으면 기본 악기)
+function instrumentOf(theme, ingId, voices) {
+  return soundOf(theme, ingId, voices)?.instrument;
+}
+
+function instrumentsOf(theme, items, voices) {
+  return items.map((it) => instrumentOf(theme, it.ing, voices)).filter(Boolean);
 }
 
 export const MISSIONS = [
@@ -13,7 +18,7 @@ export const MISSIONS = [
     title: '쿵쿵쿵! 드럼 세 번',
     goal: '드럼 소리가 나는 재료를 3개 이상 써 보세요.',
     hint: '어떤 재료가 드럼일까요? 왼쪽 재료를 눌러 소리를 들어 봐요.',
-    check: (theme, items) => instrumentsOf(theme, items).filter((i) => i === 'drum').length >= 3,
+    check: (theme, items, voices) => instrumentsOf(theme, items, voices).filter((i) => i === 'drum').length >= 3,
   },
   {
     id: 'together',
@@ -21,10 +26,10 @@ export const MISSIONS = [
     title: '함께 연주해요',
     goal: '두 가지 악기를 같은 높이에 놓아 동시에 연주해 보세요.',
     hint: '같은 줄에 서로 다른 악기 재료를 나란히 놓아요.',
-    check: (theme, items) => {
+    check: (theme, items, voices) => {
       const rows = new Map();
       for (const it of items) {
-        const inst = ingredientOf(theme, it.ing)?.instrument;
+        const inst = instrumentOf(theme, it.ing, voices);
         if (!inst) continue;
         if (!rows.has(it.row)) rows.set(it.row, new Set());
         rows.get(it.row).add(inst);
@@ -64,7 +69,7 @@ export const MISSIONS = [
     title: '우리 밴드 결성!',
     goal: '서로 다른 악기 4가지 이상으로 음악을 만들어 보세요.',
     hint: '오른쪽 아래 "우리 밴드"에 불이 4개 이상 켜지면 성공!',
-    check: (theme, items) => new Set(instrumentsOf(theme, items)).size >= 4,
+    check: (theme, items, voices) => new Set(instrumentsOf(theme, items, voices)).size >= 4,
   },
   {
     id: 'two-bars',
@@ -91,6 +96,6 @@ export function getMission(id) {
   return MISSIONS.find((m) => m.id === id) || null;
 }
 
-export function checkMission(mission, theme, items) {
-  return Boolean(mission && mission.check(theme, items));
+export function checkMission(mission, theme, items, voices = {}) {
+  return Boolean(mission && mission.check(theme, items, voices));
 }

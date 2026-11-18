@@ -51,3 +51,11 @@ test('높은 탑', () => {
   assert.equal(ok('tower', six), false);
   assert.equal(ok('tower', [...six, it('mango', 0, 1), it('mango', 3, 1)]), true);
 });
+
+test('내가 고른 악기로 미션을 검사한다', () => {
+  const items = [it('mango', 0, 0), it('banana', 1, 0), it('jelly', 2, 0)];
+  assert.equal(ok('drum3', items), false);
+  const voices = { mango: 'drum', banana: 'drum', jelly: 'drum' };
+  assert.equal(checkMission(getMission('drum3'), theme, items, voices), true, '망고·바나나·젤리를 드럼으로 바꾸면 성공');
+  assert.equal(checkMission(getMission('band4'), theme, items, voices), false, '모두 드럼이면 악기 1가지');
+});
