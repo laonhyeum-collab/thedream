@@ -300,7 +300,9 @@ function buildCup() {
     const row = el('div', 'row');
     row.dataset.row = r;
     const label = el('span', 'row-label');
-    row.append(label);
+    const score = el('div', 'row-score'); // 따라 만들기 악보 (그 층 옆에)
+    score.hidden = true;
+    row.append(label, score);
     for (let c = 0; c < C; c++) {
       const slot = el('div', 'slot');
       slot.dataset.row = r;
@@ -1089,6 +1091,8 @@ function playSong(song) {
   if (!ok) { toast('😢 이 기기에서는 소리를 낼 수 없어요'); return; }
   toast(`🎧 정답 노래 「${song.title}」`, 1600);
   updatePlayUI();
+  // 따라 만들기 화면이면 지금 연주하는 층(과 그 옆 악보)을 반짝여요
+  if (state.screen === 'create') requestAnimationFrame(animate);
 }
 
 const REASON_TEXT = {
@@ -1110,57 +1114,61 @@ function renderSongPanel() {
   const p = $('#songPanel');
   const s = state.song;
   p.hidden = !s;
-  if (!s) return;
+  if (!s) { renderInlineScore(); return; }
   const L = levelInfo(s.level);
   $('#songLevel').textContent = `🎼 따라 만들기 · ${L.icon} ${L.name} ${'⭐'.repeat(s.song.stars)}`;
   $('#songTitle').textContent = s.song.title;
   const r = s.result;
   p.classList.toggle('ok', Boolean(r?.allOk));
+  const wrong = r ? r.steps.filter((st) => !st.ok).map((st) => `${st.index + 1}층 ${reasonText(st)}`) : [];
   $('#songState').textContent = r
-    ? (r.allOk ? '🎉 정답 노래와 똑같아요!' : `${r.total}층 중 ${r.correct}층이 맞았어요. 📜 악보에서 틀린 곳을 봐요`)
-    : `${s.song.steps.length}층짜리 노래예요. ${L.desc}`;
+    ? (r.allOk ? '🎉 정답 노래와 똑같아요!' : `${r.total}층 중 ${r.correct}층이 맞았어요. ❌ ${wrong.join(' · ')}`)
+    : `컵 옆 악보를 보며 쌓아요. ${L.desc}`;
+  renderInlineScore();
 }
 
-// 악보: 위층이 위에 오도록 (컵과 같은 방향)
-function renderScore() {
+// 악보를 컵 옆, 같은 층 높이에 바로 보여 줘요 (1층 악보 = 컵 1층 옆)
+function renderInlineScore() {
   const s = state.song;
-  const theme = state.theme;
-  const L = levelInfo(s.level);
-  $('#songDlgTitle').textContent = `📜 「${s.song.title}」 악보`;
-  $('#songDlgLead').textContent = s.level === 1
-    ? '아래(1층)부터 연주해요. 같은 줄은 함께 연주해요.'
-    : s.level === 2 ? '악기만 보여요. 몇 박인지는 들어서 맞혀 봐요!' : '귀로만 들어요. 몇 층인지만 알려 줘요.';
-  const ol = $('#songScore');
-  ol.replaceChildren();
-  const r = s.result;
-  const n = Math.max(s.song.steps.length, r ? r.steps.length : 0);
-  for (let i = n - 1; i >= 0; i--) {
-    const step = s.song.steps[i];
+  createScreen.classList.toggle('song-mode', Boolean(s));
+  const r = s?.result;
+  for (const row of $$('#cupRows .row')) {
+    const i = Number(row.dataset.row);
+    const box = $('.row-score', row);
+    row.classList.remove('res-ok', 'res-bad');
+    const step = s?.song.steps[i];
     const res = r?.steps[i];
-    const li = el('li', `score-row${res ? (res.ok ? ' ok' : ' bad') : ''}`);
-    li.append(el('span', 'score-no', String(i + 1)));
-    const notes = el('div', 'score-notes');
-    if (!step) notes.append(el('span', 'score-q', '(정답에는 없는 층)'));
-    else for (const [ingId, size] of step) {
-      const ing = ingredientOf(theme, ingId);
-      const inst = INSTRUMENTS[ing.instrument];
-      const note = el('span', 'score-note');
-      if (s.level === 1) note.append(ingPic(ing, 'sn-pic'), el('b', '', sizeOf(size).short));
-      else if (s.level === 2) note.append(instPic(ing.instrument, 'sn-pic'), el('b', '', '?박'));
-      else note.append(el('span', 'score-q', '❓'));
-      note.title = s.level === 1 ? `${ing.name} (${inst.name}) ${sizeOf(size).short}` : '';
-      notes.append(note);
+    if (!s || (!step && !res)) { box.hidden = true; continue; }
+    box.hidden = false;
+    box.replaceChildren();
+    box.className = `row-score${res ? (res.ok ? ' ok' : ' bad') : ''}`;
+    box.dataset.reason = res ? `${i + 1}층 ${res.ok ? '✅ ' : '❌ '}${reasonText(res)}` : '';
+    if (res) row.classList.add(res.ok ? 'res-ok' : 'res-bad');
+    if (res) box.append(el('span', 'rs-mark', res.ok ? '✅' : '❌'));
+    if (!step) { box.append(el('span', 'rs-q', '없는 층')); continue; }
+    for (const [ingId, size] of step) {
+      const ing = ingredientOf(state.theme, ingId);
+      const note = el('span', 'rs-note');
+      if (s.level === 1) {
+        note.append(ingPic(ing, 'sn-pic'), el('b', 'rs-beat', sizeOf(size).short));
+        note.title = `${ing.name} ${sizeOf(size).short}`;
+      } else if (s.level === 2) {
+        note.append(instPic(ing.instrument, 'sn-pic'), el('b', 'rs-beat', '?'));
+      } else {
+        note.append(el('span', 'rs-q', '❓'));
+      }
+      box.append(note);
     }
-    li.append(notes);
-    if (res) li.append(el('span', 'score-res', `${res.ok ? '✅' : '❌'} ${reasonText(res)}`));
-    ol.append(li);
   }
 }
 
-function openScore() {
-  renderScore();
-  if (!$('#songDialog').open) $('#songDialog').showModal();
-}
+// 악보 줄을 누르면 그 층의 결과를 알려 줘요
+$('#cupRows').addEventListener('click', (e) => {
+  const box = e.target.closest('.row-score');
+  if (!box) return;
+  if (box.dataset.reason) toast(box.dataset.reason, 2000);
+  else if (state.song?.level === 1) toast(`${Number(box.closest('.row').dataset.row) + 1}층: ${box.textContent.replace(/\s+/g, ' ')}`, 1600);
+});
 
 function checkSong() {
   const s = state.song;
@@ -1173,15 +1181,13 @@ function checkSong() {
     sparkle();
     showDone('🎼 똑같아요!', `「${s.song.title}」을(를) ${levelInfo(s.level).name} 완성했어요! ${'⭐'.repeat(s.song.stars)}`, { mission: true });
   } else {
-    openScore();
+    const first = s.result.steps.find((st) => !st.ok);
+    toast(`${s.result.total}층 중 ${s.result.correct}층 맞았어요 · ${first.index + 1}층: ${reasonText(first)}`, 2600);
   }
 }
 
 $('#btnSongListen').addEventListener('click', () => { audio.ensure(); playSong(state.song.song); });
-$('#btnSongScore').addEventListener('click', openScore);
 $('#btnSongCheck').addEventListener('click', () => { if (guardEdit()) checkSong(); });
-$('#songDlgListen').addEventListener('click', () => { audio.ensure(); playSong(state.song.song); });
-$('#songDlgClose').addEventListener('click', () => $('#songDialog').close());
 
 // ---------- 도전 목록 ----------
 function renderMissions() {

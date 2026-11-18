@@ -239,10 +239,22 @@ let songLevel = 0;
 for (let i = 0; i < 40; i++) { songLevel = Math.max(songLevel, await page.evaluate(() => window.__level())); await page.waitForTimeout(25); }
 check(songLevel > 0.02, `정답 노래가 소리 남 (${songLevel.toFixed(3)})`);
 await page.click('#btnStop');
-// 악보 보기 (보며 만들기: 재료와 박자가 보임)
-await page.click('#btnSongScore');
-check(await page.locator('#songScore .score-row').count() === 4 && /2박/.test(await page.textContent('#songScore')), '악보: 4층, 박자 표시');
-await page.click('#songDlgClose');
+// 악보는 다른 창 없이 컵 옆, 같은 층 높이에 보임 (보며 만들기: 재료와 박자)
+const scoreRows = await page.evaluate(() => [...document.querySelectorAll('#cupRows .row')]
+  .filter((r) => !r.querySelector('.row-score').hidden)
+  .map((r) => ({ row: Number(r.dataset.row), text: r.querySelector('.row-score').textContent, sameHeight: (() => {
+    const a = r.getBoundingClientRect(), b = r.querySelector('.row-score').getBoundingClientRect();
+    return Math.abs((a.top + a.height / 2) - (b.top + b.height / 2)) < 2;
+  })() })).sort((a, b) => a.row - b.row));
+check(scoreRows.length === 4 && scoreRows.map((r) => r.row).join() === '0,1,2,3', `악보: 컵 1~4층 옆에 표시 (${scoreRows.map((r) => r.row).join()})`);
+check(scoreRows.every((r) => r.sameHeight) && /2박/.test(scoreRows[0].text) && /1박/.test(scoreRows[1].text), '악보 줄이 그 층과 같은 높이 · 박자 표시');
+check(await page.locator('dialog[open]').count() === 0, '악보를 보려고 다른 창을 열지 않음');
+{
+  // 악보가 오른쪽 패널을 가리지 않음
+  const sb = await page.locator('#cupRows .row[data-row="0"] .row-score').boundingBox();
+  const side = await page.locator('.side').boundingBox();
+  check(sb.x + sb.width <= side.x, '악보가 오른쪽 패널을 가리지 않음');
+}
 // 일부러 틀리게: 얼음 2박 / 딸기 2박(정답 1박) / 망고 1박
 await dragTo('#palette .ing[data-ing="ice"]', slot(0, 1));
 await page.click('#sizeBtns .size-btn[data-level="3"]');
@@ -250,11 +262,15 @@ await dragTo('#palette .ing[data-ing="strawberry"]', slot(1, 1));
 await page.click('#sizeBtns .size-btn[data-level="3"]');
 await dragTo('#palette .ing[data-ing="mango"]', slot(2, 1));
 await page.click('#btnSongCheck');
-await page.waitForSelector('#songDialog[open]');
-const rows = await page.$$eval('#songScore .score-row', (els) => els.map((e) => e.className.includes('ok') ? 'ok' : 'bad').reverse());
-check(JSON.stringify(rows) === JSON.stringify(['ok', 'bad', 'ok', 'bad']), `틀린 층을 알려 줌 (${rows.join(',')})`);
-check(/더 짧게/.test(await page.textContent('#songScore')), '딸기는 "더 짧게" 힌트');
-await page.click('#songDlgClose');
+await page.waitForTimeout(200);
+const rows = await page.$$eval('#cupRows .row', (els) => els
+  .filter((r) => !r.querySelector('.row-score').hidden)
+  .sort((a, b) => a.dataset.row - b.dataset.row)
+  .map((r) => (r.querySelector('.row-score').classList.contains('ok') ? 'ok' : 'bad')));
+check(JSON.stringify(rows) === JSON.stringify(['ok', 'bad', 'ok', 'bad']), `틀린 층을 컵 옆에서 바로 알려 줌 (${rows.join(',')})`);
+check(/더 짧게/.test(await page.textContent('#songState')) && /더 짧게/.test(await page.textContent('#toast')), '딸기는 "더 짧게" 힌트');
+await page.click('#cupRows .row[data-row="3"] .row-score');
+check(/4층 ❌ 아직 없어요/.test(await page.textContent('#toast')), '악보 줄을 누르면 그 층 결과 안내');
 // 고치기: 딸기 1박, 아이스크림 2박 더하기 → 정답
 await page.click(`${slot(1, 1)} .item`);
 await page.click('#sizeBtns .size-btn[data-level="2"]');
