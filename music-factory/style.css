@@ -311,7 +311,7 @@ h1 { margin: 6px 0 4px; font-size: clamp(2rem, 5vw, 3rem); color: var(--pink-dee
 .song-panel.ok { border-color: var(--mint); background: #effcf7; }
 .song-panel .m-title { font-size: 1.15rem; display: block; }
 .song-panel .m-state { margin: 6px 0 0; font-size: 0.85rem; color: var(--ink-soft); }
-.song-btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+.song-btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
 .song-btn {
   border: 2px solid var(--line); background: #fff; border-radius: 14px; padding: 6px 2px; min-height: 64px;
   display: grid; justify-items: center; gap: 2px; font-size: 0.8rem;
@@ -340,23 +340,27 @@ h1 { margin: 6px 0 4px; font-size: clamp(2rem, 5vw, 3rem); color: var(--pink-dee
 .song-level.done { background: #effcf7; border-color: var(--mint); }
 .song-level:active { transform: scale(0.96); }
 
-/* 악보 창 */
-.song-dlg { width: min(560px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); }
-.score { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.score-row {
-  display: grid; grid-template-columns: 34px 1fr; grid-template-areas: "no notes" ". res"; align-items: center; gap: 2px 8px;
-  background: #f6f9ff; border: 2px solid #dbe9f7; border-radius: 14px; padding: 6px 10px;
+/* 컵 옆 악보: 층마다 같은 높이에 그 층의 정답이 보여요 */
+.song-mode .stage { align-items: flex-start; }
+.song-mode .cup { margin-left: 2%; }
+.song-mode .direction { display: none; }
+.row-score {
+  position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); z-index: 2;
+  display: flex; align-items: center; gap: 4px; white-space: nowrap; cursor: pointer;
+  padding: 2px 8px 2px 4px; max-height: 100%; min-height: 26px;
+  background: #f6f2ff; border: 2px solid #cdbdff; border-radius: 10px;
 }
-.score-row.ok { background: #effcf7; border-color: var(--mint); }
-.score-row.bad { background: #fff1f3; border-color: #ffb3c0; }
-.score-no { grid-area: no; width: 30px; height: 30px; border-radius: 50%; background: var(--sky); color: #fff; display: grid; place-items: center; font-size: 0.95rem; }
-.score-notes { grid-area: notes; display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
-.score-note { display: inline-flex; align-items: center; gap: 4px; background: #fff; border-radius: 999px; padding: 2px 10px 2px 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08); }
-.sn-pic { width: 32px; height: 32px; }
-.sn-pic .emo { font-size: 1.5rem; }
-.score-q { font-size: 1.1rem; color: var(--ink-soft); padding: 2px 6px; }
-.score-res { grid-area: res; font-size: 0.85rem; }
-.score-row.bad .score-res { color: #c4314b; }
+.row-score.ok { background: #effcf7; border-color: var(--mint); }
+.row-score.bad { background: #fff1f3; border-color: #ff8fa3; }
+.row.now .row-score { box-shadow: 0 0 0 3px #ffd23f; background: #fff8d6; }
+.rs-note { display: inline-flex; align-items: center; gap: 1px; }
+.sn-pic { width: clamp(18px, 3.4vh, 30px); height: clamp(18px, 3.4vh, 30px); }
+.sn-pic .emo { font-size: clamp(0.95rem, 2.8vh, 1.4rem); }
+.rs-beat { font-size: 0.72rem; }
+.rs-q { font-size: 0.85rem; color: var(--ink-soft); }
+.rs-mark { font-size: 0.85rem; }
+.row.res-ok { background: rgba(127, 220, 196, 0.22); }
+.row.res-bad { background: rgba(255, 143, 163, 0.18); }
 .mission-panel.ok { border-color: var(--mint); background: #effcf7; }
 .mission-panel .m-title { font-size: 1.15rem; }
 .mission-panel .m-goal { margin: 4px 0; font-size: 0.95rem; }
@@ -627,10 +631,18 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
   }
   .song-panel .panel-label, .song-panel .m-state { display: none; }
   .song-panel .m-title { flex: 1; min-width: 0; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .song-btns { margin: 0; flex: none; grid-template-columns: repeat(3, auto); gap: 4px; }
+  .song-btns { margin: 0; flex: none; grid-template-columns: repeat(2, auto); gap: 4px; }
   .song-btn { min-height: 40px; padding: 2px 8px; grid-auto-flow: column; align-items: center; gap: 4px; font-size: 0.75rem; border-radius: 10px; }
   .song-btn span { font-size: 1.1rem; }
   .song-list { grid-template-columns: 1fr; }
+  /* 폰: 컵 칸을 왼쪽으로 모으고 오른쪽에 층마다 악보 */
+  .song-mode .cup { margin-left: 0; width: 100%; }
+  .song-mode .cup-rows { left: 12%; right: 37%; }
+  .row-score { left: calc(100% + 4px); width: max-content; padding: 1px 4px 1px 2px; gap: 2px; border-radius: 8px; min-height: 0; border-width: 1.5px; }
+  .row-score .sn-pic { width: 18px; height: 18px; }
+  .row-score .sn-pic .emo { font-size: 0.95rem; }
+  .rs-beat { font-size: 0.62rem; }
+  .rs-mark { font-size: 0.7rem; }
 
   /* 재료 띠: 옆으로 밀어 넘기기, 위로 끌면 컵으로 */
   .palette { flex-direction: row; align-items: stretch; gap: 6px; padding: 6px; border-radius: 16px; overflow: visible; }
