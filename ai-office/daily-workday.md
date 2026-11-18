@@ -17,6 +17,7 @@
 - feed/<id>: at(ISO), dept("strategy" · "edu" · "app" · "media" · "ceo"), member(직원 이름), text(40자 이내 한 줄), link
 - schedule/<id>: date("YYYY-MM-DD", 서울 기준), time("HH:MM", 선택), dept, title, note
 - docs/<id>: title, dept, team, createdAt, body(일반 텍스트 본문), driveUrl, files([{name, url}], PDF 미리보기)
+- config/lesson-formats: 교안 형식 모음(howToChoose, formats[{id, name, status, rules}], purposeAdjust)
 - apps/<id>: order, name, summary, kind, audience, status("운영 중" · "개선 중" · "점검 필요"), folder, liveUrl, artifactUrl, repoUrl, lastCheck(ISO), note
 문서 id는 t-YYYYMMDD-n, f-YYYYMMDD-HHMM-n, s-YYYYMMDD-n, d-YYYYMMDD-n처럼 날짜를 넣어 겹치지 않게 만들어요. 쓰기가 여러 개면 batch로 묶어요.
 
@@ -57,7 +58,7 @@
    - 다솜 · 교안 디자인: 검수가 끝난 내용으로 실제 파일 3종 세트를 만들어요(아래 "교안 디자인 규칙").
    - 앱개발부서에서 온 업데이트 노트가 있으면 관련 교안에 반영해요.
    - 원고는 업무 하나당 문서 하나로 합쳐서 저장해요(아래 "저장 방법"). 업무는 status "done", docId, link(드라이브 주소가 있으면)로 바꿔요.
-5. 교육부서 · 새봄 기획: 교육부서의 결재 대기(proposed)가 3개보다 적으면 새 수업 아이디어를 모자란 만큼만 proposed로 올려요(dept "edu", by "AI", team "수업기획팀"). detail에는 대상 학년, 차시 수, 핵심 활동, 쓰는 도구를 2~3줄로 적어요. 계절, 학기 일정, 이미 만든 수업과 겹치지 않는지 생각해요.
+5. 교육부서 · 새봄 기획: 교육부서의 결재 대기(proposed)가 3개보다 적으면 새 수업 아이디어를 모자란 만큼만 proposed로 올려요(dept "edu", by "AI", team "수업기획팀"). detail에는 대상 학년, 차시 수, 핵심 활동, 쓰는 도구를 2~3줄로 적어요. 계절, 학기 일정, 이미 만든 수업과 겹치지 않는지 생각해요. 레고사이언스 과학 수업 아이디어도 섞어요.
 6. 앱개발부서 (아래 "앱개발부서 규칙")
    - 별 · 점검: GitHub 도구로 laonhyeum-collab/thedream의 최근 Actions 실행(GitHub Pages 배포)과 main 커밋을 확인해요. apps 문서마다 lastCheck를 오늘로 바꾸고, 배포가 실패했으면 해당 앱 status를 "점검 필요"로, note에 이유를 적어요.
    - 하늘 · 기획: 교육부서 요청서와 점검 결과를 보고 앱 개선안을 만들어요. 앱개발부서의 결재 대기가 2개보다 적으면 모자란 만큼 proposed로 올려요(dept "app", team "앱기획팀"). detail에는 어떤 앱의 무엇을 왜 바꾸는지, 수업에서 어떻게 쓰이는지 적어요.
@@ -78,19 +79,10 @@
 - 저장소를 붙이거나 push할 수 없으면 코드를 바꾸지 말고 "개발 명세서"(바꿀 파일, 바꿀 내용, 테스트 방법)를 docs에 저장해요. 업무는 approved로 두고 note에 이유를 적어요.
 
 ## 교안 디자인 규칙 (교안디자인팀 · 다솜)
-기본 형식은 대표님의 ai-prompt-lesson-kit 스킬이에요. 스킬이 보이면 먼저 불러서 그 안의 헬퍼 스크립트와 팔레트를 그대로 써요. 스킬이 없으면 아래 규칙만 따라요.
-- 3종 세트: 교안 PPT(.pptx, 8~11장), 수업지도안(.docx), 학생 활동지(.docx)
-- 공통: 흰 배경에 연한 파스텔 포인트를 써요. 그린 6FA287/3F6F54/E8F5EC, 블루 6FA8DC/EAF3FC, 피치 F0A868/FDF1E7, 본문 4A5568, 선 E3E8ED. 진한 단색으로 채운 박스는 쓰지 않아요. 한 슬라이드의 불릿은 4~6개까지만 넣어요.
-- PPT: 표지 → 전체 과정 한눈에 → 학습 목표 → 활동 단계별 1~2장 → 정리 → 마무리 순서예요. PPT에는 소요 시간을 표시하지 않아요.
-- 수업지도안: 공문서 톤을 지켜요. 회색(D9D9D9) 표 헤더를 쓰고, 기본정보 표 → 학습 주제·목표·자료 → 수업 흐름 표(단계 | 단계별 지도내용 | 자료□ 및 유의점◇) → 수업 의도 순서로 써요. ▣ ○ - □ ◇ 기호를 쓰고, 단계별 시간은 표 안에만 적어요.
-- 학생 활동지: 오늘의 과정 요약 카드, 단계별 빈칸, 체크리스트, 발표 칸, 별점 자기평가, 소감을 넣어요.
-- 교육 목적에 맞춘 조정:
-  - 저학년(1~3학년): 글자를 크게(본문 20pt 이상) 하고, 문장은 짧게, 아이콘을 넉넉히, 활동지 칸은 넓게 만들어요.
-  - 고학년(4~6학년): 도전 과제와 단계별 체크리스트를 넣고, 스스로 고쳐 보는 칸을 둬요.
-  - 엔트리 등 코딩 수업: 따라 하기 단계 번호와 블록 화면 캡처 자리(점선 상자에 "캡처 위치" 표시)를 넣어요.
-  - AI 프롬프트 수업: 뤼튼은 프롬프트 문장 작성(텍스트 전용), 캔바 Magic Media는 이미지 생성이라고 역할을 꼭 나눠 적어요. 실제 입력 예시 문장도 함께 넣어요.
-  - 우리 앱을 쓰는 수업: 앱 주소와 화면 순서를 넣어요.
-  - 공개수업·기관 제출용: 지도안을 더 격식 있게 쓰고, PPT 꾸밈은 줄여요.
+교안 형식은 사무실 DB의 config/lesson-formats 문서에 있어요. 매번 먼저 읽고 따라요. 대표님이 형식을 바꾸면 이 문서만 바뀌어요.
+- 형식 고르기: howToChoose를 따라요. 레고 교구로 만들고 실험하는 과학 수업은 "lego-science", 그 밖의 AI·코딩 수업은 "ai-prompt" 형식이에요. status가 "임시"인 형식을 썼으면 브리핑에 한 줄 적어요.
+- ai-prompt 형식을 쓸 때 ai-prompt-lesson-kit 스킬이 보이면 먼저 불러서 그 안의 헬퍼 스크립트와 팔레트를 그대로 써요.
+- 교육 목적에 맞춘 조정은 purposeAdjust를 따라요.
 - 만드는 방법: 작업용 빈 폴더에서 npm install pptxgenjs docx로 라이브러리를 설치해요. 파일을 만든 뒤 soffice --headless --convert-to pdf로 PDF를 만들고, pdftoppm -png -r 60으로 페이지 이미지를 만들어 글자 잘림이나 겹침을 한 번 확인하고 고쳐요.
 - 파일 전달:
   - .pptx와 .docx 원본은 드라이브 "AI 사무실/교육부서"에 올려요.
