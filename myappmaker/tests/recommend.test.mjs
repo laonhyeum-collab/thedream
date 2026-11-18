@@ -166,3 +166,22 @@ test('요청 5: 개인정보는 받지 않음 — 학년·반 칸 없음, 개인
   assert.equal(planWarnings(p).length, 0);
   assert.ok(recommend('제 이름은 박지호고 공룡이 좋아요').notices.some((n) => n.kind === 'privacy'));
 });
+
+test('그림 프롬프트는 모두 앱 월드 참고 화면과 같은 컨셉 (쿼터뷰 픽셀아트·2등신 캐릭터·동그란 문장·건물 모습)', async () => {
+  const { studentBoothPrompt, worldPrompts, PIXEL_STYLE, CHIBI_LOOK, BADGE_LOOK, BUILDING_LOOK } = await import('../shared/worldart.js');
+  const { buildImagePrompts } = await import('../shared/plan.js');
+  const p = emptyPlan('fruit-bomb');
+  p.f.elements = ['코인', '생명'];
+  const imgs = buildImagePrompts(p);
+  for (const x of imgs) {
+    assert.ok(x.text.includes(PIXEL_STYLE), `${x.title}: 같은 그림체 문장`);
+    assert.match(x.text, /앱 월드 지도 그림이 있으면 그 그림의 그림체/, `${x.title}: 지도 그림 따라 하기`);
+  }
+  assert.match(imgs.find((x) => x.key === 'background').text, /앱 월드」 안의 한 장소/);
+  assert.ok(imgs.find((x) => x.key === 'hero').text.includes(CHIBI_LOOK), '주인공은 앱 월드 아이들과 같은 2등신');
+  assert.ok(imgs.filter((x) => x.key.startsWith('icon')).every((x) => x.text.includes(BADGE_LOOK)), '아이콘은 동그란 문장 모양');
+  const booth = studentBoothPrompt({ appName: '과일 비', topicName: '과일 폭탄 잡기', cat: 'action', summary: '과일 받기' });
+  assert.ok(booth.includes(BUILDING_LOOK) && booth.includes(PIXEL_STYLE), '학생 부스 = 앱 월드 건물 모습');
+  for (const a of worldPrompts({})) assert.ok(a.prompt.includes(PIXEL_STYLE), `${a.key}: 월드 그림도 같은 그림체`);
+  assert.match(PIXEL_STYLE, /쿼터뷰/); assert.match(PIXEL_STYLE, /흙 절벽/);
+});

@@ -117,6 +117,7 @@
       <details class="card">
         <summary><h3>🎨 이미지 만들기 프롬프트 (선택 · 시간이 남으면)</h3></summary>
         <p class="muted small">이미지 생성 AI(Gemini 등)에 하나씩 넣어 그림을 만들고, 그림 파일을 저장해요. 그다음 <b>「4. 내 앱 → 🖼️ 내 그림 넣기」</b>에서 올리면 게임에 들어가요. 그림이 없어도 앱은 이모지로 잘 돌아가요.</p>
+        <div class="ref-tip" data-ref></div>
         <div id="imagePrompts" class="grid"></div>
       </details>
       <div class="card tips">
@@ -160,10 +161,11 @@
       <div class="card" id="pictures">
         <div class="row"><h3 class="grow">🖼️ 내 그림 넣기 <span class="muted small">(선택)</span></h3></div>
         <ol class="pic-steps small">
-          <li><b>📋 프롬프트 복사</b> → 이미지 AI에 붙여 넣어 그림 만들기</li>
+          <li><b>📋 프롬프트 복사</b> → 이미지 AI에 붙여 넣어 그림 만들기 (<b>앱 월드 지도 그림</b>도 같이 올리면 앱 월드와 똑같은 그림체로 나와요)</li>
           <li>마음에 드는 그림을 <b>기기에 저장</b></li>
           <li><b>📷 그림 올리기</b>를 눌러 저장한 그림 고르기 → 게임에 바로 들어가요</li>
         </ol>
+        <div class="ref-tip" data-ref></div>
         <p id="picStatus" class="small"></p>
         <div id="picSlots" class="pic-slots"></div>
         <p id="picBudget" class="muted small"></p>
@@ -188,6 +190,14 @@
       <div class="card">
         <h3>✅ 입점 전 확인</h3>
         <ul id="submitChecks" class="checklist"></ul>
+      </div>
+      <div class="card" id="myBooth">
+        <h3>🙂 내 캐릭터와 🏠 내 부스</h3>
+        <p class="muted small">앱 월드에서 내 부스 앞에 서 있을 캐릭터를 만들어요. 부스 건물 그림은 선택이에요 (선생님이 건물이 그려진 지도를 쓰면 지도 속 건물이 보여요).</p>
+        <div class="booth-grid">
+          <div id="avatarBox"></div>
+          <div class="pic-slot" id="boothSlot"></div>
+        </div>
       </div>
       <div class="card">
         <h3>🌟 완성 후 돌아보기 <span class="muted small">(기획서 15번)</span></h3>

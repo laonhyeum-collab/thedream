@@ -2,7 +2,9 @@
 // 앱 화면, 인쇄용 기획서, 활동지가 모두 이 정의 하나를 같은 순서·같은 말로 씁니다.
 import { topicById, categoryById } from './topics.js';
 import { checkText, looksLikeRealName } from './recommend.js';
-import { cleanImages } from './images.js';
+import { cleanImages, MAX_IMAGE_CHARS } from './images.js';
+import { PIXEL_STYLE, CHIBI_LOOK, BADGE_LOOK, REF_HINT } from './worldart.js';
+import { cleanAvatar } from './avatar.js';
 
 export const SCHEMA = 'myappmaker.plan/1';
 
@@ -17,7 +19,7 @@ export const MAX_PICK = 3;
 
 // 그림은 모두 메타버스 앱 월드와 같은 느낌으로
 export const IMAGE_STYLE = '앱 월드 스타일';
-export const IMAGE_STYLE_DESC = '우리 반 메타버스 앱 월드와 같은 느낌: 밝은 파스텔 색, 둥글둥글하고 귀여운 2D 플랫 일러스트, 얇고 부드러운 외곽선, 연두색 잔디·모래색 길·하늘색 물 같은 맑은 색감, 그림자는 아주 옅게';
+export const IMAGE_STYLE_DESC = `우리 반 메타버스 앱 월드와 같은 그림체 — ${PIXEL_STYLE}`;
 
 // 기획서 15개 항목. part = 활동 묶음(①~④), req = 꼭 쓰기(★)
 export const SECTIONS = [
@@ -112,6 +114,8 @@ export function emptyPlan(topicId = null) {
     updatedAt: new Date().toISOString(),
     topicId,
     idea: null,          // 추천에서 고른 나만의 주제 (recommend.js ideaFromRec)
+    avatar: null,        // 앱 월드에서 내 부스 앞에 서 있을 픽셀 캐릭터 (avatar.js)
+    boothImage: '',      // 내 부스 건물 그림 (data URL, 선택)
     difficulty: 'easy',
     f,
     app: { html: '', url: '', images: {}, updatedAt: null },   // images: 그림 자리별 그림(data URL), 코드와 따로 보관
@@ -133,6 +137,8 @@ export function normalizePlan(raw) {
   }
   out.f.imageStyle = IMAGE_STYLE;
   out.app.images = cleanImages(out.app.images);
+  out.avatar = src.avatar && typeof src.avatar === 'object' ? cleanAvatar(src.avatar) : null;
+  out.boothImage = typeof src.boothImage === 'string' && src.boothImage.length <= MAX_IMAGE_CHARS && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(src.boothImage) ? src.boothImage : '';
   out.f.classInfo = '';                       // 학년·반은 받지 않음 (개인정보)
   if (out.difficulty === 'hard') out.difficulty = 'normal';   // 예전 3단계 난이도
   if (!DIFFICULTY.some((d) => d.id === out.difficulty)) out.difficulty = 'easy';
@@ -245,7 +251,7 @@ export function buildAppPrompt(plan) {
     line('화면 구성', screens),
     line('화면 이동 흐름', f.flow),
     line('대표 색상', f.colors),
-    line('그림 느낌', '밝은 파스텔 색의 둥글고 귀여운 2D 그림 (우리 반 메타버스 앱 월드와 어울리게)'),
+    line('그림 느낌', '16비트 레트로 게임 같은 밝은 픽셀아트 (우리 반 메타버스 앱 월드와 어울리게)'),
     line('글자 분위기', f.fontMood),
     line('버튼 모양', f.buttonShape),
     line('★ 나만의 특별 기능', f.extra),
@@ -290,16 +296,16 @@ export function buildImagePrompts(plan) {
   const hero = [f.charName, f.charLook, f.charTrait].filter(filled).join(', ') || (t ? t.hint.character : '귀여운 주인공');
   const place = f.place.trim() || (t ? t.hint.place : '밝은 게임 배경');
   const colors = f.colors.length ? `대표 색상은 ${f.colors.join('·')}` : '밝고 선명한 색';
-  const common = `그림체: ${style}. ${colors}. 이미지 안에 글자·숫자·로고·워터마크를 넣지 마. 유명 캐릭터나 브랜드를 따라 하지 말고 독창적으로. 어린이 게임에 어울리게 밝고 친근하게.`;
+  const common = `그림체: ${style}. ${REF_HINT} ${colors}. 이미지 안에 글자·숫자·로고·워터마크를 넣지 마. 유명 캐릭터나 브랜드를 따라 하지 말고 독창적으로. 어린이 게임에 어울리게 밝고 친근하게.`;
   const keep = `주인공 모습(${hero})은 모든 그림에서 똑같은 색과 생김새로 유지해 줘.`;
   const white = '배경은 아무것도 없는 하얀색 한 가지로(무늬·그림자·바닥 없이), 그림이 가운데에 오게';
   return imageSlots(plan).map((sl) => ({
     id: sl.key, key: sl.key, title: `${sl.title} (${sl.ratio})`, slot: sl,
     text: sl.key === 'background'
-      ? `게임 「${f.appName || (t ? t.name : '나의 게임')}」의 배경 그림을 그려 줘. 장소: ${place}. 가로 16:9 비율, 캐릭터 없이 배경만. 위쪽과 가운데에 점수·버튼이 올라갈 빈 공간을 넉넉히 남겨 줘. ${common}`
+      ? `우리 반 메타버스 「앱 월드」 안의 한 장소처럼 보이는 게임 「${f.appName || (t ? t.name : '나의 게임')}」 배경을 그려 줘. 장소: ${place}. 앱 월드와 같은 쿼터뷰 픽셀아트로(블록 모양 땅·흙 절벽·맑은 물·둥근 나무·꽃이 앱 월드와 똑같은 느낌). 가로 16:9, 캐릭터 없이 배경만, 가운데와 위쪽은 게임이 펼쳐지도록 넓게 비워 둬. ${common}`
       : sl.key === 'hero'
-        ? `게임 주인공 캐릭터 한 명을 그려 줘: ${hero}. 정면을 보고 서 있는 전신, ${white}. 정사각형 1:1. ${keep} ${common}`
-        : `게임에 쓸 "${sl.element}" 아이콘 하나를 그려 줘. 단순하고 굵은 외곽선, 작게 줄여도 알아보기 쉽게, ${white}. 정사각형 1:1. ${common}`,
+        ? `앱 월드에 사는 아이들과 똑같은 ${CHIBI_LOOK}로 내 게임 주인공을 그려 줘: ${hero}. 살짝 비스듬히 정면을 보고 서 있는 전신 한 명, ${white}. 정사각형 1:1. ${keep} ${common}`
+        : `게임에 쓸 「${sl.element}」 아이콘: ${BADGE_LOOK}. 작게 줄여도 알아보기 쉽게 단순하게, 동그란 배지 바깥은 하얀색 한 가지로. 정사각형 1:1. ${common}`,
   }));
 }
 

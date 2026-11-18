@@ -6,6 +6,8 @@ import { mountApp } from '../shared/sandbox.js';
 import { applyImages } from '../shared/images.js';
 import { download, readFileText, safeName } from '../shared/files.js';
 import { LESSONS, TIMER_PRESETS } from './lesson.js';
+import { createWorldAdmin } from './worldadmin.js';
+import { STUDENT_BOOTHS } from '../shared/worldart.js';
 import { h, $, toast, copyText, fmtTime } from '../shared/ui.js';
 
 const KEY_STORE = 'myappmaker.teacher.key';
@@ -35,7 +37,7 @@ function fromSubmission(sub) {
     id: `file_${(sub.studentKey || plan.id).slice(-20)}`, source: 'file',
     developer: plan.f.developer, classInfo: plan.f.classInfo, appName: plan.f.appName, topicId: plan.topicId,
     status: 'submitted', feedback: '', booth: null, appUrl: plan.app.url, hasHtml: !!plan.app.html, htmlSize: plan.app.html.length,
-    submittedAt: sub.submittedAt || plan.updatedAt, likes: 0, plan: { ...plan, app: { ...plan.app, html: '', images: {} } }, html: applyImages(plan.app.html, plan.app.images),
+    submittedAt: sub.submittedAt || plan.updatedAt, likes: 0, plan: { ...plan, boothImage: '', app: { ...plan.app, html: '', images: {} } }, html: applyImages(plan.app.html, plan.app.images), boothImage: plan.boothImage || '', hasBooth: !!plan.boothImage,
   };
 }
 
@@ -121,7 +123,7 @@ async function openDetail(id) {
   const miss = plan ? missingRequired(plan) : [];
   const frame = h('iframe', { class: 'app-frame', title: `${x.appName} 실행 화면`, style: 'height:420px' });
   const fb = h('textarea', { rows: 3, placeholder: '예) 실패 화면에서 다시하기 버튼이 안 눌려요. 고쳐 달라고 해 볼까요?' }); fb.value = x.feedback || '';
-  const booth = h('input', { type: 'number', min: 1, max: 99, placeholder: '번호' }); booth.value = x.booth || '';
+  const booth = h('input', { type: 'number', min: 1, max: STUDENT_BOOTHS, placeholder: '1~12' }); booth.value = x.booth || '';
   const save = async (status) => {
     try {
       await review(x, { status, feedback: fb.value.trim(), booth: booth.value === '' ? null : Number(booth.value) });
@@ -157,7 +159,7 @@ async function openDetail(id) {
         h('button', { class: 'danger small', onclick: () => removeItem(x) }, '🗑️ 삭제'))),
   );
   $('#detail').hidden = false;
-  if (!booth.value && x.status !== 'approved') booth.value = nextFreeBooth();
+  if (!booth.value && x.status !== 'approved') booth.value = nextFreeBooth() || '';
   try {
     const a = await getHtml(x);
     if (a.html || a.url) mountApp(frame, a);
@@ -194,8 +196,8 @@ async function removeItem(x) {
 
 function nextFreeBooth() {
   const used = new Set(items.filter((x) => x.status === 'approved' && x.booth).map((x) => Number(x.booth)));
-  let n = 1; while (used.has(n)) n += 1;
-  return n;
+  for (let n = 1; n <= STUDENT_BOOTHS; n++) if (!used.has(n)) return n;
+  return null;   // 부스 12개가 다 찼어요
 }
 
 // ---------- 파일 제출 넣기 ----------
@@ -259,6 +261,7 @@ $('#autoBooth').onclick = async () => {
   if (!todo.length) { toast('번호가 없는 입점 앱이 없어요'); return; }
   for (const x of todo) {
     const n = nextFreeBooth();
+    if (!n) { toast(`부스는 ${STUDENT_BOOTHS}개까지예요. 남은 앱은 앱 월드 「탐험」 목록에서만 열려요`, 5000); break; }
     try { await review(x, { status: 'approved', booth: n }); x.booth = n; } catch (e) { toast(e.message); break; }
   }
   toast(`🔢 ${todo.length}개 부스에 번호를 붙였어요`);
@@ -272,9 +275,12 @@ $('#exportWorld').onclick = async () => {
     let a = { html: '', url: x.appUrl };
     try { a = await getHtml(x); } catch { /* 링크만 */ }
     const plan = normalizePlanSafe(x.plan);
-    out.push({ id: x.id, developer: x.developer, appName: x.appName, topicId: x.topicId, booth: x.booth, likes: x.likes || 0, intro: plan ? plan.f.intro : '', appUrl: a.url || '', html: a.html || '' });
+    let boothImage = x.boothImage || '';
+    if (!boothImage && x.hasBooth && x.source === 'server' && x.status === 'approved') { try { boothImage = (await api.booth(x.id)).image; } catch { /* 기본 건물 */ } }
+    out.push({ id: x.id, developer: x.developer, appName: x.appName, topicId: x.topicId, booth: x.booth, likes: x.likes || 0, intro: plan ? plan.f.intro : '', appUrl: a.url || '', html: a.html || '', avatar: plan ? plan.avatar || null : null, boothImage });
   }
-  download(`메타버스_앱월드_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ schema: 'myappmaker.world/1', exportedAt: new Date().toISOString(), items: out }));
+  const worldPart = await worldAdmin.exportPart().catch(() => ({}));
+  download(`메타버스_앱월드_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ schema: 'myappmaker.world/1', exportedAt: new Date().toISOString(), items: out, ...worldPart }));
   toast('🌏 메타버스 파일을 내려받았어요');
 };
 
@@ -356,11 +362,15 @@ $('#clearLocal').onclick = () => {
   saveLocal([]); refresh(); toast('지웠어요');
 };
 
+// ---------- 월드 꾸미기 ----------
+const worldAdmin = createWorldAdmin({ getApi: () => api, getKey: () => teacherKey });
+
 // ---------- 탭 ----------
 document.querySelectorAll('[data-tab]').forEach((b) => {
   b.onclick = () => {
     document.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
     document.querySelectorAll('.tab-panel').forEach((p) => { p.hidden = p.id !== `tab-${b.dataset.tab}`; });
+    if (b.dataset.tab === 'world') worldAdmin.render();
   };
 });
 $('#refreshBtn').onclick = refresh;
