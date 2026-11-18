@@ -55,6 +55,7 @@ jobs:
           mkdir -p _site/myappmaker
           cp -r myappmaker/index.html myappmaker/student myappmaker/teacher myappmaker/world myappmaker/shared _site/myappmaker/
           mkdir -p _site/myappmaker/docs && cp myappmaker/docs/*.docx _site/myappmaker/docs/
+          mkdir -p _site/comfort-food && cp comfort-food/index.html _site/comfort-food/
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v5
