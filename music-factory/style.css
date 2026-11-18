@@ -345,20 +345,40 @@ h1 { margin: 6px 0 4px; font-size: clamp(2rem, 5vw, 3rem); color: var(--pink-dee
 .song-mode .cup { margin-left: 2%; }
 .song-mode .direction { display: none; }
 .row-score {
-  position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%); z-index: 2;
-  display: flex; align-items: center; gap: 4px; white-space: nowrap; cursor: pointer;
-  padding: 2px 8px 2px 4px; max-height: 100%; min-height: 26px;
-  background: #f6f2ff; border: 2px solid #cdbdff; border-radius: 10px;
+  position: absolute; left: calc(100% + 22px); top: 50%; transform: translateY(-50%); z-index: 2;
+  display: flex; align-items: center; gap: 6px; white-space: nowrap; cursor: pointer;
+  padding: 3px 12px 3px 4px; max-height: 100%; min-height: 30px;
+  background: #f6f2ff; border: 3px solid #b9a2ff; border-radius: 12px;
+  box-shadow: 0 2px 0 rgba(120, 90, 200, 0.18);
+}
+/* 컵 층과 악보 줄을 잇는 점선 */
+.row-score::before {
+  content: ""; position: absolute; right: 100%; top: 50%; width: 20px; margin-right: 3px;
+  border-top: 3px dotted #b9a2ff;
 }
 .row-score.ok { background: #effcf7; border-color: var(--mint); }
+.row-score.ok::before { border-top-color: var(--mint); }
 .row-score.bad { background: #fff1f3; border-color: #ff8fa3; }
-.row.now .row-score { box-shadow: 0 0 0 3px #ffd23f; background: #fff8d6; }
-.rs-note { display: inline-flex; align-items: center; gap: 1px; }
-.sn-pic { width: clamp(18px, 3.4vh, 30px); height: clamp(18px, 3.4vh, 30px); }
-.sn-pic .emo { font-size: clamp(0.95rem, 2.8vh, 1.4rem); }
-.rs-beat { font-size: 0.72rem; }
-.rs-q { font-size: 0.85rem; color: var(--ink-soft); }
-.rs-mark { font-size: 0.85rem; }
+.row-score.bad::before { border-top-color: #ff8fa3; }
+.row.now .row-score { box-shadow: 0 0 0 4px #ffd23f; background: #fff8d6; }
+.rs-head {
+  position: absolute; left: 0; bottom: calc(100% + 6px); white-space: nowrap;
+  background: var(--violet); color: #fff; border-radius: 999px; padding: 3px 12px;
+  font-size: clamp(0.85rem, 1.8vh, 1.15rem);
+}
+.rs-no {
+  display: inline-flex; align-items: baseline; justify-content: center; gap: 1px; min-width: 2.4em; padding: 0.35em 0.6em;  border-radius: 999px;
+  background: var(--violet); color: #fff; font-size: clamp(0.72rem, 1.6vh, 1rem); line-height: 1;
+}
+.rs-no small { font-size: 0.7em; }
+.row-score.ok .rs-no { background: #3fbf9f; }
+.row-score.bad .rs-no { background: #f0628f; }
+.rs-note { display: inline-flex; align-items: center; gap: 2px; }
+.sn-pic { width: clamp(20px, 4.6vh, 46px); height: clamp(20px, 4.6vh, 46px); }
+.sn-pic .emo { font-size: clamp(1rem, 3.6vh, 2.1rem); }
+.rs-beat { font-size: clamp(0.72rem, 1.7vh, 1.1rem); }
+.rs-q { font-size: clamp(0.85rem, 1.9vh, 1.2rem); color: var(--ink-soft); }
+.rs-mark { font-size: clamp(0.85rem, 1.9vh, 1.2rem); }
 .row.res-ok { background: rgba(127, 220, 196, 0.22); }
 .row.res-bad { background: rgba(255, 143, 163, 0.18); }
 .mission-panel.ok { border-color: var(--mint); background: #effcf7; }
@@ -637,12 +657,16 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
   .song-list { grid-template-columns: 1fr; }
   /* 폰: 컵 칸을 왼쪽으로 모으고 오른쪽에 층마다 악보 */
   .song-mode .cup { margin-left: 0; width: 100%; }
-  .song-mode .cup-rows { left: 12%; right: 37%; }
-  .row-score { left: calc(100% + 4px); width: max-content; padding: 1px 4px 1px 2px; gap: 2px; border-radius: 8px; min-height: 0; border-width: 1.5px; }
+  .song-mode .cup-rows { left: 10%; right: 41%; }
+  .row-score { left: calc(100% + 8px); width: max-content; padding: 1px 4px 1px 2px; gap: 2px; border-radius: 8px; min-height: 0; border-width: 2px; }
+  .row-score::before { width: 6px; margin-right: 1px; border-top-width: 2px; }
+  .rs-no { min-width: 1.6em; padding: 0.25em 0.3em; font-size: 0.62rem; }
+  .rs-no small { display: none; }
+  .rs-head { font-size: 0.72rem; padding: 1px 8px; bottom: calc(100% + 3px); }
   .row-score .sn-pic { width: 18px; height: 18px; }
   .row-score .sn-pic .emo { font-size: 0.95rem; }
   .rs-beat { font-size: 0.62rem; }
-  .rs-mark { font-size: 0.7rem; }
+  .row-score .rs-mark { display: none; } /* 폰: 맞음·틀림은 테두리 색과 층 번호 색으로 */
 
   /* 재료 띠: 옆으로 밀어 넘기기, 위로 끌면 컵으로 */
   .palette { flex-direction: row; align-items: stretch; gap: 6px; padding: 6px; border-radius: 16px; overflow: visible; }
