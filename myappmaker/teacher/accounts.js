@@ -8,15 +8,15 @@ export function createAccountsAdmin({ getApi, getKey, setKey, onLogin }) {
   let me = '';   // 로그인한 관리자 아이디
 
   // ---------- 관리자 로그인 (⚙️ 연결 설정 탭) ----------
-  async function renderAdmin() {
-    const box = $('#adminBox');
+  // box: 그릴 곳 (기본 = ⚙️ 연결 설정 탭, 시작 화면에서는 시작 화면 안)
+  async function renderAdmin(box = $('#adminBox')) {
     const api = getApi();
     if (!api.enabled) {
       box.replaceChildren(h('h2', {}, '👤 관리자 로그인'), h('p', { class: 'muted small' }, '위에서 저장소 주소와 반 코드를 먼저 저장해 주세요. 저장소 없이 파일 방식으로 쓸 때는 로그인이 필요 없어요.'));
       return;
     }
     me = '';
-    if (getKey()) { try { me = (await api.whoami(getKey())).adminId; } catch { setKey(''); } }
+    if (getKey()) { try { me = (await api.whoami(getKey())).adminId; if (me) setKey(getKey(), me); } catch { setKey(''); } }
     if (getKey() && me) return renderLoggedIn(box);
     if (getKey() && !me) {   // 예전 방식(설치 열쇠)으로 연결되어 있음
       box.replaceChildren(h('h2', {}, '👤 관리자 로그인'),
@@ -30,7 +30,7 @@ export function createAccountsAdmin({ getApi, getKey, setKey, onLogin }) {
       msg.textContent = '로그인 중…';
       try {
         const r = await api.adminLogin(id.value.trim(), pw.value);
-        setKey(r.token); toast(`👋 ${r.adminId} 선생님, 반가워요`); renderAdmin(); onLogin();
+        setKey(r.token, r.adminId); toast(`👋 ${r.adminId} 선생님, 반가워요`); renderAdmin(); onLogin();
       } catch (e) { msg.textContent = `⚠ ${e.message}`; }
     };
     pw.addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
@@ -56,7 +56,7 @@ export function createAccountsAdmin({ getApi, getKey, setKey, onLogin }) {
         msg.textContent = '만드는 중…';
         try {
           const r = await api.adminSetup(key.value.trim(), id.value.trim(), pw.value);
-          setKey(r.token); toast(`✅ 관리자 ${r.adminId} 계정으로 로그인했어요`); renderAdmin(); onLogin();
+          setKey(r.token, r.adminId); toast(`✅ 관리자 ${r.adminId} 계정으로 로그인했어요`); renderAdmin(); onLogin();
         } catch (e) { msg.textContent = `⚠ ${e.message}`; }
       } }, '✨ 관리자 계정 만들기'), msg));
   }
@@ -83,7 +83,7 @@ export function createAccountsAdmin({ getApi, getKey, setKey, onLogin }) {
         } }, '➕ 추가')),
       h('div', { class: 'row' }, h('label', { class: 'field grow' }, h('span', {}, '내 비밀번호 바꾸기'), mypw),
         h('button', { class: 'ghost', onclick: async () => {
-          try { const r = await api.changePassword(getKey(), mypw.value); setKey(r.token); mypw.value = ''; toast('🔑 비밀번호를 바꿨어요 (다른 기기의 로그인은 풀려요)'); } catch (e) { toast(e.message, 4000); }
+          try { const r = await api.changePassword(getKey(), mypw.value); setKey(r.token, r.adminId); mypw.value = ''; toast('🔑 비밀번호를 바꿨어요 (다른 기기의 로그인은 풀려요)'); } catch (e) { toast(e.message, 4000); }
         } }, '🔑 바꾸기')));
   }
 

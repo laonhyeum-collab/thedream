@@ -12,6 +12,8 @@ import { STUDENT_BOOTHS } from '../shared/worldart.js';
 import { h, $, toast, copyText, fmtTime } from '../shared/ui.js';
 
 const KEY_STORE = 'myappmaker.teacher.key';
+const ADMIN_STORE = 'myappmaker.teacher.admin';      // 로그인한 관리자 아이디 (표시용)
+const FILEMODE = 'myappmaker.teacher.filemode';      // 저장소 없이 파일로 쓰기로 고름
 const LOCAL = 'myappmaker.teacher.local';
 const STATUS = {
   submitted: { label: '📨 확인 대기', cls: 'warn' },
@@ -51,8 +53,11 @@ async function refresh() {
       const r = await api.list(teacherKey);
       list.unshift(...r.items.map((x) => ({ ...x, source: 'server' })));
       setConn(true);
-    } catch (e) { serverErr = e.message; setConn(false, e.message); }
-  } else setConn(false);
+    } catch (e) {
+      serverErr = e.message; setConn(false, e.message);
+      if (/로그인/.test(e.message)) { setKey(''); toast('로그인 시간이 지났어요. 다시 로그인해 주세요', 5000); renderGate(); }
+    }
+  } else if (api.enabled) { const p = $('#connPill'); p.className = 'pill warn'; p.textContent = '🟡 로그인 필요'; p.title = ''; } else setConn(false);
   items = list;
   $('#listInfo').textContent = [
     api.enabled && teacherKey ? `🏫 저장소 ${items.filter((x) => x.source === 'server').length}명` : '저장소 미연결 (⚙️ 연결 설정)',
@@ -326,6 +331,8 @@ function shareLinks() {
   };
   $('#studentLink').textContent = `학생 앱: ${mk('../student/')}`;
   $('#studentLink').dataset.url = mk('../student/');
+  $('#teacherLinkCode').textContent = `교사 앱: ${mk('./')}`;
+  $('#teacherLinkCode').dataset.url = mk('./');
   $('#worldLinkCode').textContent = `메타버스: ${mk('../world/')}`;
   $('#worldLinkCode').dataset.url = mk('../world/');
   $('#openWorld').href = mk('../world/');
@@ -341,6 +348,7 @@ $('#cfgSave').onclick = async () => {
   cfg = { endpoint, classCode: $('#cfgClass').value.trim() };
   saveConfig('teacher', cfg);
   api = createApi(cfg);
+  setFileMode(!api.enabled);
   shareLinks();
   if (!api.enabled) { $('#cfgResult').textContent = '📁 저장소 없이 파일 모드로 써요'; accountsAdmin.renderAdmin(); refresh(); return; }
   $('#cfgResult').textContent = '연결 시험 중…';
@@ -364,8 +372,72 @@ $('#clearLocal').onclick = () => {
 const worldAdmin = createWorldAdmin({ getApi: () => api, getKey: () => teacherKey });
 
 // ---------- 계정 (관리자 로그인 · 학생 아이디) ----------
-function setKey(k) { teacherKey = k || ''; try { if (teacherKey) localStorage.setItem(KEY_STORE, teacherKey); else localStorage.removeItem(KEY_STORE); } catch { /* 저장 불가 */ } }
-const accountsAdmin = createAccountsAdmin({ getApi: () => api, getKey: () => teacherKey, setKey, onLogin: () => refresh() });
+function setKey(k, adminId) {
+  teacherKey = k || '';
+  try {
+    if (teacherKey) localStorage.setItem(KEY_STORE, teacherKey); else localStorage.removeItem(KEY_STORE);
+    if (!teacherKey) localStorage.removeItem(ADMIN_STORE); else if (adminId) localStorage.setItem(ADMIN_STORE, adminId);
+  } catch { /* 저장 불가 */ }
+  renderUserChip();
+}
+function adminName() { try { return localStorage.getItem(ADMIN_STORE) || ''; } catch { return ''; } }
+function renderUserChip() {
+  const c = $('#userChip');
+  c.hidden = !(api.enabled && teacherKey);
+  c.textContent = `👤 ${adminName() || '관리자'} · 로그아웃`;
+}
+$('#userChip').onclick = () => { if (!confirm('로그아웃할까요?')) return; setKey(''); toast('로그아웃했어요'); renderGate(); };
+function isFileMode() { try { return localStorage.getItem(FILEMODE) === '1'; } catch { return false; } }
+function setFileMode(on) { try { if (on) localStorage.setItem(FILEMODE, '1'); else localStorage.removeItem(FILEMODE); } catch { /* 저장 불가 */ } }
+
+// ---------- 시작 화면 (연결 정보 없음 → 연결하기 / 로그인 안 함 → 관리자 로그인) ----------
+function gateNeeded() {
+  if (api.enabled) return teacherKey ? '' : 'login';
+  return isFileMode() || localItems().length ? '' : 'connect';
+}
+function renderGate() {
+  const need = gateNeeded();
+  $('#gate').hidden = !need;
+  document.querySelector('main.wrap').hidden = !!need;
+  document.querySelector('.t-tabs').hidden = !!need;
+  renderUserChip();
+  if (!need) return false;
+  const guide = h('p', { class: 'small' }, '📄 처음이라면: ', h('a', { href: '../docs/우리반_저장소_설치안내.docx', download: '' }, '우리 반 저장소 만들기 · 계정 안내 (.docx)'));
+  if (need === 'connect') {
+    const ep = h('input', { id: 'gEndpoint', type: 'url', placeholder: 'https://script.google.com/macros/s/…/exec' }); ep.value = cfg.endpoint;
+    const cc = h('input', { id: 'gClass', type: 'text', placeholder: '예) DREAM-5-2' }); cc.value = cfg.classCode;
+    const msg = h('p', { class: 'small', role: 'status' });
+    const connect = async () => {
+      const endpoint = ep.value.trim(), classCode = cc.value.trim();
+      if (!isValidEndpoint(endpoint)) { msg.textContent = '⚠ 배포 뒤에 나온 웹 앱 URL(https://script.google.com/macros/s/…/exec)을 넣어 주세요'; return; }
+      if (!classCode) { msg.textContent = '⚠ 반 코드를 넣어 주세요 (Code.gs 의 CLASS_CODE 와 똑같이)'; return; }
+      msg.textContent = '연결 시험 중…';
+      const next = createApi({ endpoint, classCode });
+      try { await next.ping(); } catch (e) { msg.textContent = `⚠ ${e.message}`; return; }
+      cfg = { endpoint, classCode }; saveConfig('teacher', cfg); api = next; setFileMode(false);
+      renderSettings(); toast('✅ 우리 반 저장소에 연결했어요'); renderGate(); refresh();
+    };
+    $('#gateBody').replaceChildren(
+      h('h1', {}, '🔌 우리 반 저장소 연결'),
+      h('p', {}, '이 기기에서 처음 여는 교사 앱이에요. 우리 반 저장소 주소와 반 코드를 넣어 주세요.'),
+      h('p', { class: 'muted small' }, '💡 다른 기기에서 쓰던 교사 앱의 「⚙️ 연결 설정 → 🧑‍🏫 다른 기기에서 교사 앱 열기」 주소로 열면 자동으로 채워져요.'),
+      h('label', { class: 'field' }, h('span', {}, '저장소 주소 (웹 앱 URL)'), ep),
+      h('label', { class: 'field' }, h('span', {}, '반 코드'), cc),
+      h('div', { class: 'row' }, h('button', { id: 'gConnect', class: 'primary big', onclick: connect }, '🔌 연결하기'),
+        h('button', { id: 'gFileMode', class: 'ghost', onclick: () => { setFileMode(true); renderGate(); refresh(); } }, '📁 저장소 없이 파일로 쓰기')),
+      msg, guide);
+    return true;
+  }
+  $('#gateBody').replaceChildren(
+    h('h1', {}, '🔑 관리자 로그인'),
+    h('p', { class: 'muted small' }, `🏫 반 코드 ${cfg.classCode} · 저장소에 연결됨`),
+    h('div', { id: 'gateLogin' }),
+    h('div', { class: 'row' }, h('button', { class: 'ghost small', onclick: () => { cfg = { endpoint: '', classCode: '' }; saveConfig('teacher', cfg); api = createApi(cfg); renderSettings(); renderGate(); } }, '🔌 다른 저장소로 연결하기')),
+    guide);
+  accountsAdmin.renderAdmin($('#gateLogin'));
+  return true;
+}
+const accountsAdmin = createAccountsAdmin({ getApi: () => api, getKey: () => teacherKey, setKey, onLogin: () => { renderGate(); refresh(); } });
 
 // ---------- 탭 ----------
 document.querySelectorAll('[data-tab]').forEach((b) => {
@@ -381,8 +453,7 @@ $('#refreshBtn').onclick = refresh;
 
 renderLesson();
 renderSettings();
-accountsAdmin.renderAdmin();
 showTimer();
-if (!teacherKey && !localItems().length) document.querySelector('[data-tab="settings"]').click();
+renderGate();
 refresh();
 setInterval(() => { if (!document.hidden && $('#detail').hidden && api.enabled && teacherKey) refresh(); }, 60000);

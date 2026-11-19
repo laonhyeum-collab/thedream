@@ -26,8 +26,14 @@
         <button role="tab" data-tab="settings">⚙️ 연결 설정</button>
       </nav>
       <span id="connPill" class="pill">연결 안 됨</span>
+      <button id="userChip" type="button" class="ghost small" hidden></button>
     </div>
   </header>
+
+  <!-- 시작 화면: 이 기기에 연결 정보가 없거나, 관리자로 로그인하지 않았을 때 -->
+  <section id="gate" class="wrap no-print" hidden>
+    <div class="card gate-card" id="gateBody"></div>
+  </section>
 
   <main class="wrap no-print">
     <!-- 학생 현황 -->
@@ -98,6 +104,11 @@
         <p class="muted small">이 주소로 열면 반 저장소가 자동으로 연결돼요. 클래스룸·패들렛 등에 올려 주세요. (관리자 비밀번호·설치 열쇠는 들어 있지 않아요)</p>
         <div class="link-row"><code id="studentLink"></code><button data-copylink="studentLink">📋 복사</button></div>
         <div class="link-row"><code id="worldLinkCode"></code><button data-copylink="worldLinkCode">📋 복사</button></div>
+      </div>
+      <div class="card">
+        <h3>🧑‍🏫 다른 기기에서 교사 앱 열기 (선생님만)</h3>
+        <p class="muted small">교사 앱의 연결 정보는 기기마다 따로 저장돼요. 다른 컴퓨터·태블릿에서는 이 주소로 열면 저장소 주소와 반 코드가 자동으로 들어가고, 관리자 아이디·비밀번호로 로그인만 하면 돼요. (비밀번호는 들어 있지 않아요)</p>
+        <div class="link-row"><code id="teacherLinkCode"></code><button data-copylink="teacherLinkCode">📋 복사</button></div>
       </div>
       <div class="card">
         <h3>🧹 이 기기의 파일 제출 데이터</h3>
