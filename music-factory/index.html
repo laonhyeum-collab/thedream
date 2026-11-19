@@ -29,6 +29,7 @@
       <button type="button" class="menu-btn m3" data-go="challenge"><span class="mi">🏆</span>음악 만들기 도전</button>
       <button type="button" class="menu-btn m4" data-go="instruments"><span class="mi">🎧</span>악기 소리 체험</button>
       <button type="button" class="menu-btn m5" data-go="songs"><span class="mi">🎼</span>노래 따라 만들기</button>
+      <button type="button" class="menu-btn m6" data-go="levels"><span class="mi">🪜</span>단계별 도전</button>
     </nav>
     <p class="qr-dl">📱 접속 QR 내려받기:
       <a href="qr/music-factory-qr-card.png" download="music-play-factory-QR-card.png">인쇄용 카드</a> ·
@@ -115,6 +116,11 @@
       </div>
       <p class="m-state" id="songState"></p>
     </div>
+    <div class="panel lyrics-panel" id="lyricsPanel" hidden>
+      <p class="panel-label">✍️ 내 노래 가사</p>
+      <p class="lyrics-show empty" id="lyricsShow">아직 가사가 없어요.</p>
+      <button type="button" class="voice-btn small" id="btnLyrics" aria-label="가사 쓰기">✍️<span class="lbl"> 가사 쓰기</span></button>
+    </div>
     <div class="panel band">
       <p class="panel-label" id="bandLabel">우리 밴드</p>
       <div class="band-grid" id="band"></div>
@@ -153,6 +159,30 @@
   </header>
   <p class="page-lead">미션을 골라 빙수 음악을 만들어 보세요. 조건을 채우고 ▶️ 끝까지 들으면 성공!</p>
   <div id="missionList" class="mission-list"></div>
+</section>
+
+<!-- ========== 단계별 도전 ========== -->
+<section id="levels" class="screen page" hidden>
+  <header class="pagebar">
+    <button type="button" class="round" data-go="home" aria-label="처음 화면">🏠</button>
+    <h2>🪜 단계별 도전</h2>
+  </header>
+  <p class="page-lead">1단계부터 차근차근! 목표를 채우고 ▶️ 끝까지 들으면 다음 단계가 열려요. 5단계까지 통과하면 🎲 랜덤 조합 도전과 ✍️ 가사 쓰기가 열려요.</p>
+  <div id="levelList" class="mission-list level-list"></div>
+  <div class="unlock-cards">
+    <div class="panel unlock-card" id="comboCard">
+      <strong>🎲 랜덤 조합 도전</strong>
+      <p class="uc-text">반주(피아노·거문고·오르골…)가 화음을 깔아 주면, 그 위에 다른 악단의 악기를 쌓아요. 반주와 악기는 같은 조와 빠르기라서 잘 어울려요.</p>
+      <div class="combo-list" id="comboList"></div>
+      <p class="uc-state" id="comboState"></p>
+      <button type="button" class="wide-btn" id="btnCombo">🎲 랜덤 조합 뽑기</button>
+    </div>
+    <div class="panel unlock-card">
+      <strong>✍️ 가사 쓰기 (교육용 체크)</strong>
+      <p class="uc-text">내 노래에 짧은 가사를 붙여요. 고운 말인지, 개인 정보(이름·전화번호·주소·학교)가 없는지 확인해요. 가사는 이 기기 안에만 저장되고 어디에도 보내지 않아요.</p>
+      <p class="uc-state" id="lyricsState"></p>
+    </div>
+  </div>
 </section>
 
 <!-- ========== 노래 따라 만들기 ========== -->
@@ -198,6 +228,7 @@
   <h3 id="doneTitle">완성!</h3>
   <p id="doneText"></p>
   <div class="dlg-btns col">
+    <button type="button" class="wide-btn" id="doneNext" hidden>➡️ 다음 단계</button>
     <button type="button" class="wide-btn" id="doneListen">▶️ 다시 듣기</button>
     <button type="button" class="wide-btn ghost" id="doneLibrary">📦 보관함 보기</button>
     <button type="button" class="wide-btn ghost" id="doneClose">✏️ 계속 만들기</button>
@@ -222,6 +253,26 @@
   <div class="dlg-btns">
     <button type="button" class="wide-btn ghost" id="voiceResetAll">↩️ 모두 처음 악기로</button>
     <button type="button" class="wide-btn" id="voiceClose">다 골랐어요</button>
+  </div>
+</dialog>
+
+<dialog id="lyricsDialog" class="dlg lyrics-dlg">
+  <h3>✍️ 내 노래 가사 쓰기</h3>
+  <label class="field" for="lyricsInput">짧고 즐거운 가사를 써 봐요 (4줄까지)</label>
+  <textarea id="lyricsInput" class="lyrics-input" rows="4" maxlength="120" autocomplete="off" spellcheck="false"
+            placeholder="예) 시원한 빙수 한 그릇&#10;친구랑 나눠 먹자"></textarea>
+  <p class="lyrics-count" id="lyricsCount">0/80</p>
+  <ul class="lyrics-rules" aria-label="교육용 체크">
+    <li>🌱 고운 말로 써요 (욕설·놀리는 말·무서운 말 ✖)</li>
+    <li>🔒 이름·전화번호·주소·이메일·학교는 쓰지 않아요</li>
+    <li>✂️ 80글자, 4줄까지 짧고 즐겁게</li>
+    <li>📱 가사는 이 기기에만 저장되고 어디에도 보내지 않아요</li>
+  </ul>
+  <p class="lyrics-msg" id="lyricsMsg" role="alert"></p>
+  <div class="dlg-btns">
+    <button type="button" class="wide-btn ghost" id="lyricsClear">🧽 지우기</button>
+    <button type="button" class="wide-btn ghost" id="lyricsCancel">취소</button>
+    <button type="button" class="wide-btn" id="lyricsOk">✅ 체크하고 붙이기</button>
   </div>
 </dialog>
 
