@@ -113,6 +113,14 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
 .tbl table{border-collapse:collapse;width:100%;min-width:560px;font-size:13px}
 .tbl th,.tbl td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 .tbl th{font-size:12px;color:var(--muted)}
+.urgent{border:2px solid var(--bad);border-radius:12px;background:var(--panel);padding:14px 16px;display:grid;gap:10px}
+.urgent .uh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.urgent h2{font-family:var(--f-display);font-weight:400;font-size:19px;margin:0;color:var(--bad)}
+.uform{display:grid;gap:8px}
+.uform textarea{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;min-height:56px;resize:vertical;width:100%}
+.uform .r{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn.urg{background:var(--bad);border-color:var(--bad);color:#fff}
+.st-new{color:var(--warn)}.st-processing{color:var(--media)}.st-failed{color:var(--bad)}
 .status-line{font-size:12px;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.bub{transition:none}}
 </style>
@@ -132,6 +140,15 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
     <div id="overlay"></div>
     <div class="who" id="who" hidden><button id="whoX" aria-label="닫기">×</button><div id="whoBody"></div></div>
   </div>
+
+  <section class="urgent" aria-labelledby="urgH">
+    <div class="uh"><h2 id="urgH">긴급공지</h2><span class="note" id="urgHint">적어서 보내면 담당 직원이 바로 처리해요. 근무 시간이 아니어도 돼요.</span></div>
+    <form id="urgForm" class="uform">
+      <textarea id="urgText" placeholder="예: 내일 3학년 레고 과학 수업 지도안 오늘 안에 만들어줘" aria-label="긴급공지 내용" required></textarea>
+      <div class="r"><button class="btn urg" type="submit" id="urgBtn">긴급공지 보내기</button><span class="note" id="urgMsg" aria-live="polite"></span></div>
+    </form>
+    <div class="list" id="urgList"></div>
+  </section>
 
   <nav class="tabs" role="tablist" id="tabs">
     <button role="tab" data-tab="dash" aria-selected="true">대시보드</button>
@@ -284,7 +301,9 @@ const MEDIA_OFFICE = "https://claude.ai/artifact/8bxSJL6icMaJpRTJYe644q";
 const fileLinks = d => (Array.isArray(d.files)? d.files : []).filter(f=>safeUrl(f.url)).map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.name||"파일")}</a>`).join(" · ");
 
 // ---------- State ----------
-let tasks=[], feed=[], schedule=[], docs=[], apps=[], office={};
+let tasks=[], feed=[], schedule=[], docs=[], apps=[], notices=[], office={};
+const URGENT_TRIGGER = "trig_01F2xPSizJ7HiWEFXm3YWp9y";
+const NSTATUS = {new:"접수됨",processing:"처리 중",done:"처리 완료",failed:"처리 못 함"};
 let canWrite = null;
 
 // ---------- Canvas office ----------
@@ -512,6 +531,7 @@ function render(){
       ${a.note?`<div class="meta">메모: ${esc(a.note)}</div>`:""}
       ${links?`<div class="links">${links}</div>`:""}</div>`;
   }).join("") : `<div class="empty">앱 목록을 불러오는 중이에요.</div>`;
+  $("#urgList").innerHTML = notices.slice(0,5).map(n=>`<div class="item"><div class="h"><span class="st st-${esc(n.status)}">${esc(NSTATUS[n.status]||n.status)}</span><span class="note">${esc(fmtDay(n.createdAt))} ${esc(fmtTime(n.createdAt))}${n.processedAt?" → "+esc(fmtTime(n.processedAt))+" 완료":""}</span></div><div class="det" style="color:var(--ink)">${esc(n.text)}</div>${n.result?`<div class="det">보고: ${esc(n.result)}</div>`:""}${n.docId?`<div class="acts"><button class="btn ghost" data-doc="${esc(n.docId)}">결과 자료 보기</button></div>`:""}</div>`).join("");
   if(docLinkedOpen) openDoc(docLinkedOpen);
 }
 function openDoc(id){
@@ -564,6 +584,34 @@ $("#orderForm").addEventListener("submit", async e=>{
   }catch(err){ $("#orderMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; }
 });
 
+// ---------- Urgent notices ----------
+async function wakeOffice(id){
+  let mcp=null; try{ mcp = await window.claude?.use?.("mcp"); }catch(_){}
+  if(!mcp) return "nomcp";
+  try{ await mcp.callTool("Claude Code Remote","fire_trigger",{trigger_id:URGENT_TRIGGER, text:"긴급공지 "+id+" 접수. 지금 바로 처리해 주세요."}); return "ok"; }
+  catch(e){ return e?.code || "error"; }
+}
+$("#urgForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const text=$("#urgText").value.trim(); if(!text) return;
+  if(!dbRef){ $("#urgMsg").textContent="사무실 데이터에 연결되지 않아 공지를 저장할 수 없어요."; return; }
+  const btn=$("#urgBtn"); btn.disabled=true; $("#urgMsg").textContent="공지를 올리는 중…";
+  const id="n-"+Date.now().toString(36);
+  try{
+    await dbRef.doc("notices/"+id).set({text, status:"new", createdAt:new Date().toISOString(), by:"대표"});
+  }catch(err){ btn.disabled=false; $("#urgMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; return; }
+  $("#urgText").value="";
+  $("#urgMsg").textContent="공지를 올렸어요. 담당 직원을 부르는 중…";
+  const r = await wakeOffice(id);
+  btn.disabled=false;
+  const later="매시 7분(오전 8시~밤 10시) 정기 점검 때 처리돼요.";
+  $("#urgMsg").textContent =
+    r==="ok" ? "담당 직원이 바로 출근했어요. 처리하면 아래에 보고가 올라와요." :
+    r==="approval_required"||r==="not_in_manifest" ? "바로 부르려면 Claude Code Remote 연결을 허용해 주세요. 지금은 "+later :
+    r==="server_not_connected"||r==="needs_reauth" ? "claude.ai 설정의 커넥터에서 Claude Code Remote를 연결하면 바로 처리돼요. 지금은 "+later :
+    "공지는 접수됐어요. "+later;
+});
+
 // ---------- Data ----------
 (async()=>{
   const db = await getDb();
@@ -580,6 +628,7 @@ $("#orderForm").addEventListener("submit", async e=>{
   db.collection("schedule").orderBy("date","asc").limit(200).onSnapshot(s=>{ schedule=rows(s); render(); }, err);
   db.collection("docs").orderBy("createdAt","desc").limit(100).onSnapshot(s=>{ docs=rows(s); render(); }, err);
   db.collection("apps").orderBy("order","asc").limit(100).onSnapshot(s=>{ apps=rows(s); render(); }, err);
+  db.collection("notices").orderBy("createdAt","desc").limit(20).onSnapshot(s=>{ notices=rows(s); render(); }, err);
 })();
 
 render();
