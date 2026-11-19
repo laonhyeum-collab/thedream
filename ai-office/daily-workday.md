@@ -52,6 +52,12 @@
 - 대표지원실 총괄검수 · 가람: 대표 컨펌 전에 모든 부서 결과물을 최종 검수
 - 대표지원실 비서실 · 도담: 하루 마감, 대표 브리핑, 자료실·드라이브 정리
 
+## 공통 업무 절차 (모든 업무에 먼저 적용)
+일을 시작하기 전에 config/workflow를 읽고 그대로 따라요. 요약:
+1. 중복 확인: 새 업무를 받으면 같은 부서·관련 부서의 최근 업무와 자료를 먼저 비교해요. 같은 일이면 새로 만들지 않고 기존 업무에 합쳐요(mergedInto). 대표님 컨펌 카드는 한 가지 일에 하나만 올라가요.
+2. 진행 공유: 비슷한 업무가 다른 직원에게 있으면 그 진행 상황(status, note, docId, feed)을 확인하고 이어서 해요. 시작·끝날 때 feed에 업무 id를 넣어 한 줄씩 남기고, 결과 문서에 taskId를 적어요.
+3. 두 번 이상 수정·반려(reviseCount + rejectCount ≥ 2)된 업무는 부서 전체가 의논해 '부서 회의록'(지적 사항 전부, 반복된 이유, 고칠 방향과 이유, 체크리스트)을 docs에 남기고, 그 방향으로 고친 뒤 부서 검수와 가람 총괄 검수를 꼭 받아 컨펌에 올려요.
+
 ## 첨부파일 읽기
 대표 지시(tasks)나 긴급공지(notices)에 attachments가 있으면 일을 시작하기 전에 꼭 열어 봐요.
 - Artifact 도구 action "read"에 url(사무실 페이지 주소)과 path(첨부의 id, 32자)를 넣으면 파일이 내려받아지고 저장 위치를 알려줘요.
@@ -110,7 +116,7 @@
 
 ## 하루 순서
 각 단계를 마칠 때마다 담당 직원 이름으로 feed에 한 줄씩 남겨요. 사무실 화면에서 직원 말풍선으로 보여요.
-1. 출근: office/state를 status "근무 중"으로 바꾸고 lastRun에 지금 시각을 넣어요. tasks, schedule, apps, imageReqs, classes, config/company, config/sites, config/images, config/classes, 최근 feed를 읽어요. imageReqs에 status "uploaded"인 그림이 남아 있으면 config/images의 whenUploaded대로 오늘 안에 먼저 자리에 넣어요. 반려(rejected)된 업무는 다시 제안하지 않아요.
+1. 출근: office/state를 status "근무 중"으로 바꾸고 lastRun에 지금 시각을 넣어요. tasks, schedule, apps, imageReqs, classes, config/company, config/sites, config/images, config/classes, config/workflow, 최근 feed를 읽어요. imageReqs에 status "uploaded"인 그림이 남아 있으면 config/images의 whenUploaded대로 오늘 안에 먼저 자리에 넣어요. 반려(rejected)된 업무는 다시 제안하지 않아요.
 2. 전략부서 · 한결: 대표 지시(by "대표")를 가장 먼저, 그다음 대표 수정 요청(status "revise")을 배정해요. 배정할 때 owner와 support를 정해요. 교육부서는 승인된 업무 중 최대 2개, 앱개발부서는 최대 1개, 미디어부서는 최대 1개를 오늘 처리할 업무로 골라요. 받은 요청서(handoff)도 담당 부서에 배정해요. 나머지는 다음 날로 미뤄요.
 3. 전략부서 · 다온: config/classes 규칙대로 대표님 수업을 관리해요. 새 수업은 whenNew대로 자료를 점검해 담당 부서에 업무를 만들고, 앞으로 3주 수업은 daily대로 prep을 맞추며 컨펌 마감(수업 3일 전)이 가까운 자료를 오늘 최우선으로 올려요(2번 배정에서 대표 지시 다음 순서). twoWeekCheck대로 2주 앞 수업 일정이 비었으면 대표님께 입력을 요청해요. 그다음 앞으로 2주 일정을 schedule에 정리해요. 이미 있는 일정은 중복으로 만들지 않아요. 지난 일정은 그대로 둬요.
 4. 교육부서 제작: 오늘 고른 업무를 doing으로 바꾸고, 업무마다 아래를 만들어요.

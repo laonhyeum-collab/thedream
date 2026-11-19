@@ -43,12 +43,12 @@ h1 small{display:block;font-family:var(--f-body);font-size:13px;color:var(--mute
 .clock .s b{display:block;font-size:13px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle}
 
-.floor{position:relative;width:100%;aspect-ratio:480/300;max-width:100%;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#eef3fc;box-shadow:var(--shadow)}
-.floor canvas{position:absolute;inset:0;width:100%;height:100%;cursor:pointer;image-rendering:pixelated}
-.lbl{position:absolute;font-family:var(--f-body);font-weight:700;font-size:clamp(8px,1.3vw,12.5px);color:#fff;background:var(--c,#24324a);padding:2px 9px;border-radius:999px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.floor{position:relative;width:100%;aspect-ratio:640/400;max-width:100%;border-radius:12px;overflow:hidden;border:3px solid #2b2a33;background:#2b2a33}
+.floor canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;cursor:pointer}
+.lbl{position:absolute;transform:translate(-50%,0);font-family:var(--f-display);font-size:clamp(10px,1.7vw,15px);color:#fff;background:rgba(43,42,51,.78);padding:1px 8px;border-radius:6px;white-space:nowrap;pointer-events:none}
 .lbl.media{background:rgba(110,92,190,.88)}
-.bub{position:absolute;transform:translate(-50%,-100%);max-width:34%;background:#ffffff;color:#1d2436;border:0;box-shadow:0 3px 10px rgba(20,30,60,.25);border-radius:10px;padding:3px 9px;font-size:clamp(9px,1.35vw,12px);line-height:1.35;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .3s}
-.bub::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-5px;border:5px solid transparent;border-top-color:#ffffff;border-bottom:0}
+.bub{position:absolute;transform:translate(-50%,-100%);max-width:34%;background:#fffdf7;color:#2b2a33;border:2px solid #2b2a33;border-radius:8px;padding:2px 7px;font-size:clamp(9px,1.35vw,12px);line-height:1.35;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .3s}
+.bub::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-4px;border:4px solid transparent;border-top-color:#2b2a33}
 .dim{position:absolute;inset:0;background:rgba(20,22,48,.45);pointer-events:none;transition:opacity .6s}
 .who{position:absolute;right:10px;bottom:10px;max-width:min(300px,70%);background:var(--panel);color:var(--ink);border:2px solid #2b2a33;border-radius:10px;padding:10px 12px;font-size:13px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
 .who b{font-family:var(--f-display);font-weight:400;font-size:16px}
@@ -90,6 +90,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .btn:hover{filter:brightness(.97)}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.ghost{border-color:var(--line);background:var(--panel2)}
+.btn.ghost.danger{color:#C2410C;border-color:#F5C9B3}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 a{color:var(--strat)}
 .feed .row{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;padding:7px 0;border-bottom:1px dashed var(--line)}
@@ -208,21 +209,12 @@ form.order input[type=checkbox]{flex:none}
   </header>
 
   <div class="floor" id="floor">
-    <canvas id="cv" width="480" height="300" aria-label="AI 직원들이 일하는 픽셀 사무실"></canvas>
+    <canvas id="cv" width="640" height="400" aria-label="AI 직원들이 일하는 픽셀 사무실"></canvas>
     <div class="dim" id="dim" style="opacity:0"></div>
     <div id="overlay"></div>
     <div class="who" id="who" hidden><button id="whoX" aria-label="닫기">×</button><div id="whoBody"></div></div>
   </div>
 
-  <section class="urgent" aria-labelledby="urgH">
-    <div class="uh"><h2 id="urgH">긴급공지</h2><span class="note" id="urgHint">적어서 보내면 담당 직원이 바로 처리해요. 근무 시간이 아니어도 돼요.</span></div>
-    <form id="urgForm" class="uform">
-      <textarea id="urgText" placeholder="예: 내일 3학년 레고 과학 수업 지도안 오늘 안에 만들어줘" aria-label="긴급공지 내용" required></textarea>
-      <div class="att" id="urgAtt"><label class="btn ghost" for="urgFile">📎 파일·캡처 첨부</label><input type="file" id="urgFile" multiple accept="image/*,application/pdf,.txt,.md,.csv,.json"><span class="note" id="urgAttHint">이미지·PDF·텍스트, 한 파일 20MB까지. 캡처는 글 칸에 붙여넣기(Ctrl+V)해도 돼요.</span><div class="chips" id="urgChips"></div></div>
-      <div class="r"><button class="btn urg" type="submit" id="urgBtn">긴급공지 보내기</button><span class="note" id="urgMsg" aria-live="polite"></span></div>
-    </form>
-    <div class="list" id="urgList"></div>
-  </section>
 
   <nav class="tabs" role="tablist" id="tabs">
     <button role="tab" data-tab="dash" aria-selected="true">대시보드</button>
@@ -241,6 +233,15 @@ form.order input[type=checkbox]{flex:none}
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><h2 style="margin:0">오늘 대표님이 할 일</h2><span class="note" id="todoSum"></span></div>
       <div id="classAlert"></div>
       <div class="todo" id="todo"></div>
+      <section class="urgent" style="margin:0" aria-labelledby="urgH">
+        <div class="uh"><h2 id="urgH">긴급공지</h2><span class="note" id="urgHint">적어서 보내면 바로 처리해요. 결과는 대표 결재로 올라와요.</span></div>
+        <form id="urgForm" class="uform">
+          <textarea id="urgText" placeholder="예: 내일 3학년 레고 과학 수업 지도안 오늘 안에 만들어줘" aria-label="긴급공지 내용" required></textarea>
+          <div class="att" id="urgAtt"><label class="btn ghost" for="urgFile">📎 파일·캡처 첨부</label><input type="file" id="urgFile" multiple accept="image/*,application/pdf,.txt,.md,.csv,.json"><span class="note" id="urgAttHint">이미지·PDF·텍스트, 한 파일 20MB까지. 캡처는 글 칸에 붙여넣기(Ctrl+V)해도 돼요.</span><div class="chips" id="urgChips"></div></div>
+          <div class="r"><button class="btn urg" type="submit" id="urgBtn">긴급공지 보내기</button><span class="note" id="urgMsg" aria-live="polite"></span></div>
+        </form>
+        <div class="list" id="urgList"></div>
+      </section>
       <span hidden><span id="kP"></span><span id="kD"></span><span id="kC"></span><span id="kS"></span></span>
       <div class="two">
         <div class="min0"><h2>오늘의 브리핑</h2><div class="brief" id="brief"><span class="note">매일 아침 비서실 도담이 하루 업무를 마치면 여기에 브리핑을 남겨요.</span></div></div>
@@ -450,6 +451,18 @@ const MEMBERS = [
   {id:"dodam", name:"도담", dept:"ceo", team:"비서실", role:"하루 업무 마감, 대표 브리핑 작성", hair:"#6a3b2a", shirt:"#c98a2b", desk:[36,19]}
 ];
 
+const MEDIA_GHOSTS = [];
+const ROOMS = [
+  {key:"strategy", x:0,y:0,w:9,h:10, floor:["#c9d8e8","#bccce0"], label:"전략부서"},
+  {key:"edu", x:9,y:0,w:15,h:10, floor:["#d6e8d0","#c8dec1"], label:"교육부서"},
+  {key:"media", x:24,y:0,w:16,h:10, floor:["#ddd6f0","#d0c8e8"], label:"미디어부서"},
+  {key:"ceo", x:0,y:13,w:9,h:12, floor:["#d9b98a","#cfae7c"], label:"대표실"},
+  {key:"meet", x:9,y:13,w:10,h:12, floor:["#efe2c4","#e7d8b6"], label:"회의실"},
+  {key:"app", x:19,y:13,w:13,h:12, floor:["#f3dccb","#ead0bd"], label:"앱개발부서"},
+  {key:"lounge", x:32,y:13,w:8,h:12, floor:["#cfe3e6","#c2d9dd"], label:"대표지원실"}
+];
+const SPOTS = { meet:[[11,18],[13.5,18],[16,18],[11,21],[13.5,21],[16,21]], lounge:[[34,21],[38,22],[34,17]], ceo:[[4,20],[6,20]], hall:[[5,11],[14,11],[20,11],[28,11],[35,11]] };
+
 // ---------- Helpers ----------
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -499,201 +512,152 @@ let canWrite = null;
 const showClosed = {closedTasks:false, notices:false};
 document.addEventListener("click", e=>{ const b=e.target.closest("[data-toggle]"); if(!b) return; showClosed[b.dataset.toggle]=!showClosed[b.dataset.toggle]; render(); });
 
-// ---------- Office scene: bright isometric pixel-art floor ----------
-const SW=480, SH=300;
-const cv = $("#cv"), ctx = cv.getContext("2d");
-cv.width=SW; cv.height=SH; ctx.imageSmoothingEnabled=false;
-const TW=18, TH=9, OX=240, OY=54, WALLH=42;
-const P=(x,y,z=0)=>[Math.round(OX+(x-y)*TW/2), Math.round(OY+(x+y)*TH/2 - z)];
-const LOOK = {
-  hangyeol:["short"], daon:["pony"], nuri:["short","glasses"], roa:["bob","glasses"],
-  saebom:["long"], raon:["short"], boram:["bun"], ieum:["bob","glasses"], dasom:["long"],
-  harang:["spiky","cap"], seoyun:["long"], chaea:["bob","beret"], gaon:["short","phones"], ideun:["spiky"], bareum:["short","glasses"], narae:["pony"],
-  haneul:["bob"], doyun:["spiky","phones"], byeol:["bun"], siu:["short","glasses"],
-  garam:["bob","glasses"], dodam:["bun"]
-};
-const SKIN=["#ffd9bf","#f6c9a5","#eab48c","#ffe3cf"];
-function shade(hex,amt){ const n=parseInt(hex.slice(1),16); let r=n>>16,gg=n>>8&255,b=n&255; const f=v=>Math.max(0,Math.min(255,Math.round(v+amt*255))); return `rgb(${f(r)},${f(gg)},${f(b)})`; }
-function poly(g,pts,fill,stroke){ g.beginPath(); g.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) g.lineTo(pts[i][0],pts[i][1]); g.closePath(); if(fill){ g.fillStyle=fill; g.fill(); } if(stroke){ g.strokeStyle=stroke; g.lineWidth=1; g.stroke(); } }
-// iso box: tile origin x,y, size w(x) d(y), height h px, base z
-function box(g,x,y,w,d,h,col,z=0,outline="rgba(60,50,80,.35)"){
-  const A=P(x,y,z+h),B=P(x+w,y,z+h),C=P(x+w,y+d,z+h),D=P(x,y+d,z+h),E=P(x+w,y,z),F=P(x+w,y+d,z),G=P(x,y+d,z);
-  poly(g,[D,C,F,G],shade(col,-.12),outline); // front-left (+y)
-  poly(g,[B,C,F,E],shade(col,-.22),outline); // front-right (+x)
-  poly(g,[A,B,C,D],col,outline);             // top
+// ---------- Canvas office ----------
+const cv = $("#cv"), ctx = cv.getContext("2d"), T = 16;
+ctx.imageSmoothingEnabled = false;
+const bg = document.createElement("canvas"); bg.width=640; bg.height=400;
+function drawBackground(){
+  const g = bg.getContext("2d");
+  g.fillStyle="#8a7f72"; g.fillRect(0,0,640,400);
+  // corridor
+  for(let x=0;x<40;x++) for(let y=10;y<13;y++){ g.fillStyle=(x+y)%2?"#e9e2d3":"#e1d9c8"; g.fillRect(x*T,y*T,T,T); }
+  ROOMS.forEach(r=>{
+    for(let x=r.x;x<r.x+r.w;x++) for(let y=r.y;y<r.y+r.h;y++){ g.fillStyle=r.floor[(x+y)%2]; g.fillRect(x*T,y*T,T,T); }
+    // top wall with windows
+    const wy = r.y*T;
+    g.fillStyle="#5d5463"; g.fillRect(r.x*T,wy,r.w*T,T+4);
+    for(let x=r.x+1;x<r.x+r.w-1;x+=3){ g.fillStyle="#a9d6ec"; g.fillRect(x*T+2,wy+3,T*2-4,T-6); g.fillStyle="#d8f0fa"; g.fillRect(x*T+3,wy+4,6,3); }
+    // side walls
+    g.fillStyle="#4a4250"; g.fillRect(r.x*T,wy,3,r.h*T); g.fillRect((r.x+r.w)*T-3,wy,3,r.h*T);
+    // door gap toward corridor
+    const doorX = (r.x + Math.floor(r.w/2))*T;
+    if(r.y===0){ g.fillStyle="#4a4250"; g.fillRect(r.x*T,(r.y+r.h)*T-3,r.w*T,3); g.fillStyle=r.floor[0]; g.fillRect(doorX-T,(r.y+r.h)*T-3,T*2,3); }
+    else { g.fillStyle="#4a4250"; g.fillRect(r.x*T,r.y*T,r.w*T,3); g.fillStyle="#e1d9c8"; g.fillRect(doorX-T,r.y*T,T*2,T+4); }
+  });
+  const desk=(tx,ty,mon="#2b2a33")=>{ const x=tx*T-12,y=ty*T-6; g.fillStyle="#8a5a36"; g.fillRect(x,y,40,18); g.fillStyle="#6e4527"; g.fillRect(x,y+16,40,4); g.fillStyle=mon; g.fillRect(x+12,y-8,16,11); g.fillStyle="#7fd1b9"; g.fillRect(x+14,y-6,12,7); g.fillStyle="#cfc7b8"; g.fillRect(x+4,y+6,10,5); g.fillStyle="#3c3c46"; g.fillRect(x+16,y+20,9,7); };
+  const plant=(tx,ty)=>{ const x=tx*T,y=ty*T; g.fillStyle="#b4673f"; g.fillRect(x+4,y+8,8,8); g.fillStyle="#3f8f4f"; g.fillRect(x+2,y,12,9); g.fillStyle="#5fb26a"; g.fillRect(x+5,y-3,6,6); };
+  const shelf=(tx,ty)=>{ const x=tx*T,y=ty*T; g.fillStyle="#6e4527"; g.fillRect(x,y,30,22); const c=["#e0794f","#4f9e7a","#3f7fb8","#c9a14a","#7b6cc9"]; for(let i=0;i<5;i++){ g.fillStyle=c[i]; g.fillRect(x+3+i*5,y+3,4,7); g.fillStyle=c[(i+2)%5]; g.fillRect(x+3+i*5,y+12,4,7);} };
+  const board=(tx,ty,w)=>{ const x=tx*T,y=ty*T; g.fillStyle="#f6f4ee"; g.fillRect(x,y,w,14); g.fillStyle="#6e6a75"; g.fillRect(x,y+14,w,2); g.fillStyle="#e0794f"; g.fillRect(x+4,y+4,w*0.4,2); g.fillStyle="#3f7fb8"; g.fillRect(x+4,y+8,w*0.6,2); };
+  MEMBERS.forEach(m=>desk(m.desk[0],m.desk[1]));
+  MEDIA_GHOSTS.forEach(p=>desk(p.x,p.y,"#4a3f7a"));
+  // decorations
+  plant(1,1.4); plant(7.6,1.4); plant(22.6,8.2); plant(22.6,1.4); plant(38.4,8.2); plant(1,23);
+  shelf(19.5,7.5); board(3,1.3,36); board(13,1.3,60); board(28,1.3,90);
+  // CEO room: big desk + rug
+  g.fillStyle="#b04a3a"; g.fillRect(1*T,16*T,7*T,6*T); g.fillStyle="#c86450"; g.fillRect(1*T+4,16*T+4,7*T-8,6*T-8);
+  g.fillStyle="#5a3a22"; g.fillRect(2.5*T,17*T,4*T,T+6); g.fillStyle="#2b2a33"; g.fillRect(4*T,16.4*T,T,10); g.fillStyle="#f2c94c"; g.fillRect(2.8*T,17.3*T,8,6);
+  g.fillStyle="#3c3c46"; g.fillRect(4.1*T,18.6*T,12,10);
+  // meeting table
+  g.fillStyle="#7a5232"; g.fillRect(10.5*T,18.8*T,7*T,2.2*T); g.fillStyle="#936440"; g.fillRect(10.5*T+3,18.8*T+3,7*T-6,2.2*T-6);
+  for(let i=0;i<3;i++){ g.fillStyle="#d9534f"; g.fillRect((11.2+i*2.4)*T,17.6*T,12,10); g.fillRect((11.2+i*2.4)*T,21.4*T,12,10); }
+  board(10,14.4,80);
+  // app room: release board, server racks
+  board(23,14.4,70);
+  for(let i=0;i<2;i++){ const x=(29.6+i*1.2)*T, y=15.2*T; g.fillStyle="#2b2a33"; g.fillRect(x,y,16,40); for(let j=0;j<5;j++){ g.fillStyle=j%2?"#7fd1b9":"#f2c94c"; g.fillRect(x+3,y+4+j*7,3,2); g.fillStyle="#4a4a56"; g.fillRect(x+8,y+4+j*7,5,2);} }
+  plant(30.5,22.6); shelf(28.2,21.4);
+  // lounge: sofa, water, coffee
+  g.fillStyle="#4f8f96"; g.fillRect(33*T,22.4*T,4*T,1.6*T); g.fillStyle="#6aaab0"; g.fillRect(33*T,21.8*T,4*T,0.8*T);
+  g.fillStyle="#d5e9f2"; g.fillRect(38.5*T,16*T,12,18); g.fillStyle="#7cc6e8"; g.fillRect(38.5*T+2,16*T+2,8,7);
+  g.fillStyle="#7a6a58"; g.fillRect(33*T,15.5*T,22,14); g.fillStyle="#f6efe0"; g.fillRect(33*T+3,15.5*T+3,16,8); // coffee machine
+  // media room: camera on tripod
+  { const x=37.6*T, y=6.6*T; g.fillStyle="#2b2a33"; g.fillRect(x,y,14,9); g.fillStyle="#7fd1b9"; g.fillRect(x+10,y+3,5,3); g.fillStyle="#4a4250"; g.fillRect(x+6,y+9,2,14); g.fillRect(x+1,y+21,12,2); }
 }
-const ZONES=[
-  {key:"media",x0:0,y0:0,x1:12,y1:8,c:["#ece4ff","#e2d7ff"],label:"미디어부서 · 스튜디오"},
-  {key:"edu",x0:12,y0:0,x1:24,y1:8,c:["#dcf6e8","#cdefdd"],label:"교육부서"},
-  {key:"strategy",x0:0,y0:8,x1:8,y1:16,c:["#ddedff","#cfe3ff"],label:"전략부서"},
-  {key:"app",x0:0,y0:16,x1:8,y1:24,c:["#ffe6da","#ffd9c8"],label:"앱개발부서"},
-  {key:"lounge",x0:8,y0:8,x1:16,y1:24,c:["#fff3dd","#fbe8c8"],label:"라운지"},
-  {key:"ceo",x0:16,y0:8,x1:24,y1:16,c:["#fff5c9","#ffedad"],label:"대표지원실"},
-  {key:"boss",x0:16,y0:16,x1:24,y1:24,c:["#fdeaf2","#f8dce9"],label:"대표실"}
-];
-const ZCOL={media:"#8b5cf6",edu:"#16a34a",strategy:"#2563eb",app:"#ea580c",lounge:"#b7791f",ceo:"#ca8a04",boss:"#db2777"};
-const HOME={hangyeol:[2.2,10],daon:[5.2,10],nuri:[2.2,13],roa:[5.2,13],
-  saebom:[14,2],raon:[17,2],boram:[20,2],ieum:[15.5,5],dasom:[18.5,5],
-  harang:[2,2],seoyun:[5,2],chaea:[8,2],gaon:[3.5,5],ideun:[6.5,5],bareum:[9.5,5],narae:[10.5,2],
-  haneul:[2.2,18],doyun:[5.2,18],byeol:[2.2,21],siu:[5.2,21],
-  garam:[18,11],dodam:[21,11]};
-const DOOR={media:[10.5,8.6],edu:[14,8.6],strategy:[8.6,12],app:[8.6,20],ceo:[15.4,12]};
-const HUBS=[[11,12],[13.5,14.5],[10.5,19],[13.5,21.5],[22,14.2]];
-// ---- static background ----
-const bg=document.createElement("canvas"); bg.width=SW; bg.height=SH; const bgx=bg.getContext("2d"); bgx.imageSmoothingEnabled=false;
-function skyMode(){ const h=kstParts().h; return h>=7&&h<17?"day":h>=17&&h<19?"dusk":"night"; }
-let lastSky="";
-function drawStatic(){
-  const g=bgx; g.clearRect(0,0,SW,SH); const mode=skyMode(); lastSky=mode;
-  const sky={day:["#bfe6ff","#eaf7ff"],dusk:["#c9b6ff","#ffd6b3"],night:["#27325e","#3f4f8a"]}[mode];
-  let gr=g.createLinearGradient(0,0,0,SH); gr.addColorStop(0,mode==="night"?"#e4e8fb":"#f4f8ff"); gr.addColorStop(1,mode==="night"?"#d6dcf5":"#e6f0fc"); g.fillStyle=gr; g.fillRect(0,0,SW,SH);
-  // floor tiles
-  ZONES.forEach(z=>{ for(let x=z.x0;x<z.x1;x++) for(let y=z.y0;y<z.y1;y++){ poly(g,[P(x,y),P(x+1,y),P(x+1,y+1),P(x,y+1)],z.c[(x+y)%2]); } });
-  // floor edge thickness
-  poly(g,[P(0,24),P(24,24),P(24,24,-6),P(0,24,-6)],"#d6c3a5"); poly(g,[P(24,0),P(24,24),P(24,24,-6),P(24,0,-6)],"#c4ae8c");
-  // back walls
-  poly(g,[P(0,0),P(24,0),P(24,0,WALLH),P(0,0,WALLH)],"#ffffff","rgba(60,50,80,.25)"); // right-back wall (along x)
-  poly(g,[P(0,0),P(0,24),P(0,24,WALLH),P(0,0,WALLH)],"#f3f5fb","rgba(60,50,80,.25)"); // left-back wall (along y)
-  // wall top caps
-  poly(g,[P(0,0,WALLH),P(24,0,WALLH),P(24,-.5,WALLH),P(0,-.5,WALLH)],"#d9dfee"); poly(g,[P(0,0,WALLH),P(0,24,WALLH),P(-.5,24,WALLH),P(-.5,0,WALLH)],"#cfd6e8");
-  // colored skirting per zone on walls
-  ZONES.filter(z=>z.y0===0).forEach(z=>poly(g,[P(z.x0,0),P(z.x1,0),P(z.x1,0,5),P(z.x0,0,5)],ZCOL[z.key]));
-  ZONES.filter(z=>z.x0===0).forEach(z=>poly(g,[P(0,z.y0),P(0,z.y1),P(0,z.y1,5),P(0,z.y0,5)],ZCOL[z.key]));
-  // windows
-  const winX=(x0,x1)=>poly(g,[P(x0,0,14),P(x1,0,14),P(x1,0,38),P(x0,0,38)],sky[0],"#9fb3d8");
-  const winY=(y0,y1)=>poly(g,[P(0,y0,14),P(0,y1,14),P(0,y1,38),P(0,y0,38)],sky[1],"#9fb3d8");
-  [[13,15],[21,23]].forEach(([a,b])=>winX(a,b)); [[9,11],[17,19]].forEach(([a,b])=>winY(a,b));
-  // wall decor: green screen (media, left wall), ON AIR, whiteboard (edu), bookshelf, kanban (strategy), server monitors (app)
-  poly(g,[P(1,0,8),P(5,0,8),P(5,0,40),P(1,0,40)],"#34c46b","#1f8f4a"); // green screen on back wall
-  poly(g,[P(6.5,0,30),P(9,0,30),P(9,0,38),P(6.5,0,38)],"#2b2f45"); poly(g,[P(7,0,32),P(8.5,0,32),P(8.5,0,36),P(7,0,36)],"#ff5a6a");
-  poly(g,[P(16,0,16),P(20,0,16),P(20,0,38),P(16,0,38)],"#ffffff","#9aa6c0");
-  [["#2563eb",16.6,30],["#16a34a",17.4,26],["#ea580c",18.4,32],["#8b5cf6",19,24]].forEach(([c,x,z])=>poly(g,[P(x,0,z),P(x+.6,0,z),P(x+.6,0,z+3),P(x,0,z+3)],c));
-  poly(g,[P(0,9.5,14),P(0,15,14),P(0,15,38),P(0,9.5,38)],"#ffffff","#9aa6c0");
-  ["#ffe066","#ffb3c1","#a5e8c0","#b8d4ff"].forEach((c,i)=>{ for(let k=0;k<3;k++) poly(g,[P(0,10+i*1.25,18+k*6),P(0,10.9+i*1.25,18+k*6),P(0,10.9+i*1.25,22+k*6),P(0,10+i*1.25,22+k*6)],c); });
-  poly(g,[P(0,20.5,14),P(0,23.5,14),P(0,23.5,36),P(0,20.5,36)],"#1e2438","#11162a");
-  for(let k=0;k<5;k++) poly(g,[P(0,20.8,30-k*3.5),P(0,22.6-(k%3)*.5,30-k*3.5),P(0,22.6-(k%3)*.5,31.5-k*3.5),P(0,20.8,31.5-k*3.5)],["#7dd3fc","#86efac","#fde047","#c4b5fd","#fca5a5"][k]);
-  // clock on edu wall
-  g.fillStyle="#fff"; const [cx,cy]=P(22.5,0,32); g.beginPath(); g.arc(cx,cy,4,0,7); g.fill(); g.strokeStyle="#334"; g.stroke(); g.fillStyle="#334"; g.fillRect(cx,cy-3,1,3); g.fillRect(cx,cy,2,1);
-  // partitions (low glass walls with door gaps)
-  const wallX=(x,y0,y1)=>box(g,x-.12,y0,.24,y1-y0,8,"#ffffff",0,"rgba(80,90,120,.35)");
-  const wallY=(y,x0,x1)=>box(g,x0,y-.12,x1-x0,.24,8,"#ffffff",0,"rgba(80,90,120,.35)");
-  wallY(8,0,9.5); wallY(8,11.5,13); wallY(8,15,24);
-  wallY(16,0,6.5); wallY(16,18.5,24);
-  wallX(12,0,3); wallX(12,5,8);
-  wallX(8,8,11); wallX(8,13,19); wallX(8,21,24);
-  wallX(16,8,11); wallX(16,13,24);
-  // rugs in lounge & boss
-  poly(g,[P(9.5,16.5),P(14.5,16.5),P(14.5,22.5),P(9.5,22.5)],"#ffd6a5"); poly(g,[P(10,17),P(14,17),P(14,22),P(10,22)],"#ffe8c7");
-  poly(g,[P(17.5,17.5),P(22.5,17.5),P(22.5,22.5),P(17.5,22.5)],"#f7c6da");
+drawBackground();
+
+// Pixel sprite (12x16) drawn per frame
+function drawPerson(x,y,p,frame,dir,sleeping){
+  x=Math.round(x); y=Math.round(y);
+  ctx.fillStyle="rgba(0,0,0,.18)"; ctx.fillRect(x-5,y+7,10,3);
+  const bob = frame%2 && !sleeping ? 1:0;
+  // legs
+  ctx.fillStyle="#2f2f3a"; ctx.fillRect(x-3,y+2,2,5-bob); ctx.fillRect(x+1,y+2,2,4+bob);
+  // body
+  ctx.fillStyle=p.shirt; ctx.fillRect(x-4,y-5,8,8);
+  ctx.fillStyle="rgba(255,255,255,.25)"; ctx.fillRect(x-4,y-5,8,2);
+  // arms
+  ctx.fillStyle="#f1c9a5"; ctx.fillRect(x-5,y-3+bob,1,4); ctx.fillRect(x+4,y-3+(1-bob),1,4);
+  // head
+  ctx.fillStyle="#f6d2b0"; ctx.fillRect(x-4,y-13,8,8);
+  ctx.fillStyle=p.hair; ctx.fillRect(x-5,y-14,10,4); ctx.fillRect(x-5,y-11,2,4);
+  if(dir!=="up"){ ctx.fillStyle="#2b2a33"; if(sleeping){ ctx.fillRect(x-2,y-9,2,1); ctx.fillRect(x+1,y-9,2,1);} else { ctx.fillRect(x-2,y-10,1,2); ctx.fillRect(x+2,y-10,1,2);} ctx.fillStyle="#ef9a9a"; ctx.fillRect(x-3,y-8,1,1); ctx.fillRect(x+3,y-8,1,1); }
+  else { ctx.fillStyle=p.hair; ctx.fillRect(x-4,y-11,8,5); }
 }
-drawStatic();
-// ---- props & actors drawn in depth order each frame ----
-function plant(g,x,y){ box(g,x-.3,y-.3,.6,.6,6,"#e9a37a"); const [px,py]=P(x,y,6); g.fillStyle="#3fbf6e"; g.fillRect(px-4,py-7,9,6); g.fillStyle="#2ea35a"; g.fillRect(px-2,py-10,5,4); g.fillStyle="#6bd893"; g.fillRect(px-3,py-6,2,2); }
-const PROPS=[
-  {k:6.5+6.5, d:g=>{ box(g,6,6,1,1,6,"#3b3f55"); const [x,y]=P(6.5,6.5,6); g.fillStyle="#2b2f45"; g.fillRect(x-3,y-8,7,5); g.fillStyle="#7dd3fc"; g.fillRect(x+3,y-7,2,2); }}, // camera
-  {k:11+7, d:g=>{ const [x,y]=P(11,7,0); g.fillStyle="#2b2f45"; g.fillRect(x,y-22,1,22); g.strokeStyle="#ffe58a"; g.lineWidth=2; g.beginPath(); g.arc(x,y-25,5,0,7); g.stroke(); }}, // ring light
-  {k:23+1, d:g=>{ box(g,22.2,.4,1.4,1,24,"#b07a4f"); const cs=["#ef4444","#3b82f6","#f59e0b","#10b981","#8b5cf6"]; for(let r=0;r<3;r++) for(let i=0;i<4;i++){ const [x,y]=P(22.5+i*.25,1.4,6+r*7); g.fillStyle=cs[(r+i)%5]; g.fillRect(x,y-5,2,5); } }}, // bookshelf
-  {k:1.5+17.5, d:g=>{ box(g,.4,16.6,1,1.6,22,"#2a3150"); for(let k=0;k<5;k++){ const [x,y]=P(1.4,17+k*.25,4+k*3.5); g.fillStyle=(k%2?"#4ade80":"#fde047"); g.fillRect(x,y,2,1);} }}, // server
-  // lounge
-  {k:10.5+18, d:g=>{ box(g,9.8,17.8,3.6,1,4,"#60a5fa"); box(g,9.8,17.8,3.6,.35,9,"#3b82f6"); }}, // sofa
-  {k:12+20.5, d:g=>{ box(g,11.2,19.8,1.6,1.4,7,"#ffffff"); }}, // coffee table
-  {k:15.2+9.2, d:g=>{ box(g,14.6,8.6,1,1,15,"#64748b"); const [x,y]=P(15.1,9.6,10); g.fillStyle="#fef3c7"; g.fillRect(x-3,y-2,4,3); }}, // coffee machine
-  {k:13+11.5, d:g=>{ box(g,12,11,2,1.4,7,"#fde68a"); }}, // lounge table
-  {k:22.5+14.5, d:g=>{ box(g,22,13.8,1.2,1.2,12,"#94a3b8"); }}, // ceo cabinet
-  // boss office
-  {k:19.6+19.8, d:g=>{ box(g,18.4,19.2,2.6,1.2,8,"#a16207"); box(g,19.2,19.4,.8,.5,6,"#e2e8f0",8); }}, // boss desk
-  {k:19.6+18.5, d:g=>{ box(g,19.3,18.2,.8,.7,12,"#2563eb"); }}, // boss chair
-  {k:21+22.5, d:g=>{ box(g,20,22,2.5,.9,5,"#f472b6"); box(g,20,22,2.5,.3,9,"#ec4899"); }}, // boss sofa
-  {k:9+9, d:g=>plant(g,9,9)},{k:15.5+23.3, d:g=>plant(g,15.5,23.3)},{k:23.3+23.3,d:g=>plant(g,23.3,23.3)},{k:1+7.3,d:g=>plant(g,1,7.3)},{k:23.3+7.3,d:g=>plant(g,23.3,7.3)},{k:7.3+23.3,d:g=>plant(g,7.3,23.3)},{k:23.3+9,d:g=>plant(g,23.3,9)}
-];
-// pixel character sprite at foot (sx,sy)
-function sprite(g,sx,sy,m,o={}){
-  const look=LOOK[m.id]||["short"], st=look[0], acc=look.slice(1), skin=SKIN[MEMBERS.indexOf(m)%SKIN.length], hair=m.hair, shirt=m.shirt;
-  const R=(x,y,w,h,c)=>{ g.fillStyle=c; g.fillRect(sx+x,sy+y,w,h); };
-  const t=o.t||0, sit=o.sit, f=Math.floor((o.walk||0))%2;
-  const bob = sit? (Math.floor(t*2+sx)%2) : 0;
-  R(-4,-1,9,2,"rgba(40,40,70,.18)");
-  if(!sit){ R(-3,-4,2,4,"#3b4566"); R(1,-4,2,4,"#3b4566"); if(f){ R(-3,-1,2,1,"#22283d"); } else { R(1,-1,2,1,"#22283d"); } }
-  const by = sit?-3:-4; // body bottom
-  if(st==="long") R(-4,by-14+bob,9,9,hair);
-  R(-3,by-6+bob,7,6,shirt); R(-3,by-6+bob,7,1,shade(shirt,.18)); R(-4,by-5+bob,1,4,shade(shirt,-.1)); R(4,by-5+bob,1,4,shade(shirt,-.1));
-  R(-4,by-1+bob,1,1,skin); R(4,by-1+bob,1,1,skin);
-  const hy=by-13+bob; // head top
-  R(-3,hy,7,7,skin);
-  // hair
-  if(st==="short"||st==="spiky"||st==="pony"||st==="bun"){ R(-3,hy-1,7,3,hair); R(-4,hy,1,3,hair); R(4,hy,1,2,hair); }
-  if(st==="bob"||st==="long"){ R(-4,hy-1,9,3,hair); R(-4,hy+2,1,5,hair); R(4,hy+2,1,5,hair); }
-  if(st==="spiky"){ R(-3,hy-2,1,1,hair); R(-1,hy-3,1,2,hair); R(1,hy-2,1,1,hair); R(3,hy-3,1,2,hair); }
-  if(st==="bun") R(-1,hy-3,3,2,hair);
-  if(st==="pony") R(5,hy+1,1,4,hair);
-  // face
-  if(o.sleep){ R(-2,hy+4,2,1,"#3a3350"); R(1,hy+4,2,1,"#3a3350"); }
-  else { const blink=Math.sin(t*1.3+sx*7)>.97; R(-2,hy+3,1,blink?1:2,"#2d2a44"); R(2,hy+3,1,blink?1:2,"#2d2a44"); }
-  R(-3,hy+5,1,1,"#ffb3b3"); R(3,hy+5,1,1,"#ffb3b3");
-  if(acc.includes("glasses")){ R(-3,hy+3,3,1,"rgba(40,40,70,.55)"); R(1,hy+3,3,1,"rgba(40,40,70,.55)"); }
-  if(acc.includes("phones")){ R(-4,hy-2,9,1,"#2d2a44"); R(-5,hy+2,2,3,"#ef4444"); R(4,hy+2,2,3,"#ef4444"); }
-  if(acc.includes("beret")) { R(-4,hy-2,8,2,"#ef4444"); }
-  if(acc.includes("cap")) { R(-3,hy-2,7,2,"#facc15"); R(4,hy-1,3,1,"#facc15"); }
-  if(o.sel){ g.strokeStyle="#f59e0b"; g.lineWidth=1; g.strokeRect(sx-6.5,sy-(sit?20:22)+bob,14,sit?19:22); }
+
+const actors = MEMBERS.map(m=>({m, x:m.desk[0]*T+8, y:m.desk[1]*T+20, home:[m.desk[0]*T+8,m.desk[1]*T+20], path:[], wait:2+Math.random()*6, dir:"down", frame:0, sel:false}));
+function routeTo(a, tx, ty){
+  const hallY = 11.5*T;
+  a.path = [[a.x,hallY],[tx,hallY],[tx,ty]];
 }
-function desk(g,x,y,col){ box(g,x+.35,y+.25,1.3,.7,7,"#ffffff","rgba(80,90,120,.4)"); box(g,x+.35,y+.25,1.3,.12,7,col); const [mx,my]=P(x+.95,y+.45,7); g.fillStyle="#cbd5e1"; g.fillRect(mx-4,my-7,8,6); g.fillStyle=col; g.fillRect(mx-1,my-5,2,2); g.fillStyle="#94a3b8"; g.fillRect(mx-1,my-1,2,1); }
-const actors=MEMBERS.map(m=>{ const h=HOME[m.id]||[12,12]; return {m, hx:h[0], hy:h[1], x:h[0], y:h[1], path:[], state:"desk", wait:3+Math.random()*12, walk:0, sel:false}; });
+function pickTrip(a){
+  const r=Math.random();
+  let spot;
+  if(r<.35) spot = SPOTS.meet[Math.floor(Math.random()*SPOTS.meet.length)];
+  else if(r<.6) spot = SPOTS.lounge[Math.floor(Math.random()*SPOTS.lounge.length)];
+  else if(r<.75) spot = SPOTS.ceo[Math.floor(Math.random()*SPOTS.ceo.length)];
+  else spot = SPOTS.hall[Math.floor(Math.random()*SPOTS.hall.length)];
+  routeTo(a, spot[0]*T+8, spot[1]*T+8); a.away=true;
+}
 function working(){ const k=kstParts(); const wk=!["Sat","Sun"].includes(k.wd); const st=office.status||""; if(st==="근무 중") return true; return wk && k.h>=8 && k.h<18; }
-let lastT=performance.now(), tick=0;
+
+let last=performance.now(), tick=0;
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-function update(a,dt,awake){
-  if(reduce||!awake){ a.x=a.hx; a.y=a.hy; a.path=[]; a.state="desk"; return; }
-  a.wait-=dt;
-  if(a.state==="desk" && a.wait<=0){
-    if(Math.random()<.4 && a.m.dept!=="boss"){ const door=DOOR[a.m.dept]; const hub=HUBS[Math.floor(Math.random()*HUBS.length)]; a.path=[[a.hx,a.hy+1.2],door,[hub[0]+Math.random()-.5,hub[1]+Math.random()-.5]]; a.state="out"; }
-    else a.wait=5+Math.random()*10;
-  }
-  if(a.path.length){ const [tx,ty]=a.path[0]; const dx=tx-a.x, dy=ty-a.y, d=Math.hypot(dx,dy), sp=2.2*dt; a.walk+=dt*8;
-    if(d<=sp){ a.x=tx; a.y=ty; a.path.shift(); if(!a.path.length){ if(a.state==="out"){ a.state="hub"; a.wait=3+Math.random()*5; } else { a.state="desk"; a.wait=6+Math.random()*12; } } }
-    else { a.x+=dx/d*sp; a.y+=dy/d*sp; } }
-  if(a.state==="hub" && a.wait<=0){ const door=DOOR[a.m.dept]; a.path=[door,[a.hx,a.hy+1.2],[a.hx,a.hy]]; a.state="back"; }
-}
 function step(now){
-  const dt=Math.min(.05,(now-lastT)/1000); lastT=now; tick+=dt;
-  const awake=working();
-  if(skyMode()!==lastSky) drawStatic();
-  ctx.clearRect(0,0,SW,SH); ctx.drawImage(bg,0,0);
-  actors.forEach(a=>update(a,dt,awake));
-  const items=[];
-  PROPS.forEach(p=>items.push({k:p.k,d:p.d}));
-  actors.forEach(a=>{ const col=ZCOL[a.m.dept]||"#999"; items.push({k:a.hx+a.hy+1.4, d:g=>desk(g,a.hx,a.hy,col)});
-    const atDesk=a.state==="desk"&&!a.path.length;
-    items.push({k:a.x+a.y+(atDesk?0:.6), d:g=>{ const [sx,sy]=P(a.x,a.y); sprite(g,sx,sy,a.m,{sit:atDesk,t:tick,walk:a.walk,sleep:!awake,sel:a.sel}); if(atDesk&&awake&&Math.floor(tick*3+a.hx)%3===0){ g.fillStyle="#38bdf8"; g.fillRect(sx+5,sy-18,1,1); g.fillRect(sx+7,sy-19,1,1);} if(!awake&&atDesk){ g.fillStyle="#fff"; g.fillRect(sx+5,sy-20-Math.floor(tick*4%4),2,1);} }}); });
-  items.sort((a,b)=>a.k-b.k).forEach(it=>it.d(ctx));
-  $("#dim").style.opacity = awake? 0 : .22;
+  const dt=Math.min(.05,(now-last)/1000); last=now; tick+=dt;
+  const awake = working();
+  ctx.drawImage(bg,0,0);
+  // media ghosts (other window)
+  MEDIA_GHOSTS.forEach((p,i)=>{ ctx.globalAlpha=.55; drawPerson(p.x*T+8,p.y*T+20,p,Math.floor(tick*2+i),"up",!awake); ctx.globalAlpha=1; });
+  actors.forEach(a=>{
+    if(!reduce && awake){
+      if(a.path.length){
+        const [tx,ty]=a.path[0]; const dx=tx-a.x, dy=ty-a.y, d=Math.hypot(dx,dy), sp=34*dt;
+        if(d<=sp){ a.x=tx; a.y=ty; a.path.shift(); if(!a.path.length) a.wait = a.away? 3+Math.random()*5 : 6+Math.random()*10; }
+        else { a.x+=dx/d*sp; a.y+=dy/d*sp; a.dir = Math.abs(dx)>Math.abs(dy)?(dx>0?"right":"left"):(dy>0?"down":"up"); a.frame = Math.floor(tick*6); }
+      } else {
+        a.wait-=dt; a.frame=0;
+        if(a.wait<=0){ if(a.away){ routeTo(a,a.home[0],a.home[1]); a.away=false; } else if(Math.random()<.5) pickTrip(a); else a.wait=4+Math.random()*6; }
+      }
+    } else if(!awake && (a.x!==a.home[0]||a.y!==a.home[1])) { a.x=a.home[0]; a.y=a.home[1]; a.path=[]; a.away=false; }
+    const atDesk = !a.path.length && !a.away;
+    drawPerson(a.x,a.y,a.m, a.frame, atDesk?"up":a.dir, !awake);
+    if(a.sel){ ctx.strokeStyle="#f2c94c"; ctx.lineWidth=2; ctx.strokeRect(Math.round(a.x)-8,Math.round(a.y)-17,16,27); }
+    if(!awake){ ctx.fillStyle="#fffdf7"; ctx.font="bold 8px monospace"; ctx.fillText("z",a.x+5,a.y-16-((tick*8)%6)); }
+    else if(atDesk && Math.floor(tick*3+a.home[0])%2===0){ ctx.fillStyle="#7fd1b9"; ctx.fillRect(a.home[0]-4,a.home[1]-30,8,1); }
+  });
+  $("#dim").style.opacity = awake? 0 : 1;
   placeBubbles();
   requestAnimationFrame(step);
 }
-// ---------- Overlays: zone labels + speech bubbles ----------
+
+// ---------- Overlays: room labels + speech bubbles ----------
 const overlay = $("#overlay");
-ZONES.forEach(z=>{ if(z.key==="lounge") return; const [lx,ly]= z.y0===0 ? P(z.x0+.6,z.y0+.2,WALLH+4) : z.x0===0 ? P(z.x0+.2,z.y0+.6,WALLH+4) : P((z.x0+z.x1)/2,(z.y0+z.y1)/2-1.5,26);
-  const el=document.createElement("div"); el.className="lbl"; el.textContent=z.label; el.style.left=(lx/SW*100)+"%"; el.style.top=(ly/SH*100)+"%"; el.style.setProperty("--c",ZCOL[z.key]); overlay.appendChild(el); });
+ROOMS.forEach(r=>{ const el=document.createElement("div"); el.className="lbl"+(r.media?" media":""); el.textContent=r.label; el.style.left=((r.x+r.w/2)*T/640*100)+"%"; el.style.top=(((r.y)*T+22)/400*100)+"%"; overlay.appendChild(el); });
 const bubbles = {};
 actors.forEach(a=>{ const b=document.createElement("div"); b.className="bub"; b.style.opacity=0; overlay.appendChild(b); bubbles[a.m.id]=b; });
 let bubbleTurn=0, bubbleClock=0;
-function latestLine(m){ const f = feed.find(e=>e.member===m.name); return f? f.text : null; }
-function headPos(a){ const [sx,sy]=P(a.x,a.y); return [sx, sy-(a.state==="desk"&&!a.path.length?19:21)]; }
+function latestLine(m){
+  const f = feed.find(e=>e.member===m.name);
+  if(f) return f.text;
+  return null;
+}
 function placeBubbles(){
   const awake = working();
   bubbleClock += 1/60;
   if(bubbleClock>4){ bubbleClock=0; bubbleTurn=(bubbleTurn+1)%actors.length; }
   actors.forEach((a,i)=>{
     const b=bubbles[a.m.id];
-    const show = awake && (i===bubbleTurn || i===(bubbleTurn+7)%actors.length || a.sel);
+    const show = awake && (i===bubbleTurn || i===(bubbleTurn+4)%actors.length || a.sel);
     const line = latestLine(a.m);
-    if(show && line){ const [hx,hy]=headPos(a); b.textContent=`${a.m.name}: ${line}`; b.style.left=(hx/SW*100)+"%"; b.style.top=(hy/SH*100)+"%"; b.style.opacity=1; }
+    if(show && line){ b.textContent=`${a.m.name}: ${line}`; b.style.left=(a.x/640*100)+"%"; b.style.top=((a.y-18)/400*100)+"%"; b.style.opacity=1; }
     else b.style.opacity=0;
   });
 }
+
+// click to inspect
 cv.addEventListener("click",e=>{
-  const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*SW, y=(e.clientY-r.top)/r.height*SH;
-  let best=null,bd=12;
-  actors.forEach(a=>{ const [hx,hy]=headPos(a); const d=Math.hypot(hx-x,(hy+7)-y); if(d<bd){bd=d;best=a;} });
+  const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*640, y=(e.clientY-r.top)/r.height*400;
+  let best=null,bd=18;
+  actors.forEach(a=>{ const d=Math.hypot(a.x-x,(a.y-6)-y); if(d<bd){bd=d;best=a;} });
   actors.forEach(a=>a.sel=false);
   if(!best){ $("#who").hidden=true; return; }
   best.sel=true; const m=best.m;
@@ -749,8 +713,8 @@ function taskCard(t, withActs){
   const docBtn = t.docId ? `<button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button>` : "";
   let acts = "";
   if(withActs==="approve" && canWrite!==false) acts = `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}">승인</button><input class="revnote" id="rej-${esc(t._id)}" placeholder="반려 이유·바라는 방향 (선택)" aria-label="반려 이유"><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>`;
-  if(withActs==="confirm" && canWrite!==false) acts = `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button><input class="revnote" id="rev-${esc(t._id)}" placeholder="수정할 점 (선택)" aria-label="수정할 점"><button class="btn ghost" data-act="revise" data-id="${esc(t._id)}">수정 요청</button>`;
-  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChip(t.status)}${t.review?`<span class="st ${t.review.result==="보류"?"st-failed":"st-done"}" title="${esc(t.review.notes||"")}">부서 검수 ${esc(t.review.result||"")} · ${esc(t.review.by||"")}</span>`:""}${t.mergeStatus?`<span class="st ${t.mergeStatus==="merged"?"st-done":"st-failed"}">${t.mergeStatus==="merged"?"병합 완료":"병합 보류"}</span>`:""}${t.finalReview?`<span class="st ${t.finalReview.result==="통과"?"st-done":"st-failed"}" title="${esc(t.finalReview.notes||"")}">총괄 검수 ${esc(t.finalReview.result||"")} · ${esc(t.finalReview.by||"")}</span>`:""}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${t.by==="대표"?" · 대표 지시":""}</span></div>
+  if(withActs==="confirm" && canWrite!==false) acts = `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button><input class="revnote" id="rev-${esc(t._id)}" placeholder="수정할 점 · 반려 이유 (선택)" aria-label="수정할 점 또는 반려 이유"><button class="btn ghost" data-act="revise" data-id="${esc(t._id)}">수정 요청</button><button class="btn ghost danger" data-act="reject" data-id="${esc(t._id)}" title="처음부터 새로 작성해요">반려 · 새로 작성</button>`;
+  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChip(t.status)}${t.review?`<span class="st ${t.review.result==="보류"?"st-failed":"st-done"}" title="${esc(t.review.notes||"")}">부서 검수 ${esc(t.review.result||"")} · ${esc(t.review.by||"")}</span>`:""}${t.mergeStatus?`<span class="st ${t.mergeStatus==="merged"?"st-done":"st-failed"}">${t.mergeStatus==="merged"?"병합 완료":"병합 보류"}</span>`:""}${t.finalReview?`<span class="st ${t.finalReview.result==="통과"?"st-done":"st-failed"}" title="${esc(t.finalReview.notes||"")}">총괄 검수 ${esc(t.finalReview.result||"")} · ${esc(t.finalReview.by||"")}</span>`:""}${((t.reviseCount||0)+(t.rejectCount||0))>=1?`<span class="st ${((t.reviseCount||0)+(t.rejectCount||0))>=2?"st-revise":"st-proposed"}" title="2번 이상이면 부서 전체가 의논해서 고쳐요">수정·반려 ${(t.reviseCount||0)+(t.rejectCount||0)}회${((t.reviseCount||0)+(t.rejectCount||0))>=2?" · 부서 회의":""}</span>`:""}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${t.by==="대표"?" · 대표 지시":""}</span></div>
     <div class="title">${esc(t.title)}</div>${t.detail?`<div class="det">${esc(t.detail)}</div>`:""}${attList(t.attachments)}
     ${(acts||link||docBtn)?`<div class="acts">${acts}${docBtn}${link}</div>`:""}</div>`;
 }
@@ -770,7 +734,8 @@ function render(){
   $("#confirmList").innerHTML = confirms.length ? confirms.map(t=>taskCard(t,"confirm")).join("") : `<div class="empty">컨펌할 결과물이 없어요. 부서 검수와 총괄 검수를 통과한 결과물이 여기로 와요.</div>`;
   $("#approveList").innerHTML = pending.length ? pending.map(t=>taskCard(t,"approve")).join("") : `<div class="empty">결재할 기획안이 없어요. 교육부서가 출근하면 새 수업 아이디어를 올려요.</div>`;
   const rest = tasks.filter(t=>!["proposed","confirm"].includes(t.status));
-  const active = rest.filter(t=>!["done","rejected"].includes(t.status)), closed = rest.filter(t=>["done","rejected"].includes(t.status));
+  const isClosed = t=>t.status==="done" || (t.status==="rejected" && !["requested","doing"].includes(t.rewrite));
+  const active = rest.filter(t=>!isClosed(t)), closed = rest.filter(isClosed);
   $("#taskList").innerHTML = (active.length ? active.map(t=>taskCard(t,false)).join("") : `<div class="empty">지금 진행 중인 업무가 없어요.</div>`)
     + (closed.length ? `<button class="more" type="button" data-toggle="closedTasks">${showClosed.closedTasks?"완료·반려 숨기기":`완료·반려된 업무 ${closed.length}건 보기`}</button>${showClosed.closedTasks?`<div class="list" style="opacity:.75">${closed.map(t=>taskCard(t,false)).join("")}</div>`:""}` : "");
   const sc = schedule.filter(s=>s.date>=today).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
@@ -785,10 +750,10 @@ function render(){
       ${a.note?`<div class="meta">메모: ${esc(a.note)}</div>`:""}
       ${links?`<div class="links">${links}</div>`:""}</div>`;
   }).join("") : `<div class="empty">앱 목록을 불러오는 중이에요.</div>`;
-  const nOpen = notices.filter(n=>!["done","failed"].includes(n.status) || (Date.now()-new Date(n.processedAt||n.createdAt))<12*3600e3), nOld = notices.filter(n=>!nOpen.includes(n));
+  const nOpen = notices.filter(n=>n.status!=="done"), nOld = notices.filter(n=>n.status==="done");
   const nShow = showClosed.notices ? notices.slice(0,10) : nOpen.slice(0,5);
   $("#urgList").innerHTML = nShow.map(n=>`<div class="item"><div class="h"><span class="st st-${esc(n.status)}">${esc(NSTATUS[n.status]||n.status)}</span><span class="note">${esc(fmtDay(n.createdAt))} ${esc(fmtTime(n.createdAt))}${n.processedAt?" → "+esc(fmtTime(n.processedAt))+" 완료":""}</span></div><div class="det" style="color:var(--ink)">${esc(n.text)}</div>${attList(n.attachments)}${n.result?`<div class="det">보고: ${esc(n.result)}</div>`:""}${n.docId?`<div class="acts"><button class="btn ghost" data-doc="${esc(n.docId)}">결과 자료 보기</button></div>`:""}</div>`).join("");
-  if(nOld.length) $("#urgList").insertAdjacentHTML("beforeend", `<button class="more" type="button" data-toggle="notices">${showClosed.notices?"지난 공지 숨기기":`지난 공지 ${nOld.length}건 보기`}</button>`);
+  if(nOld.length) $("#urgList").insertAdjacentHTML("beforeend", `<button class="more" type="button" data-toggle="notices">${showClosed.notices?"처리 끝난 공지 숨기기":`처리 끝난 공지 ${nOld.length}건 보기`}</button>`);
 }
 function openDoc(id){
   const d = docs.find(x=>x._id===id); if(!d) return;
@@ -811,8 +776,8 @@ $("#orgChart").innerHTML = ["strategy","edu","app","media"].map(k=>{
   <div class="team"><span></span><div><b>대표 · 나</b><div>기획안 승인·반려, 직접 지시</div></div></div>
   <div class="team"><canvas class="ava" width="96" height="96" data-ava="dodam"></canvas><div><b>비서실 · 도담</b><div>하루 업무 마감, 브리핑 작성</div></div></div></div>`;
 document.querySelectorAll("canvas[data-ava]").forEach(c=>{
-  const m=MEMBERS.find(x=>x.id===c.dataset.ava); if(!m) return; c.width=20; c.height=20; const g=c.getContext("2d"); g.imageSmoothingEnabled=false;
-  sprite(g,10,22,m,{t:0});
+  const m=MEMBERS.find(x=>x.id===c.dataset.ava); if(!m) return; c.width=16; c.height=20; const g=c.getContext("2d");
+  const x=8,y=15; g.fillStyle="#2f2f3a"; g.fillRect(x-3,y+2,2,4); g.fillRect(x+1,y+2,2,4); g.fillStyle=m.shirt; g.fillRect(x-4,y-5,8,8); g.fillStyle="#f6d2b0"; g.fillRect(x-4,y-13,8,8); g.fillStyle=m.hair; g.fillRect(x-5,y-14,10,4); g.fillRect(x-5,y-11,2,4); g.fillStyle="#2b2a33"; g.fillRect(x-2,y-10,1,2); g.fillRect(x+2,y-10,1,2);
 });
 
 // ---------- CEO orders & approvals ----------
@@ -825,14 +790,16 @@ document.addEventListener("click", async e=>{
   const status = {approve:"approved", reject:"rejected", confirm:"done", revise:"revise"}[act];
   const patch = {status, updatedAt:now, decidedBy:"대표"};
   if(act==="confirm") patch.confirmedAt = now;
-  if(act==="revise"){ const v=(document.getElementById("rev-"+b.dataset.id)?.value||"").trim(); patch.reviseNote = v || "대표님이 수정을 요청했어요"; patch.revisedAt = now; }
-  if(act==="reject"){ const v=(document.getElementById("rej-"+b.dataset.id)?.value||"").trim(); if(v) patch.rejectNote = v; patch.rejectedAt = now; }
+  const t0 = tasks.find(x=>x._id===b.dataset.id)||{};
+  if(act==="revise"){ const v=(document.getElementById("rev-"+b.dataset.id)?.value||"").trim(); patch.reviseNote = v || "대표님이 수정을 요청했어요"; patch.revisedAt = now; patch.reviseCount=(t0.reviseCount||0)+1; patch.reviseHistory=[...(Array.isArray(t0.reviseHistory)?t0.reviseHistory:[]), {at:now, note:patch.reviseNote}].slice(-10); }
+  const rejResult = act==="reject" && ["confirm","final","done"].includes(t0.status);
+  if(act==="reject"){ const v=(document.getElementById("rej-"+b.dataset.id)?.value||document.getElementById("rev-"+b.dataset.id)?.value||"").trim(); if(v) patch.rejectNote = v; patch.rejectedAt = now; patch.rejectCount=(t0.rejectCount||0)+1; patch.rejectStage = rejResult ? "result" : "proposal"; if(rejResult){ patch.rewrite = "requested"; patch.rejectHistory=[...(Array.isArray(t0.rejectHistory)?t0.rejectHistory:[]), {at:now, note:v||"대표님이 반려했어요"}].slice(-10); } }
   try{ await dbRef.doc("tasks/"+b.dataset.id).update(patch);
     const t = tasks.find(x=>x._id===b.dataset.id);
     const later = "다음 정기 점검(매시 7분)에 처리돼요.";
     if(act==="confirm" && t && t.branch){ const r = await wakeOffice("merge-"+b.dataset.id); $("#orderMsg").textContent = r==="ok" ? "컨펌했어요. 앱개발부서가 지금 병합을 시작해요." : "컨펌했어요. "+later; }
     if(act==="revise"){ $("#orderMsg").textContent="수정 요청을 보냈어요. 담당 팀을 부르는 중…"; const r = await wakeOffice("revise-"+b.dataset.id); $("#orderMsg").textContent = r==="ok" ? "담당 팀이 바로 고치기 시작했어요. 다 고치면 검수를 거쳐 다시 컨펌 대기로 올라와요." : "수정 요청을 남겼어요. "+later; }
-    if(act==="reject"){ $("#orderMsg").textContent="반려했어요. 담당 팀을 부르는 중…"; const r = await wakeOffice("reject-"+b.dataset.id); $("#orderMsg").textContent = r==="ok" ? "반려 이유를 반영한 새 기획안을 바로 만들기 시작했어요." : "반려했어요. 반려 이유를 반영한 새 기획안은 "+later; } }
+    if(act==="reject"){ $("#orderMsg").textContent="반려했어요. 담당 팀을 부르는 중…"; const r = await wakeOffice("reject-"+b.dataset.id); $("#orderMsg").textContent = rejResult ? (r==="ok" ? "반려했어요. 담당 부서가 반려 이유를 반영해 처음부터 새로 작성하기 시작했어요. 검수를 거쳐 다시 컨펌 대기로 올라와요." : "반려했어요. 새로 작성은 "+later) : (r==="ok" ? "반려 이유를 반영한 새 기획안을 바로 만들기 시작했어요." : "반려했어요. 반려 이유를 반영한 새 기획안은 "+later); } }
   catch(err){ b.disabled=false; $("#orderMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; }
 });
 // ---------- Classes (내 수업 일정) & today board ----------
@@ -895,7 +862,7 @@ document.addEventListener("click", async e=>{
   b.disabled=true; try{ await dbRef.doc("classes/"+b.dataset.clsdel).update({status:"canceled", updatedAt:new Date().toISOString()}); }catch(_){ b.disabled=false; }
 });
 function miniTask(t, kind){
-  const acts = canWrite===false ? "" : kind==="confirm" ? `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button>` : kind==="approve" ? `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}">승인</button><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>` : "";
+  const acts = canWrite===false ? "" : kind==="confirm" ? `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button><button class="btn ghost danger" data-act="reject" data-id="${esc(t._id)}" title="처음부터 새로 작성해요">반려</button>` : kind==="approve" ? `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}">승인</button><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>` : "";
   const doc = t.docId ? `<button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button>` : "";
   return `<div class="mini"><div class="m">${deptChip(t.dept)}${kind==="order"?stChip(t.status):""}<span>${esc(fmtDay(t.updatedAt||t.createdAt))}</span></div><div class="t">${esc(t.title)}</div>${(acts||doc)?`<div class="acts">${acts}${doc}</div>`:""}</div>`;
 }
