@@ -68,7 +68,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .chip{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;color:#fff;white-space:nowrap}
 .d-app{background:var(--app)}.d-edu{background:var(--edu)}.d-media{background:var(--media)}.d-strategy{background:var(--strat)}.d-ceo{background:var(--ceo)}
 .st{font-size:11px;padding:1px 7px;border-radius:999px;border:1.5px solid currentColor;white-space:nowrap}
-.st-proposed{color:var(--warn)}.st-approved{color:var(--strat)}.st-doing{color:var(--media)}.st-done{color:var(--ok)}.st-rejected{color:var(--bad)}.st-handoff{color:var(--media)}
+.st-proposed{color:var(--warn)}.st-confirm{color:var(--accent)}.st-final{color:var(--media)}.st-revise{color:var(--bad)}.st-approved{color:var(--strat)}.st-doing{color:var(--media)}.st-done{color:var(--ok)}.st-rejected{color:var(--bad)}.st-handoff{color:var(--media)}
 
 .list{display:grid;gap:8px}
 .item{display:grid;gap:4px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
@@ -89,6 +89,7 @@ form.order{display:grid;gap:8px;border:2px solid var(--line);border-radius:10px;
 form.order .r{display:flex;gap:8px;flex-wrap:wrap}
 form.order input,form.order select,form.order textarea{font:inherit;color:var(--ink);background:var(--panel);border:1.5px solid var(--line);border-radius:8px;padding:7px 10px;min-width:0}
 form.order input{flex:1 1 220px}
+.revnote{font:inherit;font-size:13px;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:5px 8px;flex:1 1 160px;min-width:0}
 form.order textarea{width:100%;min-height:64px;resize:vertical}
 .note{font-size:12px;color:var(--muted)}
 .org{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
@@ -110,6 +111,7 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
 .app .links{display:flex;gap:10px;flex-wrap:wrap;font-size:13px}
 .st-운영중{color:var(--ok)}.st-개선중{color:var(--media)}.st-점검필요{color:var(--bad)}
 .tbl{overflow-x:auto}
+h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0 6px}
 .tbl table{border-collapse:collapse;width:100%;min-width:560px;font-size:13px}
 .tbl th,.tbl td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
 .tbl th{font-size:12px;color:var(--muted)}
@@ -127,7 +129,7 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
 
 <div class="wrap">
   <header class="top">
-    <h1>꿈터 AI 사무실<small>교육 콘텐츠 제작 회사 · 대표 1명, AI 직원 19명</small></h1>
+    <h1>꿈터 AI 사무실<small>교육 콘텐츠 제작 회사 · 대표 1명, AI 직원 22명</small></h1>
     <div class="clock" aria-live="polite">
       <div class="t" id="clk">--:--</div>
       <div class="s"><b id="officeStatus">출근 대기</b><span id="nextRun">평일 08:00 출근</span></div>
@@ -192,7 +194,10 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
       <textarea id="orderDetail" placeholder="대상, 차시 수, 꼭 들어갈 내용, 마감일 등을 적어주세요 (선택)" aria-label="지시 내용"></textarea>
       <div class="r"><button class="btn pri" type="submit">지시 내리기</button><span class="note" id="orderMsg"></span></div>
     </form>
-    <h2 style="margin-top:16px">결재 대기</h2>
+    <h2 style="margin-top:16px">최종 컨펌 대기</h2>
+    <p class="note" style="margin-top:-4px">부서 검수와 총괄 검수(가람)를 모두 통과한 결과물이에요. 컨펌하면 완료, 수정 요청하면 담당 부서가 다음 출근 때 먼저 고쳐요.</p>
+    <div class="list" id="confirmList"></div>
+    <h2 style="margin-top:16px">기획안 결재 대기</h2>
     <div class="list" id="approveList"></div>
     <h2 style="margin-top:16px">진행 · 완료된 업무</h2>
     <div class="list" id="taskList"></div>
@@ -226,7 +231,7 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
     <h2>조직도</h2>
     <div class="org" id="orgChart"></div>
     <h2 style="margin-top:20px">부서 간 협업 규칙</h2>
-    <p class="note" style="margin-top:-4px">부서끼리 일을 넘길 때는 요청서를 업무로 올려요. 받는 부서가 처리하고 결과를 돌려줘요.</p>
+    <p class="note" style="margin-top:-4px">부서끼리 일을 넘길 때는 요청서를 업무로 올려요. 받는 부서가 처리하고 결과를 돌려줘요. 모든 결과물은 부서 검수(전략 로아, 교육 이음, 앱개발 시우, 미디어 바름, 비서실 브리핑은 로아) → 총괄 검수(대표지원실 가람) → 대표 컨펌 순서를 거쳐야 완료돼요.</p>
     <div class="tbl"><table>
       <thead><tr><th>보내는 부서</th><th>받는 부서</th><th>무엇을 넘기나</th><th>언제</th></tr></thead>
       <tbody>
@@ -242,6 +247,38 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
         <tr><td>대표</td><td>모든 부서</td><td>승인·반려, 직접 지시</td><td>대표 결재 탭에서 언제든</td></tr>
       </tbody>
     </table></div>
+    <h2 style="margin-top:20px">업무 분장 점검 (11/19)</h2>
+    <p class="note" style="margin-top:-4px">업무마다 주관 팀은 하나예요. 여러 부서에 걸친 일은 운영기획팀 한결이 주관 팀을 정하고, 나머지는 협조 팀으로 요청서를 받아요.</p>
+    <h3 class="sub">주인이 없던 업무 → 새로 맡긴 팀</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>업무</th><th>주관</th><th>협조</th></tr></thead>
+      <tbody>
+        <tr><td>회사 브랜드 가이드(로고, 색, 글꼴)</td><td>미디어 아트팀 채아</td><td>전략 한결(방향), 교육 다솜(교안 적용)</td></tr>
+        <tr><td>상표·이름 사용 가능 여부 조사</td><td>전략 운영기획팀 한결</td><td>가람(검수) · 결정은 대표</td></tr>
+        <tr><td>학부모·기관 안내문, 수업 소개서</td><td>교육 수업기획팀 새봄</td><td>미디어 채아(디자인), 가람</td></tr>
+        <tr><td>수업 후 반응·강사 의견 정리</td><td>전략 성과분석팀 누리</td><td>교육 새봄(개선 반영)</td></tr>
+        <tr><td>교구(레고 키트) 준비물·부품 체크리스트</td><td>전략 일정관리팀 다온</td><td>교육 새봄(수업별 목록)</td></tr>
+        <tr><td>앱 오류·문의 접수와 재현</td><td>앱 앱기획팀 하늘</td><td>앱 시우(재현·확인)</td></tr>
+        <tr><td>자료실·드라이브 폴더 정리, 버전 관리</td><td>대표지원실 도담</td><td>각 부서(파일 이름 규칙 지키기)</td></tr>
+        <tr><td>사무실 운영 방식 개선 제안</td><td>전략 운영기획팀 한결</td><td>모든 부서 · 실제 변경은 대표가 대화창에서</td></tr>
+      </tbody>
+    </table></div>
+    <h3 class="sub">애매하게 겹치던 업무 → 나누는 방법</h3>
+    <div class="tbl"><table>
+      <thead><tr><th>겹치는 업무</th><th>주관</th><th>협조와 나누는 선</th></tr></thead>
+      <tbody>
+        <tr><td>교안 PPT에 들어가는 그림·캐릭터</td><td>교육 다솜(교안 디자인)</td><td>미디어 채아가 캐릭터·일러스트 소재를 만들어 넘기고, 배치와 교안 디자인은 다솜이 해요</td></tr>
+        <tr><td>수업 도입 영상</td><td>미디어 하랑</td><td>교육 새봄이 학습 목표와 내용을 정하고 이음이 내용 감수, 영상 제작은 미디어</td></tr>
+        <tr><td>교안 속 앱 화면 캡처</td><td>앱 별</td><td>교육이 필요한 화면 목록을 요청하면 별이 최신 화면을 찍어 넘겨요</td></tr>
+        <tr><td>앱 안의 문제·예제·설명 글</td><td>교육 보람(내용)</td><td>앱 도윤은 화면에 넣기만 해요. 내용 정확성은 이음, 동작은 시우가 검수</td></tr>
+        <tr><td>앱 소개 영상</td><td>미디어 하랑</td><td>앱 하늘이 시연 순서와 새 기능 설명을 줘요</td></tr>
+        <tr><td>캐릭터 목소리·효과음을 앱에 넣기</td><td>앱 도윤(적용)</td><td>소리 파일 제작과 출처 확인은 미디어 가온</td></tr>
+        <tr><td>일정</td><td>전략 다온(유일한 일정표)</td><td>각 부서는 마감만 요청하고 일정표를 직접 고치지 않아요</td></tr>
+        <tr><td>숫자 집계와 대표 브리핑</td><td>대표지원실 도담(브리핑)</td><td>숫자는 누리, 사실 확인은 로아, 최종 검수는 가람</td></tr>
+        <tr><td>새 아이디어 제안</td><td>각 부서 기획(새봄·하늘·하랑)</td><td>한결이 부서 간 중복을 보고 묶거나 하나만 남겨요</td></tr>
+        <tr><td>부서 검수와 총괄 검수</td><td>부서 검수 담당</td><td>부서 검수는 전문 내용, 가람은 대표 지시 반영·부서 간 내용 충돌·회사 기준 일관성을 봐요</td></tr>
+      </tbody>
+    </table></div>
   </section>
 </div>
 
@@ -254,13 +291,14 @@ const DEPTS = {
   edu:{name:"교육부서", color:"#4f9e7a", mission:"수업 기획과 강의 자료 제작"},
   media:{name:"미디어부서", color:"#7b6cc9", mission:"교육 쇼츠와 수업 홍보 영상 제작 (기획 → 대본 → 그림·음악 → 편집 → 검수 → 채널)"},
   app:{name:"앱개발부서", color:"#d0703f", mission:"수업·콘텐츠용 앱 기획, 개발, 점검과 배포 관리"},
-  ceo:{name:"대표실 · 비서실", color:"#c98a2b", mission:"결재와 하루 브리핑"}
+  ceo:{name:"대표지원실", color:"#c98a2b", mission:"총괄 검수와 하루 브리핑. 모든 결과물은 여기를 거쳐 대표 컨펌으로 가요"}
 };
 // hair, shirt colors for each member sprite
 const MEMBERS = [
   {id:"hangyeol", name:"한결", dept:"strategy", team:"운영기획팀", role:"월간 운영 계획, 부서 간 업무 배분", hair:"#3a2a22", shirt:"#3f7fb8", desk:[2.5,4]},
   {id:"daon", name:"다온", dept:"strategy", team:"일정관리팀", role:"수업·제작 일정, 마감 관리", hair:"#7a4a2a", shirt:"#5b9bd5", desk:[6.5,4]},
   {id:"nuri", name:"누리", dept:"strategy", team:"성과분석팀", role:"완료 현황 집계, 개선점 정리", hair:"#1f1f2a", shirt:"#2f6a9a", desk:[2.5,8]},
+  {id:"roa", name:"로아", dept:"strategy", team:"검토팀", role:"일정 충돌, 수치, 대표 보고서 사실 확인", hair:"#5a3a2a", shirt:"#4a8cc8", desk:[6.5,8]},
   {id:"saebom", name:"새봄", dept:"edu", team:"수업기획팀", role:"수업 주제 발굴, 차시 구성, 학습 목표", hair:"#a4532e", shirt:"#4f9e7a", desk:[11.5,4]},
   {id:"raon", name:"라온", dept:"edu", team:"교안제작팀", role:"슬라이드 원고, 강의 대본", hair:"#2c2c3a", shirt:"#68b48f", desk:[16,4]},
   {id:"boram", name:"보람", dept:"edu", team:"활동지·평가팀", role:"학생 활동지, 퀴즈, 평가 기준", hair:"#c9a14a", shirt:"#3d8a66", desk:[20.5,4]},
@@ -275,7 +313,9 @@ const MEMBERS = [
   {id:"narae", name:"나래", dept:"media", team:"채널운영팀", role:"제목·설명·태그, 아동용 설정, 업로드 준비", hair:"#b5652e", shirt:"#a597ef", desk:[34.5,8]},
   {id:"haneul", name:"하늘", dept:"app", team:"앱기획팀", role:"앱 개선 기획, 수업 연계 요구사항 정리", hair:"#3b2b4a", shirt:"#d0703f", desk:[21,17]},
   {id:"doyun", name:"도윤", dept:"app", team:"앱개발팀", role:"승인된 기능 개발, 버그 수정", hair:"#1f1f24", shirt:"#e08a5a", desk:[26,17]},
-  {id:"byeol", name:"별", dept:"app", team:"점검·배포팀", role:"테스트, 배포 상태 점검, 업데이트 노트", hair:"#b5652e", shirt:"#b85c30", desk:[21,21]},
+  {id:"byeol", name:"별", dept:"app", team:"점검·배포팀", role:"배포 상태 점검, 업데이트 노트", hair:"#b5652e", shirt:"#b85c30", desk:[21,21]},
+  {id:"siu", name:"시우", dept:"app", team:"품질검수팀", role:"기능·기기 테스트, 접근성, 아동 안전 검수", hair:"#2c2c3a", shirt:"#c86a3a", desk:[26,21]},
+  {id:"garam", name:"가람", dept:"ceo", team:"총괄검수", role:"대표 컨펌 전 모든 부서 결과물 최종 검수", hair:"#1f1f24", shirt:"#b07a20", desk:[36,15.6]},
   {id:"dodam", name:"도담", dept:"ceo", team:"비서실", role:"하루 업무 마감, 대표 브리핑 작성", hair:"#6a3b2a", shirt:"#c98a2b", desk:[36,19]}
 ];
 const MEDIA_GHOSTS = [];
@@ -286,7 +326,7 @@ const ROOMS = [
   {key:"ceo", x:0,y:13,w:9,h:12, floor:["#d9b98a","#cfae7c"], label:"대표실"},
   {key:"meet", x:9,y:13,w:10,h:12, floor:["#efe2c4","#e7d8b6"], label:"회의실"},
   {key:"app", x:19,y:13,w:13,h:12, floor:["#f3dccb","#ead0bd"], label:"앱개발부서"},
-  {key:"lounge", x:32,y:13,w:8,h:12, floor:["#cfe3e6","#c2d9dd"], label:"비서실"}
+  {key:"lounge", x:32,y:13,w:8,h:12, floor:["#cfe3e6","#c2d9dd"], label:"대표지원실"}
 ];
 const SPOTS = { meet:[[11,18],[13.5,18],[16,18],[11,21],[13.5,21],[16,21]], lounge:[[34,21],[38,22],[34,17]], ceo:[[4,20],[6,20]], hall:[[5,11],[14,11],[20,11],[28,11],[35,11]] };
 
@@ -303,7 +343,7 @@ function fmtTime(iso){ if(!iso) return ""; const d=new Date(iso); if(isNaN(d)) r
 function fmtDay(iso){ const d=new Date(iso); if(isNaN(d)) return ""; return new Intl.DateTimeFormat("ko-KR",{timeZone:KST,month:"long",day:"numeric",weekday:"short"}).format(d); }
 function kstDateOf(iso){ const d=new Date(iso); return isNaN(d)?"":kstParts(d).date; }
 const deptChip = k => `<span class="chip d-${DEPTS[k]?k:"ceo"}">${esc(DEPTS[k]?.name||"대표실")}</span>`;
-const STATUS = {proposed:"결재 대기",approved:"승인됨 · 제작 대기",doing:"제작 중",done:"완료",rejected:"반려",handoff:"부서 전달"};
+const STATUS = {proposed:"결재 대기",approved:"승인됨 · 제작 대기",doing:"제작 중",final:"총괄 검수 중",confirm:"대표 컨펌 대기",revise:"수정 요청",done:"완료",rejected:"반려",handoff:"부서 전달"};
 const stChip = s => `<span class="st st-${esc(s)}">${esc(STATUS[s]||s)}</span>`;
 const safeUrl = u => /^(https:\/\/|\/_blob\/)/.test(u||"") ? u : "";
 const MEDIA_OFFICE = "https://claude.ai/artifact/8bxSJL6icMaJpRTJYe644q";
@@ -345,7 +385,7 @@ function drawBackground(){
   MEDIA_GHOSTS.forEach(p=>desk(p.x,p.y,"#4a3f7a"));
   // decorations
   plant(1,1.4); plant(7.6,1.4); plant(22.6,8.2); plant(22.6,1.4); plant(38.4,8.2); plant(1,23);
-  shelf(6,7.5); shelf(19.5,7.5); board(3,1.3,36); board(13,1.3,60); board(28,1.3,90);
+  shelf(19.5,7.5); board(3,1.3,36); board(13,1.3,60); board(28,1.3,90);
   // CEO room: big desk + rug
   g.fillStyle="#b04a3a"; g.fillRect(1*T,16*T,7*T,6*T); g.fillStyle="#c86450"; g.fillRect(1*T+4,16*T+4,7*T-8,6*T-8);
   g.fillStyle="#5a3a22"; g.fillRect(2.5*T,17*T,4*T,T+6); g.fillStyle="#2b2a33"; g.fillRect(4*T,16.4*T,T,10); g.fillStyle="#f2c94c"; g.fillRect(2.8*T,17.3*T,8,6);
@@ -357,7 +397,7 @@ function drawBackground(){
   // app room: release board, server racks
   board(23,14.4,70);
   for(let i=0;i<2;i++){ const x=(29.6+i*1.2)*T, y=15.2*T; g.fillStyle="#2b2a33"; g.fillRect(x,y,16,40); for(let j=0;j<5;j++){ g.fillStyle=j%2?"#7fd1b9":"#f2c94c"; g.fillRect(x+3,y+4+j*7,3,2); g.fillStyle="#4a4a56"; g.fillRect(x+8,y+4+j*7,5,2);} }
-  plant(30.5,22.6); shelf(25.5,21.4);
+  plant(30.5,22.6); shelf(28.2,21.4);
   // lounge: sofa, water, coffee
   g.fillStyle="#4f8f96"; g.fillRect(33*T,22.4*T,4*T,1.6*T); g.fillStyle="#6aaab0"; g.fillRect(33*T,21.8*T,4*T,0.8*T);
   g.fillStyle="#d5e9f2"; g.fillRect(38.5*T,16*T,12,18); g.fillStyle="#7cc6e8"; g.fillRect(38.5*T+2,16*T+2,8,7);
@@ -509,24 +549,28 @@ function feedRows(list){
 function taskCard(t, withActs){
   const link = safeUrl(t.link) ? `<a href="${esc(t.link)}" target="_blank" rel="noopener">드라이브에서 열기</a>` : "";
   const docBtn = t.docId ? `<button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button>` : "";
-  const acts = withActs && canWrite!==false ? `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}">승인</button><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>` : "";
-  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChip(t.status)}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${t.by==="대표"?" · 대표 지시":""}</span></div>
+  let acts = "";
+  if(withActs==="approve" && canWrite!==false) acts = `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}">승인</button><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>`;
+  if(withActs==="confirm" && canWrite!==false) acts = `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button><input class="revnote" id="rev-${esc(t._id)}" placeholder="수정할 점 (선택)" aria-label="수정할 점"><button class="btn ghost" data-act="revise" data-id="${esc(t._id)}">수정 요청</button>`;
+  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChip(t.status)}${t.review?`<span class="st ${t.review.result==="보류"?"st-failed":"st-done"}" title="${esc(t.review.notes||"")}">부서 검수 ${esc(t.review.result||"")} · ${esc(t.review.by||"")}</span>`:""}${t.finalReview?`<span class="st ${t.finalReview.result==="통과"?"st-done":"st-failed"}" title="${esc(t.finalReview.notes||"")}">총괄 검수 ${esc(t.finalReview.result||"")} · ${esc(t.finalReview.by||"")}</span>`:""}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${t.by==="대표"?" · 대표 지시":""}</span></div>
     <div class="title">${esc(t.title)}</div>${t.detail?`<div class="det">${esc(t.detail)}</div>`:""}
     ${(acts||link||docBtn)?`<div class="acts">${acts}${docBtn}${link}</div>`:""}</div>`;
 }
 function render(){
   const pending = tasks.filter(t=>t.status==="proposed");
-  const doing = tasks.filter(t=>["approved","doing"].includes(t.status));
-  const done = tasks.filter(t=>["done","handoff"].includes(t.status));
-  $("#kP").textContent=pending.length; $("#kD").textContent=doing.length; $("#kC").textContent=done.length;
+  const confirms = tasks.filter(t=>t.status==="confirm");
+  const doing = tasks.filter(t=>["approved","doing","final","revise","handoff"].includes(t.status));
+  const done = tasks.filter(t=>t.status==="done");
+  $("#kP").textContent=pending.length+confirms.length; $("#kD").textContent=doing.length; $("#kC").textContent=done.length;
   const today=kstParts().date; const in7=new Date(Date.now()+7*864e5); const end=kstParts(in7).date;
   $("#kS").textContent=schedule.filter(s=>s.date>=today && s.date<=end).length;
-  const n=$("#nApprove"); n.hidden=!pending.length; n.textContent=pending.length;
+  const n=$("#nApprove"); n.hidden=!(pending.length+confirms.length); n.textContent=pending.length+confirms.length;
   $("#brief").innerHTML = office.briefing ? esc(office.briefing) : `<span class="note">매일 아침 비서실 도담이 하루 업무를 마치면 여기에 브리핑을 남겨요.</span>`;
   $("#miniFeed").innerHTML = feedRows(feed.slice(0,6));
   $("#feedList").innerHTML = feedRows(feed);
-  $("#approveList").innerHTML = pending.length ? pending.map(t=>taskCard(t,true)).join("") : `<div class="empty">결재할 기획안이 없어요. 교육부서가 출근하면 새 수업 아이디어를 올려요.</div>`;
-  const rest = tasks.filter(t=>t.status!=="proposed");
+  $("#confirmList").innerHTML = confirms.length ? confirms.map(t=>taskCard(t,"confirm")).join("") : `<div class="empty">컨펌할 결과물이 없어요. 부서 검수와 총괄 검수를 통과한 결과물이 여기로 와요.</div>`;
+  $("#approveList").innerHTML = pending.length ? pending.map(t=>taskCard(t,"approve")).join("") : `<div class="empty">결재할 기획안이 없어요. 교육부서가 출근하면 새 수업 아이디어를 올려요.</div>`;
+  const rest = tasks.filter(t=>!["proposed","confirm"].includes(t.status));
   $("#taskList").innerHTML = rest.length ? rest.map(t=>taskCard(t,false)).join("") : `<div class="empty">아직 진행 중인 업무가 없어요. 위에서 지시를 내리거나 기획안을 승인해 보세요.</div>`;
   const sc = schedule.filter(s=>s.date>=today).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
   $("#schedList").innerHTML = sc.length ? sc.map(s=>`<div class="d"><div class="dd ${s.date===today?"today":""}">${esc(s.date.slice(5).replace("-","/"))}${s.time?`<br>${esc(s.time)}`:""}</div><div>${deptChip(s.dept)} ${esc(s.title)}${s.note?`<div class="note">${esc(s.note)}</div>`:""}</div></div>`).join("") : `<div class="empty">아직 잡힌 일정이 없어요. 전략부서가 첫 출근 때 2주치 운영 일정을 짜요.</div>`;
@@ -575,8 +619,12 @@ let dbRef=null;
 document.addEventListener("click", async e=>{
   const b=e.target.closest("[data-act]"); if(!b || !dbRef) return;
   b.disabled=true;
-  const status = b.dataset.act==="approve" ? "approved" : "rejected";
-  try{ await dbRef.doc("tasks/"+b.dataset.id).update({status, updatedAt:new Date().toISOString(), decidedBy:"대표"}); }
+  const act=b.dataset.act; const now=new Date().toISOString();
+  const status = {approve:"approved", reject:"rejected", confirm:"done", revise:"revise"}[act];
+  const patch = {status, updatedAt:now, decidedBy:"대표"};
+  if(act==="confirm") patch.confirmedAt = now;
+  if(act==="revise"){ const v=(document.getElementById("rev-"+b.dataset.id)?.value||"").trim(); patch.reviseNote = v || "대표님이 수정을 요청했어요"; }
+  try{ await dbRef.doc("tasks/"+b.dataset.id).update(patch); }
   catch(err){ b.disabled=false; $("#orderMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; }
 });
 $("#orderForm").addEventListener("submit", async e=>{
