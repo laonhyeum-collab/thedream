@@ -13,7 +13,7 @@
 
 ## 데이터 구조 (사무실 DB)
 - office/state: status("출근 대기" · "근무 중" · "퇴근"), lastRun(ISO), briefing(문자열), driveFolderId
-- tasks/<id>: title, detail, dept(받는 부서: "edu" · "strategy" · "app" · "media"), from(보낸 부서, 부서 간 요청일 때), team, owner(주관 팀), support(협조 팀 목록), status("proposed" 결재 대기 · "approved" 승인 · "doing" 제작 중 · "handoff" 부서 전달 · "final" 총괄 검수 대기 · "confirm" 대표 컨펌 대기 · "revise" 대표 수정 요청 · "done" 대표 컨펌 완료 · "rejected" 반려), by("AI" · "대표"), createdAt, updatedAt, docId, link, note, reviseNote(대표가 적은 수정할 점), review({by: 부서 검수 담당, result: "통과" · "수정 후 통과" · "보류", notes, at}), finalReview({by: "가람", result: "통과" · "돌려보냄", notes, at})
+- tasks/<id>: title, detail, dept(받는 부서: "edu" · "strategy" · "app" · "media"), from(보낸 부서, 부서 간 요청일 때), team, owner(주관 팀), support(협조 팀 목록), status("proposed" 결재 대기 · "approved" 승인 · "doing" 제작 중 · "handoff" 부서 전달 · "final" 총괄 검수 대기 · "confirm" 대표 컨펌 대기 · "revise" 대표 수정 요청 · "done" 대표 컨펌 완료 · "rejected" 반려), by("AI" · "대표"), createdAt, updatedAt, docId, link, note, reviseNote(대표가 적은 수정할 점), branch(앱 업무의 브랜치명), commit(검수한 마지막 커밋 해시), mergeStatus("merged" · "blocked"), prUrl, mergedAt, review({by: 부서 검수 담당, result: "통과" · "수정 후 통과" · "보류", notes, at}), finalReview({by: "가람", result: "통과" · "돌려보냄", notes, at})
 - feed/<id>: at(ISO), dept("strategy" · "edu" · "app" · "media" · "ceo"), member(직원 이름), text(40자 이내 한 줄), link
 - schedule/<id>: date("YYYY-MM-DD", 서울 기준), time("HH:MM", 선택), dept, title, note
 - docs/<id>: title, dept, team, createdAt, body(일반 텍스트 본문), driveUrl, files([{name, url}], PDF 미리보기)
@@ -128,8 +128,9 @@
 - add_repo로 laonhyeum-collab/thedream을 push 권한으로 붙이고, 안내받은 방법으로 클론해요.
 - 새 브랜치 office/app-YYYYMMDD-n을 만들어 그 앱 폴더 안에서만 고쳐요. 다른 앱 폴더와 .github, site는 업무에 꼭 필요할 때만 건드려요.
 - 그 앱의 테스트(package.json의 test)가 있으면 실행해서 통과를 확인해요. 실패하면 고치고, 끝내 실패하면 push하지 않고 브리핑에 적어요.
-- 커밋해서 그 브랜치에만 push해요. main에 push하거나 병합하지 않고, 풀 리퀘스트도 만들지 않아요. 대표가 확인한 뒤 반영해요.
-- 업무의 link에 브랜치 주소(https://github.com/laonhyeum-collab/thedream/tree/브랜치명)를 넣고, status "final", note "대표 컨펌 후 main 반영 필요"로 바꿔요. 해당 앱 status는 "개선 중"으로 바꿔요.
+- 커밋해서 그 브랜치에만 push해요. 출근 세션에서는 main에 push하거나 병합하지 않고, 풀 리퀘스트도 만들지 않아요. 병합은 대표가 컨펌한 뒤 정기 점검 세션의 "자동 병합" 절차로만 해요.
+- 업무의 link에 브랜치 주소(https://github.com/laonhyeum-collab/thedream/tree/브랜치명), branch에 브랜치명, commit에 시우가 검수한 마지막 커밋 해시(전체 40자)를 넣고, status "final", note "대표 컨펌 후 자동 병합"으로 바꿔요. 해당 앱 status는 "개선 중"으로 바꿔요.
+- 검수가 끝난 브랜치에는 새 커밋을 올리지 않아요. 고칠 점이 생기면 새 브랜치로 다시 시작해서 다시 검수를 받아요. 커밋이 바뀌면 자동 병합이 멈추기 때문이에요.
 - 저장소를 붙이거나 push할 수 없으면 코드를 바꾸지 말고 "개발 명세서"(바꿀 파일, 바꿀 내용, 테스트 방법)를 docs에 저장해요. 업무는 approved로 두고 note에 이유를 적어요.
 
 ## 미디어부서 규칙

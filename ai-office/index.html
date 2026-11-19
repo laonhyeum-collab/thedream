@@ -547,12 +547,12 @@ function feedRows(list){
   return out;
 }
 function taskCard(t, withActs){
-  const link = safeUrl(t.link) ? `<a href="${esc(t.link)}" target="_blank" rel="noopener">드라이브에서 열기</a>` : "";
+  const link = [safeUrl(t.link) ? `<a href="${esc(t.link)}" target="_blank" rel="noopener">${t.branch?"브랜치 보기":"드라이브에서 열기"}</a>` : "", safeUrl(t.prUrl) ? `<a href="${esc(t.prUrl)}" target="_blank" rel="noopener">PR 보기</a>` : ""].join(" ");
   const docBtn = t.docId ? `<button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button>` : "";
   let acts = "";
   if(withActs==="approve" && canWrite!==false) acts = `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}">승인</button><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>`;
   if(withActs==="confirm" && canWrite!==false) acts = `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button><input class="revnote" id="rev-${esc(t._id)}" placeholder="수정할 점 (선택)" aria-label="수정할 점"><button class="btn ghost" data-act="revise" data-id="${esc(t._id)}">수정 요청</button>`;
-  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChip(t.status)}${t.review?`<span class="st ${t.review.result==="보류"?"st-failed":"st-done"}" title="${esc(t.review.notes||"")}">부서 검수 ${esc(t.review.result||"")} · ${esc(t.review.by||"")}</span>`:""}${t.finalReview?`<span class="st ${t.finalReview.result==="통과"?"st-done":"st-failed"}" title="${esc(t.finalReview.notes||"")}">총괄 검수 ${esc(t.finalReview.result||"")} · ${esc(t.finalReview.by||"")}</span>`:""}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${t.by==="대표"?" · 대표 지시":""}</span></div>
+  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChip(t.status)}${t.review?`<span class="st ${t.review.result==="보류"?"st-failed":"st-done"}" title="${esc(t.review.notes||"")}">부서 검수 ${esc(t.review.result||"")} · ${esc(t.review.by||"")}</span>`:""}${t.mergeStatus?`<span class="st ${t.mergeStatus==="merged"?"st-done":"st-failed"}">${t.mergeStatus==="merged"?"병합 완료":"병합 보류"}</span>`:""}${t.finalReview?`<span class="st ${t.finalReview.result==="통과"?"st-done":"st-failed"}" title="${esc(t.finalReview.notes||"")}">총괄 검수 ${esc(t.finalReview.result||"")} · ${esc(t.finalReview.by||"")}</span>`:""}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${t.by==="대표"?" · 대표 지시":""}</span></div>
     <div class="title">${esc(t.title)}</div>${t.detail?`<div class="det">${esc(t.detail)}</div>`:""}
     ${(acts||link||docBtn)?`<div class="acts">${acts}${docBtn}${link}</div>`:""}</div>`;
 }
@@ -624,7 +624,9 @@ document.addEventListener("click", async e=>{
   const patch = {status, updatedAt:now, decidedBy:"대표"};
   if(act==="confirm") patch.confirmedAt = now;
   if(act==="revise"){ const v=(document.getElementById("rev-"+b.dataset.id)?.value||"").trim(); patch.reviseNote = v || "대표님이 수정을 요청했어요"; }
-  try{ await dbRef.doc("tasks/"+b.dataset.id).update(patch); }
+  try{ await dbRef.doc("tasks/"+b.dataset.id).update(patch);
+    const t = tasks.find(x=>x._id===b.dataset.id);
+    if(act==="confirm" && t && t.branch){ const r = await wakeOffice("merge-"+b.dataset.id); $("#orderMsg").textContent = r==="ok" ? "컨펌했어요. 앱개발부서가 지금 병합을 시작해요." : "컨펌했어요. 다음 정기 점검(매시 7분)에 병합돼요."; } }
   catch(err){ b.disabled=false; $("#orderMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; }
 });
 $("#orderForm").addEventListener("submit", async e=>{
@@ -645,7 +647,7 @@ $("#orderForm").addEventListener("submit", async e=>{
 async function wakeOffice(id){
   let mcp=null; try{ mcp = await window.claude?.use?.("mcp"); }catch(_){}
   if(!mcp) return "nomcp";
-  try{ await mcp.callTool("Claude Code Remote","fire_trigger",{trigger_id:URGENT_TRIGGER, text:"긴급공지 "+id+" 접수. 지금 바로 처리해 주세요."}); return "ok"; }
+  try{ await mcp.callTool("Claude Code Remote","fire_trigger",{trigger_id:URGENT_TRIGGER, text:id+" 접수. 지금 바로 처리해 주세요."}); return "ok"; }
   catch(e){ return e?.code || "error"; }
 }
 $("#urgForm").addEventListener("submit", async e=>{
@@ -659,7 +661,7 @@ $("#urgForm").addEventListener("submit", async e=>{
   }catch(err){ btn.disabled=false; $("#urgMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; return; }
   $("#urgText").value="";
   $("#urgMsg").textContent="공지를 올렸어요. 담당 직원을 부르는 중…";
-  const r = await wakeOffice(id);
+  const r = await wakeOffice("notice "+id);
   btn.disabled=false;
   const later="매시 7분(오전 8시~밤 10시) 정기 점검 때 처리돼요.";
   $("#urgMsg").textContent =
