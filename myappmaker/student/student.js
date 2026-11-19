@@ -167,7 +167,16 @@ function route() {
   const needLogin = api.enabled && !session;
   $('#login').hidden = !needLogin;
   document.querySelector('.steps').hidden = needLogin;
-  if (needLogin) { for (const s of SCREENS) $(`#${s}`).hidden = true; setTimeout(() => $('#loginId').focus(), 0); return; }
+  if (needLogin) {
+    for (const s of SCREENS) $(`#${s}`).hidden = true;
+    // 브라우저가 다른 사이트용으로 저장해 둔 아이디·비밀번호를 자동으로 채우면 지워요 (카드의 번호·숫자 4자리만)
+    setTimeout(() => {
+      if (!/^[A-Za-z0-9가-힣-]{1,20}$/.test($('#loginId').value) || /\s/.test($('#loginId').value)) $('#loginId').value = '';
+      if (!/^\d{0,6}$/.test($('#loginPin').value)) $('#loginPin').value = '';
+      $('#loginId').focus();
+    }, 300);
+    return;
+  }
   let name = location.hash.slice(1) || 'home';
   if (!SCREENS.includes(name)) name = 'home';
   if (['plan', 'prompts', 'myapp', 'submit'].includes(name) && !(plan && plan.topicId)) {

@@ -55,7 +55,12 @@ export function createApi(cfg, fetchImpl = globalThis.fetch.bind(globalThis)) {
       return data;
     } catch (e) {
       if (e.name === 'AbortError') throw new Error('저장소 응답이 너무 늦어요. 잠시 뒤 다시 해 보세요');
-      if (e instanceof TypeError) throw new Error('인터넷 또는 저장소 주소를 확인해 주세요');
+      if (e instanceof TypeError) {
+        // 대부분: 배포 「액세스 권한」이 「모든 사용자」가 아니거나, 주소가 …/exec 가 아님 (구글 로그인 화면이 대신 와서 읽지 못함)
+        throw new Error(/\/exec(\?|$)/.test(cfg.endpoint)
+          ? '저장소에 닿지 못했어요. Apps Script 배포의 「액세스 권한이 있는 사용자」가 「모든 사용자」인지 확인해 주세요 (「Google 계정이 있는 모든 사용자」는 안 돼요). 인터넷 연결도 확인해 주세요'
+          : '저장소 주소가 맞지 않아요. 배포 뒤에 나온 「웹 앱 URL」(…/exec 로 끝나는 주소)을 넣어 주세요');
+      }
       throw e;
     } finally { clearTimeout(timer); }
   }
