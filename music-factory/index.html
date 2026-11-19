@@ -30,6 +30,10 @@
       <button type="button" class="menu-btn m4" data-go="instruments"><span class="mi">🎧</span>악기 소리 체험</button>
       <button type="button" class="menu-btn m5" data-go="songs"><span class="mi">🎼</span>노래 따라 만들기</button>
     </nav>
+    <p class="qr-dl">📱 접속 QR 내려받기:
+      <a href="qr/music-factory-qr-card.png" download="music-play-factory-QR-card.png">인쇄용 카드</a> ·
+      <a href="qr/music-factory-qr.png" download="music-play-factory-QR.png">QR만</a>
+    </p>
   </div>
 </section>
 
@@ -73,7 +77,7 @@
   <main class="stage">
     <div class="length-info" id="lengthInfo">컵이 비어 있어요</div>
     <div class="cup" id="cup">
-      <img class="cup-img" data-optional src="assets/images/bingsu/cup.png" alt="">
+      <img class="cup-img" data-optional alt="">
       <div class="cup-glass" aria-hidden="true"></div>
       <div class="cup-rows" id="cupRows"></div>
       <div class="sparkles" id="sparkles" aria-hidden="true"></div>
@@ -112,7 +116,7 @@
       <p class="m-state" id="songState"></p>
     </div>
     <div class="panel band">
-      <p class="panel-label">우리 밴드</p>
+      <p class="panel-label" id="bandLabel">우리 밴드</p>
       <div class="band-grid" id="band"></div>
     </div>
   </aside>
@@ -167,6 +171,7 @@
     <button type="button" class="round" data-go="home" aria-label="처음 화면">🏠</button>
     <h2>🎧 악기 소리 체험</h2>
   </header>
+  <div id="ensTabs" class="ens-tabs" aria-label="악단 고르기"></div>
   <div class="len-pick">
     <span>소리 길이:</span>
     <div id="lenPick" class="len-btns"></div>
@@ -212,6 +217,7 @@
   <p class="voice-lead">① 재료를 고르고 ② 어울리는 악기를 눌러요. 누르면 소리가 나요.</p>
   <div class="voice-ings" id="voiceIngs"></div>
   <p class="voice-for" id="voiceFor"></p>
+  <div class="voice-ens" id="voiceEns"></div>
   <div class="voice-choices" id="voiceChoices"></div>
   <div class="dlg-btns">
     <button type="button" class="wide-btn ghost" id="voiceResetAll">↩️ 모두 처음 악기로</button>

@@ -99,9 +99,43 @@ export const PROGRESSION = [
   { name: 'F', root: 41, tones: [57, 60, 65] },
 ];
 
-export function chordFor(groupIndex) {
-  const i = ((groupIndex % PROGRESSION.length) + PROGRESSION.length) % PROGRESSION.length;
-  return PROGRESSION[i];
+// 악단마다 어울리는 화음 흐름 (테마의 progression 이름으로 골라요)
+export const PROGRESSIONS = {
+  pop: PROGRESSION,
+  // 클래식: C - Am - F - G
+  classical: [
+    { name: 'C', root: 36, tones: [60, 64, 67] },
+    { name: 'Am', root: 45, tones: [57, 60, 64] },
+    { name: 'F', root: 41, tones: [57, 60, 65] },
+    { name: 'G', root: 43, tones: [59, 62, 67] },
+  ],
+  // 재즈: Dm7 - G7 - Cmaj7 - A7 (세 음으로 줄인 재즈 화음)
+  jazz: [
+    { name: 'Dm7', root: 38, tones: [60, 65, 69] },
+    { name: 'G7', root: 43, tones: [59, 65, 67] },
+    { name: 'Cmaj7', root: 36, tones: [59, 64, 67] },
+    { name: 'A7', root: 45, tones: [61, 64, 67] },
+  ],
+  // 국악: 5음(도 레 미 솔 라) 안의 음만 써요
+  gugak: [
+    { name: '궁', root: 36, tones: [60, 62, 67] },
+    { name: '치', root: 43, tones: [62, 67, 69] },
+    { name: '우', root: 45, tones: [60, 64, 69] },
+    { name: '상', root: 38, tones: [62, 64, 69] },
+  ],
+  // 우주: 단조 느낌 Am - F - C - G
+  space: [
+    { name: 'Am', root: 45, tones: [57, 60, 64] },
+    { name: 'F', root: 41, tones: [57, 60, 65] },
+    { name: 'C', root: 36, tones: [60, 64, 67] },
+    { name: 'G', root: 43, tones: [59, 62, 67] },
+  ],
+};
+
+export function chordFor(groupIndex, progression = PROGRESSION) {
+  const prog = typeof progression === 'string' ? (PROGRESSIONS[progression] || PROGRESSION) : progression;
+  const i = ((groupIndex % prog.length) + prog.length) % prog.length;
+  return prog[i];
 }
 
 export function midiToFreq(m) {

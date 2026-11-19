@@ -51,7 +51,7 @@ jobs:
           cp -r mugunghwa _site/mugunghwa
           rm -rf _site/mugunghwa/tests _site/mugunghwa/tools _site/mugunghwa/package.json
           mkdir -p _site/music-factory
-          cp -r music-factory/index.html music-factory/style.css music-factory/js music-factory/assets _site/music-factory/
+          cp -r music-factory/index.html music-factory/style.css music-factory/js music-factory/assets music-factory/qr _site/music-factory/
           mkdir -p _site/myappmaker
           cp -r myappmaker/index.html myappmaker/student myappmaker/teacher myappmaker/world myappmaker/shared _site/myappmaker/
           mkdir -p _site/myappmaker/docs && cp myappmaker/docs/*.docx _site/myappmaker/docs/
