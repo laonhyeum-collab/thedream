@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { run, gridsEqual, countBlocks, diffCells, makeGrid, gridAtStep, MAX_REPEAT } from './engine';
 import { B, moveBlock, nudgeBlock, insertBlock, removeBlock, gridToBlocks, findBlock, sanitizeBlocks } from './tree';
 import { MISSIONS, missionTarget } from '../data/missions';
+import { TEMPLATES } from '../data/templates';
 import type { Block } from './types';
 
 describe('실행 엔진: 기본 명령', () => {
@@ -179,5 +180,37 @@ describe('GIF 내보내기', () => {
     for (let i = 0; i < bytes.length - 1; i++) if (bytes[i] === 0x21 && bytes[i + 1] === 0xf9) frames++;
     expect(frames).toBe(3);
     expect(bytes[bytes.length - 1]).toBe(0x3b);
+  });
+});
+
+describe('겨울 예시 템플릿', () => {
+  it('내리는 눈송이·손 흔드는 눈사람이 있고 모든 프레임이 10×10이에요', () => {
+    for (const id of ['snow', 'snowman']) {
+      const t = TEMPLATES.find((x) => x.id === id);
+      expect(t, id).toBeTruthy();
+      expect(t!.frames.length).toBeGreaterThanOrEqual(2);
+      for (const f of t!.frames) {
+        expect(f.width).toBe(10);
+        expect(f.height).toBe(10);
+        expect(f.cells.length).toBe(100);
+      }
+    }
+  });
+  it('눈송이는 프레임마다 아래로 한 칸씩 내려가요', () => {
+    const t = TEMPLATES.find((x) => x.id === 'snow')!;
+    const blueAt = (i: number) => t.frames[i].cells.map((c, k) => (c === 'blue' ? k : -1)).filter((k) => k >= 0);
+    expect(blueAt(0).length).toBe(6);
+    expect(blueAt(1).length).toBe(6);
+    expect(blueAt(0)).not.toEqual(blueAt(1));
+  });
+});
+
+describe('겨울 미션', () => {
+  it('눈송이·눈사람 미션은 처음부터 열려 있고 정답이 par 이하예요', () => {
+    for (const id of ['m13', 'm14']) {
+      const m = MISSIONS.find((x) => x.id === id)!;
+      expect(m.open).toBe(true);
+      expect(countBlocks(m.solution())).toBeLessThanOrEqual(m.par);
+    }
   });
 });
