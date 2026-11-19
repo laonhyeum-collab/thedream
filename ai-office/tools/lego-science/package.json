@@ -1,0 +1,7 @@
+{
+  "name": "lego-science-kit",
+  "private": true,
+  "description": "블록앤비트 레고 사이언스 교안 3종 세트 생성기",
+  "scripts": { "build": "node build.js" },
+  "dependencies": { "docx": "^9.16.0", "pptxgenjs": "^4.0.1" }
+}

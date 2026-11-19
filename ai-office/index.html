@@ -133,6 +133,18 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
 .st-new{color:var(--warn)}.st-processing{color:var(--media)}.st-failed{color:var(--bad)}
 .btn.dl{font-size:12.5px;padding:5px 10px}
 .status-line{font-size:12px;color:var(--muted)}
+.att{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.att label.btn{cursor:pointer}
+.att input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:3px 6px 3px 3px;font-size:12.5px;background:var(--bg);max-width:100%}
+.chip img{width:34px;height:34px;object-fit:cover;border-radius:5px;display:block}
+.chip .fi{width:34px;height:34px;display:grid;place-items:center;border-radius:5px;background:var(--panel);font-size:16px}
+.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
+.chip button{border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 2px}
+.atts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.atts a{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:3px 8px 3px 3px;text-decoration:none;color:var(--ink);background:var(--bg)}
+.atts img{width:44px;height:44px;object-fit:cover;border-radius:5px;display:block}
 @media (prefers-reduced-motion:reduce){.bub{transition:none}}
 </style>
 
@@ -156,6 +168,7 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
     <div class="uh"><h2 id="urgH">긴급공지</h2><span class="note" id="urgHint">적어서 보내면 담당 직원이 바로 처리해요. 근무 시간이 아니어도 돼요.</span></div>
     <form id="urgForm" class="uform">
       <textarea id="urgText" placeholder="예: 내일 3학년 레고 과학 수업 지도안 오늘 안에 만들어줘" aria-label="긴급공지 내용" required></textarea>
+      <div class="att" id="urgAtt"><label class="btn ghost" for="urgFile">📎 파일·캡처 첨부</label><input type="file" id="urgFile" multiple accept="image/*,application/pdf,.txt,.md,.csv,.json"><span class="note" id="urgAttHint">이미지·PDF·텍스트, 한 파일 20MB까지. 캡처는 글 칸에 붙여넣기(Ctrl+V)해도 돼요.</span><div class="chips" id="urgChips"></div></div>
       <div class="r"><button class="btn urg" type="submit" id="urgBtn">긴급공지 보내기</button><span class="note" id="urgMsg" aria-live="polite"></span></div>
     </form>
     <div class="list" id="urgList"></div>
@@ -201,7 +214,8 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
         <input id="orderTitle" placeholder="예: 초등 4학년 엔트리 미로 게임 4차시 수업" aria-label="지시 제목" required>
       </div>
       <textarea id="orderDetail" placeholder="대상, 차시 수, 꼭 들어갈 내용, 마감일 등을 적어주세요 (선택)" aria-label="지시 내용"></textarea>
-      <div class="r"><button class="btn pri" type="submit">지시 내리기</button><span class="note" id="orderMsg"></span></div>
+      <div class="att" id="orderAtt"><label class="btn ghost" for="orderFile">📎 파일·캡처 첨부</label><input type="file" id="orderFile" multiple accept="image/*,application/pdf,.txt,.md,.csv,.json"><span class="note" id="orderAttHint">이미지·PDF·텍스트, 한 파일 20MB까지. 캡처는 글 칸에 붙여넣기(Ctrl+V)해도 돼요.</span><div class="chips" id="orderChips"></div></div>
+      <div class="r"><button class="btn pri" type="submit" id="orderBtn">지시 내리기</button><span class="note" id="orderMsg"></span></div>
     </form>
     <h2 style="margin-top:16px">최종 컨펌 대기</h2>
     <p class="note" style="margin-top:-4px">부서 검수와 총괄 검수(가람)를 모두 통과한 결과물이에요. 컨펌하면 완료, 수정 요청하면 담당 부서가 다음 출근 때 먼저 고쳐요.</p>
@@ -585,6 +599,11 @@ function feedRows(list){
   });
   return out;
 }
+function attList(a){
+  const list=(Array.isArray(a)?a:[]).filter(f=>f&&typeof f.url==="string"&&f.url.startsWith("/_blob/"));
+  if(!list.length) return "";
+  return `<div class="atts">${list.map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener" title="${esc(f.name||"첨부")}">${/^image\//.test(f.type||"")?`<img src="${esc(f.url)}" alt="">`:"<span class=\"fi\">📄</span>"}${esc(f.name||"첨부")}</a>`).join("")}</div>`;
+}
 function taskCard(t, withActs){
   const link = [safeUrl(t.link) ? `<a href="${esc(t.link)}" target="_blank" rel="noopener">${t.branch?"브랜치 보기":"드라이브에서 열기"}</a>` : "", safeUrl(t.prUrl) ? `<a href="${esc(t.prUrl)}" target="_blank" rel="noopener">PR 보기</a>` : ""].join(" ");
   const docBtn = t.docId ? `<button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button>` : "";
@@ -592,7 +611,7 @@ function taskCard(t, withActs){
   if(withActs==="approve" && canWrite!==false) acts = `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}">승인</button><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>`;
   if(withActs==="confirm" && canWrite!==false) acts = `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button><input class="revnote" id="rev-${esc(t._id)}" placeholder="수정할 점 (선택)" aria-label="수정할 점"><button class="btn ghost" data-act="revise" data-id="${esc(t._id)}">수정 요청</button>`;
   return `<div class="item"><div class="h">${deptChip(t.dept)}${stChip(t.status)}${t.review?`<span class="st ${t.review.result==="보류"?"st-failed":"st-done"}" title="${esc(t.review.notes||"")}">부서 검수 ${esc(t.review.result||"")} · ${esc(t.review.by||"")}</span>`:""}${t.mergeStatus?`<span class="st ${t.mergeStatus==="merged"?"st-done":"st-failed"}">${t.mergeStatus==="merged"?"병합 완료":"병합 보류"}</span>`:""}${t.finalReview?`<span class="st ${t.finalReview.result==="통과"?"st-done":"st-failed"}" title="${esc(t.finalReview.notes||"")}">총괄 검수 ${esc(t.finalReview.result||"")} · ${esc(t.finalReview.by||"")}</span>`:""}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${t.by==="대표"?" · 대표 지시":""}</span></div>
-    <div class="title">${esc(t.title)}</div>${t.detail?`<div class="det">${esc(t.detail)}</div>`:""}
+    <div class="title">${esc(t.title)}</div>${t.detail?`<div class="det">${esc(t.detail)}</div>`:""}${attList(t.attachments)}
     ${(acts||link||docBtn)?`<div class="acts">${acts}${docBtn}${link}</div>`:""}</div>`;
 }
 function render(){
@@ -623,7 +642,7 @@ function render(){
       ${a.note?`<div class="meta">메모: ${esc(a.note)}</div>`:""}
       ${links?`<div class="links">${links}</div>`:""}</div>`;
   }).join("") : `<div class="empty">앱 목록을 불러오는 중이에요.</div>`;
-  $("#urgList").innerHTML = notices.slice(0,5).map(n=>`<div class="item"><div class="h"><span class="st st-${esc(n.status)}">${esc(NSTATUS[n.status]||n.status)}</span><span class="note">${esc(fmtDay(n.createdAt))} ${esc(fmtTime(n.createdAt))}${n.processedAt?" → "+esc(fmtTime(n.processedAt))+" 완료":""}</span></div><div class="det" style="color:var(--ink)">${esc(n.text)}</div>${n.result?`<div class="det">보고: ${esc(n.result)}</div>`:""}${n.docId?`<div class="acts"><button class="btn ghost" data-doc="${esc(n.docId)}">결과 자료 보기</button></div>`:""}</div>`).join("");
+  $("#urgList").innerHTML = notices.slice(0,5).map(n=>`<div class="item"><div class="h"><span class="st st-${esc(n.status)}">${esc(NSTATUS[n.status]||n.status)}</span><span class="note">${esc(fmtDay(n.createdAt))} ${esc(fmtTime(n.createdAt))}${n.processedAt?" → "+esc(fmtTime(n.processedAt))+" 완료":""}</span></div><div class="det" style="color:var(--ink)">${esc(n.text)}</div>${attList(n.attachments)}${n.result?`<div class="det">보고: ${esc(n.result)}</div>`:""}${n.docId?`<div class="acts"><button class="btn ghost" data-doc="${esc(n.docId)}">결과 자료 보기</button></div>`:""}</div>`).join("");
 }
 function openDoc(id){
   const d = docs.find(x=>x._id===id); if(!d) return;
@@ -669,18 +688,65 @@ document.addEventListener("click", async e=>{
     if(act==="confirm" && t && t.branch){ const r = await wakeOffice("merge-"+b.dataset.id); $("#orderMsg").textContent = r==="ok" ? "컨펌했어요. 앱개발부서가 지금 병합을 시작해요." : "컨펌했어요. 다음 정기 점검(매시 7분)에 병합돼요."; } }
   catch(err){ b.disabled=false; $("#orderMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; }
 });
+// ---------- Attachments ----------
+let assetsNS; const assetsReady = (async()=>{ try{ assetsNS = await window.claude?.use?.("assets"); }catch(_){ assetsNS=null; } return assetsNS; })();
+const attPending = {order:[], urg:[]};
+const MAXB = 20*1024*1024;
+function addFiles(k, files){
+  for(const f of files){
+    if(!f) continue;
+    if(f.size>MAXB){ $("#"+k+"AttHint").textContent=`${f.name}은(는) 20MB가 넘어서 올릴 수 없어요.`; continue; }
+    const name = f.name && f.name!=="image.png" ? f.name : `캡처-${new Date().toTimeString().slice(0,8).replace(/:/g,"")}.png`;
+    attPending[k].push({file:f, name, preview: /^image\//.test(f.type)? URL.createObjectURL(f) : ""});
+  }
+  drawChips(k);
+}
+function drawChips(k){
+  $("#"+k+"Chips").innerHTML = attPending[k].map((p,i)=>`<span class="chip">${p.preview?`<img src="${esc(p.preview)}" alt="">`:`<span class="fi">📄</span>`}<span>${esc(p.name)}</span><button type="button" data-rm="${k}:${i}" aria-label="${esc(p.name)} 빼기">×</button></span>`).join("");
+}
+function clearAtt(k){ attPending[k].forEach(p=>p.preview&&URL.revokeObjectURL(p.preview)); attPending[k]=[]; drawChips(k); }
+async function uploadAtt(k, msg){
+  if(!attPending[k].length) return [];
+  const a = await assetsReady;
+  if(!a) throw {code:"no_assets"};
+  const out=[];
+  for(let i=0;i<attPending[k].length;i++){
+    const p=attPending[k][i]; msg(`첨부 올리는 중… (${i+1}/${attPending[k].length})`);
+    const r = await a.upload(p.file);
+    out.push({name:p.name, id:r.id, url:r.url, type:r.contentType||p.file.type||"", size:r.sizeBytes});
+  }
+  return out;
+}
+const attErr = c => c==="no_assets" ? "첨부는 이 페이지를 편집할 수 있는 계정에서만 올릴 수 있어요." : c==="unsupported_type" ? "이 형식의 파일은 올릴 수 없어요. 이미지·PDF·텍스트로 바꿔 주세요." : c==="too_large" ? "파일이 너무 커요(20MB까지)." : c==="quota_exceeded" ? "사무실 저장 공간이 가득 찼어요." : "첨부를 올리지 못했어요. 다시 시도해 주세요.";
+["order","urg"].forEach(k=>{
+  $("#"+k+"File").addEventListener("change", e=>{ addFiles(k, e.target.files); e.target.value=""; });
+  $("#"+k+"Chips").addEventListener("click", e=>{ const b=e.target.closest("button[data-rm]"); if(!b) return; const i=+b.dataset.rm.split(":")[1]; const p=attPending[k].splice(i,1)[0]; if(p&&p.preview) URL.revokeObjectURL(p.preview); drawChips(k); });
+  const ta = $(k==="order"?"#orderDetail":"#urgText");
+  ta.addEventListener("paste", e=>{ const fs=[...(e.clipboardData?.files||[])]; if(fs.length){ e.preventDefault(); addFiles(k, fs); } });
+  ta.addEventListener("dragover", e=>{ if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault(); });
+  ta.addEventListener("drop", e=>{ const fs=[...(e.dataTransfer?.files||[])]; if(fs.length){ e.preventDefault(); addFiles(k, fs); } });
+});
+assetsReady.then(a=>{ if(!a){ ["order","urg"].forEach(k=>{ $("#"+k+"Att").querySelector("label").hidden=true; $("#"+k+"AttHint").textContent="첨부는 이 페이지를 편집할 수 있는 계정에서만 쓸 수 있어요."; }); } });
+
 $("#orderForm").addEventListener("submit", async e=>{
   e.preventDefault();
   const title=$("#orderTitle").value.trim(); if(!title) return;
   if(!dbRef){ $("#orderMsg").textContent="사무실 데이터에 연결되지 않아 지시를 저장할 수 없어요."; return; }
   const dept=$("#orderDept").value;
   const team = dept==="edu"?"수업기획팀":dept==="strategy"?"운영기획팀":dept==="app"?"앱기획팀":"협업창구";
+  const btn=$("#orderBtn"); btn.disabled=true;
+  let attachments=[];
+  try{ attachments = await uploadAtt("order", m=>$("#orderMsg").textContent=m); }
+  catch(err){ btn.disabled=false; $("#orderMsg").textContent=attErr(err?.code); return; }
   try{
     const now=new Date().toISOString();
-    await dbRef.collection("tasks").add({title, detail:$("#orderDetail").value.trim(), dept, team, status:"approved", by:"대표", createdAt:now, updatedAt:now});
-    $("#orderTitle").value=""; $("#orderDetail").value="";
-    $("#orderMsg").textContent="지시를 남겼어요. 다음 출근 때 담당 팀이 시작해요.";
+    const t={title, detail:$("#orderDetail").value.trim(), dept, team, status:"approved", by:"대표", createdAt:now, updatedAt:now};
+    if(attachments.length) t.attachments=attachments;
+    await dbRef.collection("tasks").add(t);
+    $("#orderTitle").value=""; $("#orderDetail").value=""; clearAtt("order");
+    $("#orderMsg").textContent="지시를 남겼어요"+(attachments.length?` (첨부 ${attachments.length}개)`:"")+". 다음 출근 때 담당 팀이 시작해요.";
   }catch(err){ $("#orderMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; }
+  btn.disabled=false;
 });
 
 // ---------- Urgent notices ----------
@@ -696,10 +762,15 @@ $("#urgForm").addEventListener("submit", async e=>{
   if(!dbRef){ $("#urgMsg").textContent="사무실 데이터에 연결되지 않아 공지를 저장할 수 없어요."; return; }
   const btn=$("#urgBtn"); btn.disabled=true; $("#urgMsg").textContent="공지를 올리는 중…";
   const id="n-"+Date.now().toString(36);
+  let attachments=[];
+  try{ attachments = await uploadAtt("urg", m=>$("#urgMsg").textContent=m); }
+  catch(err){ btn.disabled=false; $("#urgMsg").textContent=attErr(err?.code); return; }
   try{
-    await dbRef.doc("notices/"+id).set({text, status:"new", createdAt:new Date().toISOString(), by:"대표"});
+    const n={text, status:"new", createdAt:new Date().toISOString(), by:"대표"};
+    if(attachments.length) n.attachments=attachments;
+    await dbRef.doc("notices/"+id).set(n);
   }catch(err){ btn.disabled=false; $("#urgMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; return; }
-  $("#urgText").value="";
+  $("#urgText").value=""; clearAtt("urg");
   $("#urgMsg").textContent="공지를 올렸어요. 담당 직원을 부르는 중…";
   const r = await wakeOffice("notice "+id);
   btn.disabled=false;
