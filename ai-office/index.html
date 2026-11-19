@@ -127,7 +127,7 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
 
 <div class="wrap">
   <header class="top">
-    <h1>꿈터 AI 사무실<small>교육 콘텐츠 제작 회사 · 대표 1명, AI 직원 13명</small></h1>
+    <h1>꿈터 AI 사무실<small>교육 콘텐츠 제작 회사 · 대표 1명, AI 직원 19명</small></h1>
     <div class="clock" aria-live="polite">
       <div class="t" id="clk">--:--</div>
       <div class="s"><b id="officeStatus">출근 대기</b><span id="nextRun">평일 08:00 출근</span></div>
@@ -235,6 +235,9 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
         <tr><td>앱개발부서</td><td>교육부서</td><td>업데이트 노트와 수업 활용 가이드 (교안에 반영)</td><td>앱이 바뀐 날</td></tr>
         <tr><td>교육부서</td><td>미디어부서</td><td>미디어 제작 요청서: 수업 핵심 메시지, 릴스·카드뉴스 아이디어</td><td>수업 자료 완성 후</td></tr>
         <tr><td>앱개발부서</td><td>미디어부서</td><td>앱 소개 영상 요청서: 새 기능, 시연 순서, 캡처 목록</td><td>새 기능 배포 후</td></tr>
+        <tr><td>미디어부서</td><td>교육부서</td><td>수업 도입 영상, 캐릭터 그림 소재 (교안·PPT에 활용)</td><td>영상 완성 후</td></tr>
+        <tr><td>미디어부서</td><td>앱개발부서</td><td>앱 화면 녹화 요청, 앱에 넣을 캐릭터·효과음</td><td>영상 기획 단계</td></tr>
+        <tr><td>미디어부서</td><td>전략부서</td><td>회차별 제작 현황, 채널 반응 (채널 개설 후)</td><td>매일 퇴근 전</td></tr>
         <tr><td>모든 부서</td><td>비서실</td><td>하루 한 일, 막힌 점, 대표 결재가 필요한 것</td><td>퇴근 전</td></tr>
         <tr><td>대표</td><td>모든 부서</td><td>승인·반려, 직접 지시</td><td>대표 결재 탭에서 언제든</td></tr>
       </tbody>
@@ -249,37 +252,43 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
 const DEPTS = {
   strategy:{name:"전략부서", color:"#3f7fb8", mission:"전체 운영 기획과 스케줄 관리"},
   edu:{name:"교육부서", color:"#4f9e7a", mission:"수업 기획과 강의 자료 제작"},
-  media:{name:"미디어부서", color:"#7b6cc9", mission:"교육 콘텐츠 제작 (별도 창에서 운영 중)"},
+  media:{name:"미디어부서", color:"#7b6cc9", mission:"교육 쇼츠와 수업 홍보 영상 제작 (기획 → 대본 → 그림·음악 → 편집 → 검수 → 채널)"},
   app:{name:"앱개발부서", color:"#d0703f", mission:"수업·콘텐츠용 앱 기획, 개발, 점검과 배포 관리"},
   ceo:{name:"대표실 · 비서실", color:"#c98a2b", mission:"결재와 하루 브리핑"}
 };
 // hair, shirt colors for each member sprite
 const MEMBERS = [
-  {id:"hangyeol", name:"한결", dept:"strategy", team:"운영기획팀", role:"월간 운영 계획, 부서 간 업무 배분", hair:"#3a2a22", shirt:"#3f7fb8", desk:[3,4]},
-  {id:"daon", name:"다온", dept:"strategy", team:"일정관리팀", role:"수업·제작 일정, 마감 관리", hair:"#7a4a2a", shirt:"#5b9bd5", desk:[8,4]},
-  {id:"nuri", name:"누리", dept:"strategy", team:"성과분석팀", role:"완료 현황 집계, 개선점 정리", hair:"#1f1f2a", shirt:"#2f6a9a", desk:[3,8]},
-  {id:"saebom", name:"새봄", dept:"edu", team:"수업기획팀", role:"수업 주제 발굴, 차시 구성, 학습 목표", hair:"#a4532e", shirt:"#4f9e7a", desk:[14,4]},
-  {id:"raon", name:"라온", dept:"edu", team:"교안제작팀", role:"슬라이드 원고, 강의 대본", hair:"#2c2c3a", shirt:"#68b48f", desk:[19,4]},
-  {id:"boram", name:"보람", dept:"edu", team:"활동지·평가팀", role:"학생 활동지, 퀴즈, 평가 기준", hair:"#c9a14a", shirt:"#3d8a66", desk:[24,4]},
-  {id:"ieum", name:"이음", dept:"edu", team:"품질검수팀", role:"학년 수준, 안전, 오류 검수", hair:"#5a3a5a", shirt:"#2f7a58", desk:[19,8]},
-  {id:"dasom", name:"다솜", dept:"edu", team:"교안디자인팀", role:"교육 목적에 맞춘 PPT·지도안·활동지 디자인", hair:"#d9774a", shirt:"#86c9a5", desk:[14,8]},
-  {id:"harang", name:"하랑", dept:"media", team:"협업창구", role:"완성 수업을 미디어부서 제작 요청서로 전달", hair:"#e0d6c8", shirt:"#7b6cc9", desk:[31,4]},
+  {id:"hangyeol", name:"한결", dept:"strategy", team:"운영기획팀", role:"월간 운영 계획, 부서 간 업무 배분", hair:"#3a2a22", shirt:"#3f7fb8", desk:[2.5,4]},
+  {id:"daon", name:"다온", dept:"strategy", team:"일정관리팀", role:"수업·제작 일정, 마감 관리", hair:"#7a4a2a", shirt:"#5b9bd5", desk:[6.5,4]},
+  {id:"nuri", name:"누리", dept:"strategy", team:"성과분석팀", role:"완료 현황 집계, 개선점 정리", hair:"#1f1f2a", shirt:"#2f6a9a", desk:[2.5,8]},
+  {id:"saebom", name:"새봄", dept:"edu", team:"수업기획팀", role:"수업 주제 발굴, 차시 구성, 학습 목표", hair:"#a4532e", shirt:"#4f9e7a", desk:[11.5,4]},
+  {id:"raon", name:"라온", dept:"edu", team:"교안제작팀", role:"슬라이드 원고, 강의 대본", hair:"#2c2c3a", shirt:"#68b48f", desk:[16,4]},
+  {id:"boram", name:"보람", dept:"edu", team:"활동지·평가팀", role:"학생 활동지, 퀴즈, 평가 기준", hair:"#c9a14a", shirt:"#3d8a66", desk:[20.5,4]},
+  {id:"ieum", name:"이음", dept:"edu", team:"품질검수팀", role:"학년 수준, 안전, 오류 검수", hair:"#5a3a5a", shirt:"#2f7a58", desk:[16,8]},
+  {id:"dasom", name:"다솜", dept:"edu", team:"교안디자인팀", role:"교육 목적에 맞춘 PPT·지도안·활동지 디자인", hair:"#d9774a", shirt:"#86c9a5", desk:[11.5,8]},
+  {id:"harang", name:"하랑", dept:"media", team:"콘텐츠기획팀", role:"영상 기획 PD: 회차 브리프, 교과 연계, 부서 요청 정리", hair:"#e0d6c8", shirt:"#7b6cc9", desk:[26.5,4]},
+  {id:"seoyun", name:"서윤", dept:"media", team:"대본팀", role:"한국어·영어 대본과 자막 (직역 아닌 현지화)", hair:"#4a2c2a", shirt:"#8d80d0", desk:[30.5,4]},
+  {id:"chaea", name:"채아", dept:"media", team:"아트팀", role:"캐릭터, 장면 콘티, 썸네일", hair:"#e07aa0", shirt:"#9b8fd9", desk:[34.5,4]},
+  {id:"gaon", name:"가온", dept:"media", team:"사운드팀", role:"징글, 효과음, 배경음, 캐릭터 목소리", hair:"#2c2c3a", shirt:"#6a5cc0", desk:[38,4]},
+  {id:"ideun", name:"이든", dept:"media", team:"영상편집팀", role:"9:16 쇼츠 편집, 한·영 두 버전 렌더링", hair:"#7a4a2a", shirt:"#7b6cc9", desk:[26.5,8]},
+  {id:"bareum", name:"바름", dept:"media", team:"검수팀", role:"사실 확인, 아동 안전, 저작권·플랫폼 정책", hair:"#3a3a3a", shirt:"#5e52a8", desk:[30.5,8]},
+  {id:"narae", name:"나래", dept:"media", team:"채널운영팀", role:"제목·설명·태그, 아동용 설정, 업로드 준비", hair:"#b5652e", shirt:"#a597ef", desk:[34.5,8]},
   {id:"haneul", name:"하늘", dept:"app", team:"앱기획팀", role:"앱 개선 기획, 수업 연계 요구사항 정리", hair:"#3b2b4a", shirt:"#d0703f", desk:[21,17]},
   {id:"doyun", name:"도윤", dept:"app", team:"앱개발팀", role:"승인된 기능 개발, 버그 수정", hair:"#1f1f24", shirt:"#e08a5a", desk:[26,17]},
   {id:"byeol", name:"별", dept:"app", team:"점검·배포팀", role:"테스트, 배포 상태 점검, 업데이트 노트", hair:"#b5652e", shirt:"#b85c30", desk:[21,21]},
   {id:"dodam", name:"도담", dept:"ceo", team:"비서실", role:"하루 업무 마감, 대표 브리핑 작성", hair:"#6a3b2a", shirt:"#c98a2b", desk:[36,19]}
 ];
-const MEDIA_GHOSTS = [{x:35,y:4,hair:"#444",shirt:"#9b8fd9"},{x:35,y:8,hair:"#8a5a3a",shirt:"#8d80d0"}];
+const MEDIA_GHOSTS = [];
 const ROOMS = [
-  {key:"strategy", x:0,y:0,w:12,h:10, floor:["#c9d8e8","#bccce0"], label:"전략부서"},
-  {key:"edu", x:12,y:0,w:16,h:10, floor:["#d6e8d0","#c8dec1"], label:"교육부서"},
-  {key:"media", x:28,y:0,w:12,h:10, floor:["#ddd6f0","#d0c8e8"], label:"미디어부서", media:true},
+  {key:"strategy", x:0,y:0,w:9,h:10, floor:["#c9d8e8","#bccce0"], label:"전략부서"},
+  {key:"edu", x:9,y:0,w:15,h:10, floor:["#d6e8d0","#c8dec1"], label:"교육부서"},
+  {key:"media", x:24,y:0,w:16,h:10, floor:["#ddd6f0","#d0c8e8"], label:"미디어부서"},
   {key:"ceo", x:0,y:13,w:9,h:12, floor:["#d9b98a","#cfae7c"], label:"대표실"},
   {key:"meet", x:9,y:13,w:10,h:12, floor:["#efe2c4","#e7d8b6"], label:"회의실"},
   {key:"app", x:19,y:13,w:13,h:12, floor:["#f3dccb","#ead0bd"], label:"앱개발부서"},
   {key:"lounge", x:32,y:13,w:8,h:12, floor:["#cfe3e6","#c2d9dd"], label:"비서실"}
 ];
-const SPOTS = { meet:[[11,18],[13.5,18],[16,18],[11,21],[13.5,21],[16,21]], lounge:[[34,21],[38,22],[34,17]], ceo:[[4,20],[6,20]], hall:[[6,11],[14,11],[20,11],[26,11],[33,11]] };
+const SPOTS = { meet:[[11,18],[13.5,18],[16,18],[11,21],[13.5,21],[16,21]], lounge:[[34,21],[38,22],[34,17]], ceo:[[4,20],[6,20]], hall:[[5,11],[14,11],[20,11],[28,11],[35,11]] };
 
 // ---------- Helpers ----------
 const $ = s => document.querySelector(s);
@@ -335,8 +344,8 @@ function drawBackground(){
   MEMBERS.forEach(m=>desk(m.desk[0],m.desk[1]));
   MEDIA_GHOSTS.forEach(p=>desk(p.x,p.y,"#4a3f7a"));
   // decorations
-  plant(1,1.4); plant(10,1.4); plant(26.6,8.2); plant(26,1.4); plant(38,8.2); plant(1,23);
-  shelf(9,7.5); shelf(25,7.5); board(5,1.3,36); board(16,1.3,60);
+  plant(1,1.4); plant(7.6,1.4); plant(22.6,8.2); plant(22.6,1.4); plant(38.4,8.2); plant(1,23);
+  shelf(6,7.5); shelf(19.5,7.5); board(3,1.3,36); board(13,1.3,60); board(28,1.3,90);
   // CEO room: big desk + rug
   g.fillStyle="#b04a3a"; g.fillRect(1*T,16*T,7*T,6*T); g.fillStyle="#c86450"; g.fillRect(1*T+4,16*T+4,7*T-8,6*T-8);
   g.fillStyle="#5a3a22"; g.fillRect(2.5*T,17*T,4*T,T+6); g.fillStyle="#2b2a33"; g.fillRect(4*T,16.4*T,T,10); g.fillStyle="#f2c94c"; g.fillRect(2.8*T,17.3*T,8,6);
@@ -353,8 +362,8 @@ function drawBackground(){
   g.fillStyle="#4f8f96"; g.fillRect(33*T,22.4*T,4*T,1.6*T); g.fillStyle="#6aaab0"; g.fillRect(33*T,21.8*T,4*T,0.8*T);
   g.fillStyle="#d5e9f2"; g.fillRect(38.5*T,16*T,12,18); g.fillStyle="#7cc6e8"; g.fillRect(38.5*T+2,16*T+2,8,7);
   g.fillStyle="#7a6a58"; g.fillRect(33*T,15.5*T,22,14); g.fillStyle="#f6efe0"; g.fillRect(33*T+3,15.5*T+3,16,8); // coffee machine
-  // media room sign
-  g.fillStyle="rgba(123,108,201,.25)"; g.fillRect(28*T+3,T+4,12*T-6,9*T-7);
+  // media room: camera on tripod
+  { const x=37.6*T, y=6.6*T; g.fillStyle="#2b2a33"; g.fillRect(x,y,14,9); g.fillStyle="#7fd1b9"; g.fillRect(x+10,y+3,5,3); g.fillStyle="#4a4250"; g.fillRect(x+6,y+9,2,14); g.fillRect(x+1,y+21,12,2); }
 }
 drawBackground();
 
@@ -425,7 +434,7 @@ function step(now){
 
 // ---------- Overlays: room labels + speech bubbles ----------
 const overlay = $("#overlay");
-ROOMS.forEach(r=>{ const el=document.createElement("div"); el.className="lbl"+(r.media?" media":""); el.textContent=r.media? r.label+" · 다른 창에서 근무 중" : r.label; el.style.left=((r.x+r.w/2)*T/640*100)+"%"; el.style.top=(((r.y)*T+22)/400*100)+"%"; overlay.appendChild(el); });
+ROOMS.forEach(r=>{ const el=document.createElement("div"); el.className="lbl"+(r.media?" media":""); el.textContent=r.label; el.style.left=((r.x+r.w/2)*T/640*100)+"%"; el.style.top=(((r.y)*T+22)/400*100)+"%"; overlay.appendChild(el); });
 const bubbles = {};
 actors.forEach(a=>{ const b=document.createElement("div"); b.className="bub"; b.style.opacity=0; overlay.appendChild(b); bubbles[a.m.id]=b; });
 let bubbleTurn=0, bubbleClock=0;
@@ -548,7 +557,7 @@ $("#orgChart").innerHTML = ["strategy","edu","app","media"].map(k=>{
   const ms = MEMBERS.filter(m=>m.dept===k);
   return `<div class="dept" style="border-color:${DEPTS[k].color}"><h3 style="color:${DEPTS[k].color}">${DEPTS[k].name}</h3><div class="mission">${DEPTS[k].mission}</div>
   ${ms.map(m=>`<div class="team"><canvas class="ava" width="16" height="20" data-ava="${m.id}"></canvas><div><b>${m.team} · ${m.name}</b><div>${m.role}</div></div></div>`).join("")}
-  ${k==="media"?`<div class="team"><span></span><div><div>콘텐츠 제작팀은 <a href="${MEDIA_OFFICE}" target="_blank" rel="noopener">아하랩 AI 사무실</a>에서 운영 중이에요. 하랑이 완성된 수업을 제작 요청서로 넘겨줘요.</div></div></div>`:""}</div>`;
+  ${k==="media"?`<div class="team"><span></span><div><div>이전 작업 기록(가칭 시절): <a href="${MEDIA_OFFICE}" target="_blank" rel="noopener">미디어 작업 기록 보기</a></div></div></div>`:""}</div>`;
 }).join("") + `<div class="dept" style="border-color:${DEPTS.ceo.color}"><h3 style="color:${DEPTS.ceo.color}">대표실 · 비서실</h3><div class="mission">대표는 결재와 지시만, 정리는 비서가</div>
   <div class="team"><span></span><div><b>대표 · 나</b><div>기획안 승인·반려, 직접 지시</div></div></div>
   <div class="team"><canvas class="ava" width="16" height="20" data-ava="dodam"></canvas><div><b>비서실 · 도담</b><div>하루 업무 마감, 브리핑 작성</div></div></div></div>`;
