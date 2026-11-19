@@ -309,6 +309,11 @@ form.order input[type=checkbox]{flex:none}
       </div>
       <textarea id="orderDetail" placeholder="대상, 차시 수, 꼭 들어갈 내용, 마감일 등을 적어주세요 (선택)" aria-label="지시 내용"></textarea>
       <div class="att" id="orderAtt"><label class="btn ghost" for="orderFile">📎 파일·캡처 첨부</label><input type="file" id="orderFile" multiple accept="image/*,application/pdf,.txt,.md,.csv,.json"><span class="note" id="orderAttHint">이미지·PDF·텍스트, 한 파일 20MB까지. 캡처는 글 칸에 붙여넣기(Ctrl+V)해도 돼요.</span><div class="chips" id="orderChips"></div></div>
+      <div class="r" role="radiogroup" aria-label="처리 시간">
+        <label class="ck"><input type="radio" name="orderWhen" value="auto" checked> 직원이 판단 (오래 걸리고 급하지 않으면 밤에)</label>
+        <label class="ck"><input type="radio" name="orderWhen" value="now"> 🔥 급함 · 지금 바로</label>
+        <label class="ck"><input type="radio" name="orderWhen" value="night"> 🌙 밤에 처리 (00~08시)</label>
+      </div>
       <div class="r"><button class="btn pri" type="submit" id="orderBtn">지시 내리기</button><span class="note" id="orderMsg"></span></div>
     </form>
     <h2 style="margin-top:16px">최종 컨펌 대기</h2>
@@ -773,7 +778,7 @@ function taskCard(t, withActs){
   let acts = "";
   if(withActs==="approve" && canWrite!==false) acts = `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}">승인</button><input class="revnote" id="rej-${esc(t._id)}" placeholder="반려 이유·바라는 방향 (선택)" aria-label="반려 이유"><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>`;
   if(withActs==="confirm" && canWrite!==false) acts = `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button><input class="revnote" id="rev-${esc(t._id)}" placeholder="수정할 점 · 반려 이유 (선택)" aria-label="수정할 점 또는 반려 이유"><button class="btn ghost" data-act="revise" data-id="${esc(t._id)}">수정 요청</button><button class="btn ghost danger" data-act="reject" data-id="${esc(t._id)}" title="처음부터 새로 작성해요">반려 · 새로 작성</button>`;
-  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChip(t.status)}${t.review?`<span class="st ${t.review.result==="보류"?"st-failed":"st-done"}" title="${esc(t.review.notes||"")}">부서 검수 ${esc(t.review.result||"")} · ${esc(t.review.by||"")}</span>`:""}${t.mergeStatus?`<span class="st ${t.mergeStatus==="merged"?"st-done":"st-failed"}">${t.mergeStatus==="merged"?"병합 완료":"병합 보류"}</span>`:""}${t.finalReview?`<span class="st ${t.finalReview.result==="통과"?"st-done":"st-failed"}" title="${esc(t.finalReview.notes||"")}">총괄 검수 ${esc(t.finalReview.result||"")} · ${esc(t.finalReview.by||"")}</span>`:""}${((t.reviseCount||0)+(t.rejectCount||0))>=1?`<span class="st ${((t.reviseCount||0)+(t.rejectCount||0))>=2?"st-revise":"st-proposed"}" title="2번 이상이면 부서 전체가 의논해서 고쳐요">수정·반려 ${(t.reviseCount||0)+(t.rejectCount||0)}회${((t.reviseCount||0)+(t.rejectCount||0))>=2?" · 부서 회의":""}</span>`:""}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${t.by==="대표"?" · 대표 지시":""}</span></div>
+  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChip(t.status)}${t.review?`<span class="st ${t.review.result==="보류"?"st-failed":"st-done"}" title="${esc(t.review.notes||"")}">부서 검수 ${esc(t.review.result||"")} · ${esc(t.review.by||"")}</span>`:""}${t.mergeStatus?`<span class="st ${t.mergeStatus==="merged"?"st-done":"st-failed"}">${t.mergeStatus==="merged"?"병합 완료":"병합 보류"}</span>`:""}${t.finalReview?`<span class="st ${t.finalReview.result==="통과"?"st-done":"st-failed"}" title="${esc(t.finalReview.notes||"")}">총괄 검수 ${esc(t.finalReview.result||"")} · ${esc(t.finalReview.by||"")}</span>`:""}${((t.reviseCount||0)+(t.rejectCount||0))>=1?`<span class="st ${((t.reviseCount||0)+(t.rejectCount||0))>=2?"st-revise":"st-proposed"}" title="2번 이상이면 부서 전체가 의논해서 고쳐요">수정·반려 ${(t.reviseCount||0)+(t.rejectCount||0)}회${((t.reviseCount||0)+(t.rejectCount||0))>=2?" · 부서 회의":""}</span>`:""}${t.urgent?`<span class="st st-revise">🔥 급함</span>`:""}${t.queue==="night"&&!["done","confirm","rejected"].includes(t.status)?`<span class="st st-proposed" title="사용량을 아끼려고 밤 00~08시에 처리해요">🌙 야간 처리 예정</span>`:""}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${t.by==="대표"?" · 대표 지시":""}</span></div>
     <div class="title">${esc(t.title)}</div>${t.detail?`<div class="det">${esc(t.detail)}</div>`:""}${attList(t.attachments)}
     ${(acts||link||docBtn)?`<div class="acts">${acts}${docBtn}${link}</div>`:""}</div>`;
 }
@@ -996,7 +1001,7 @@ document.addEventListener("click", async e=>{
 function miniTask(t, kind){
   const acts = canWrite===false ? "" : kind==="confirm" ? `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button><button class="btn ghost danger" data-act="reject" data-id="${esc(t._id)}" title="처음부터 새로 작성해요">반려</button>` : kind==="approve" ? `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}">승인</button><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>` : "";
   const doc = t.docId ? `<button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button>` : "";
-  return `<div class="mini"><div class="m">${deptChip(t.dept)}${kind==="order"?stChip(t.status):""}<span>${esc(fmtDay(t.updatedAt||t.createdAt))}</span></div><div class="t">${esc(t.title)}</div>${(acts||doc)?`<div class="acts">${acts}${doc}</div>`:""}</div>`;
+  return `<div class="mini"><div class="m">${deptChip(t.dept)}${kind==="order"?stChip(t.status):""}${kind==="order"&&t.urgent?`<span class="st st-revise">🔥</span>`:""}${kind==="order"&&t.queue==="night"?`<span class="st st-proposed">🌙 야간</span>`:""}<span>${esc(fmtDay(t.updatedAt||t.createdAt))}</span></div><div class="t">${esc(t.title)}</div>${(acts||doc)?`<div class="acts">${acts}${doc}</div>`:""}</div>`;
 }
 function renderTodo(){
   if(!$("#todo")) return;
@@ -1212,13 +1217,16 @@ $("#orderForm").addEventListener("submit", async e=>{
   catch(err){ btn.disabled=false; $("#orderMsg").textContent=attErr(err?.code); return; }
   try{
     const now=new Date().toISOString();
+    const when=document.querySelector('input[name="orderWhen"]:checked')?.value||"auto";
     const t={title, detail:$("#orderDetail").value.trim(), dept, team, status:"approved", by:"대표", createdAt:now, updatedAt:now};
+    if(when==="now") t.urgent=true; if(when==="night"){ t.queue="night"; t.note="대표님이 밤(00~08시) 처리로 지정했어요."; }
     if(attachments.length) t.attachments=attachments;
     const id="o-"+Date.now().toString(36);
     await dbRef.doc("tasks/"+id).set(t);
     $("#orderTitle").value=""; $("#orderDetail").value=""; clearAtt("order");
     const att = attachments.length?` (첨부 ${attachments.length}개)`:"";
     $("#orderMsg").textContent="지시를 남겼어요"+att+". 담당 팀을 부르는 중…";
+    if(when==="night"){ $("#orderMsg").textContent="지시를 남겼어요"+att+". 오늘 밤(00~08시) 야간 근무 때 처리하고 아침에 컨펌 대기로 올라와요."; btn.disabled=false; return; }
     const r = await wakeOffice("order-"+id);
     $("#orderMsg").textContent = r==="ok" ? "지시를 남겼어요"+att+". 담당 팀이 지금 바로 시작했어요. 끝나면 '최종 컨펌 대기'로 올라와요." : "지시를 남겼어요"+att+". 매시 7분 정기 점검(오전 8시~밤 10시) 때 시작해요.";
   }catch(err){ $("#orderMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; }
