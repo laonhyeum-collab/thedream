@@ -50,6 +50,26 @@ h1 small{display:block;font-family:var(--f-body);font-size:13px;color:var(--mute
 .bub{position:absolute;transform:translate(-50%,-100%);max-width:34%;background:#fffdf7;color:#2b2a33;border:2px solid #2b2a33;border-radius:8px;padding:2px 7px;font-size:clamp(9px,1.35vw,12px);line-height:1.35;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .3s}
 .bub::after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-4px;border:4px solid transparent;border-top-color:#2b2a33}
 .dim{position:absolute;inset:0;background:rgba(20,22,48,.45);pointer-events:none;transition:opacity .6s}
+.floor.is3d{aspect-ratio:16/10;border:1px solid var(--line);border-radius:20px;background:#eef2f8;box-shadow:var(--shadow)}
+.floor.is3d #cv,.floor.is3d #overlay,.floor.is3d #dim{display:none}
+.o3d{position:absolute;inset:0}
+.o3c{position:absolute;inset:0;width:100%!important;height:100%!important;touch-action:pan-y;cursor:grab;display:block}
+.o3c:active{cursor:grabbing}
+.o3lbl{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.o3room{position:absolute;transform:translate(-50%,-100%);background:#fff;color:#334;border-radius:999px;padding:2px 9px 2px 3px;box-shadow:0 2px 8px rgba(20,30,60,.18);font-size:clamp(9px,1.2vw,12px);white-space:nowrap;display:flex;gap:6px;align-items:center}
+.o3room b{background:var(--c);color:#fff;border-radius:999px;padding:1px 8px;font-weight:700}
+.o3room span{color:#5b6475}
+.o3tag{position:absolute;transform:translate(-50%,-100%);background:var(--c);color:#fff;font-size:clamp(9px,1.1vw,11px);font-weight:700;padding:1px 7px;border-radius:999px;transition:opacity .2s;white-space:nowrap}
+.floor.is3d .bub{background:#fff;color:#1d2436;border:0;box-shadow:0 3px 10px rgba(20,30,60,.25);border-radius:10px;padding:3px 9px;transform:translate(-50%,-115%)}
+.floor.is3d .bub::after{border-top-color:#fff;border-width:5px;margin-left:-5px;bottom:-9px}
+.o3bar{position:absolute;left:10px;top:10px;display:flex;gap:4px;flex-wrap:wrap;max-width:62%}
+.o3bar button,.o3rooms button{border:0;background:rgba(255,255,255,.92);color:#2b3245;border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;font-weight:600;box-shadow:0 1px 4px rgba(20,30,60,.15);cursor:pointer}
+.o3bar button[aria-pressed="true"]{background:#2f6fed;color:#fff}
+.o3rooms{position:absolute;left:10px;bottom:10px;display:flex;gap:4px;flex-wrap:wrap;max-width:72%}
+.o3rooms button::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c);margin-right:5px;vertical-align:1px}
+.o3hint{position:absolute;right:10px;top:12px;font-size:11px;color:#5b6475;background:rgba(255,255,255,.85);padding:2px 9px;border-radius:999px;pointer-events:none}
+.floor.is3d .who{z-index:3}
+@media (max-width:640px){.floor.is3d{aspect-ratio:5/4}.o3hint,.o3rooms,.o3room span{display:none}.o3bar{left:6px;top:6px;max-width:96%;gap:3px}.o3bar button{font-size:10.5px;padding:3px 7px}.o3room{padding:1px;font-size:9px}.o3room b{padding:0 6px}}
 .who{position:absolute;right:10px;bottom:10px;max-width:min(300px,70%);background:var(--panel);color:var(--ink);border:2px solid #2b2a33;border-radius:10px;padding:10px 12px;font-size:13px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
 .who b{font-family:var(--f-display);font-weight:400;font-size:16px}
 .who button{position:absolute;top:4px;right:6px;border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer}
@@ -189,6 +209,28 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
 .cls .dd{font-family:var(--f-pixel);font-size:13px;line-height:1.5}
 .cls .dd .dday{display:inline-block;margin-top:4px;font-family:var(--f-body);font-weight:700;font-size:11px;padding:1px 7px;border-radius:999px;background:var(--panel2);border:1px solid var(--line)}
 .cls .dd .dday.near{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.fld{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);flex:0 1 150px}
+.fld input{width:100%}
+.cal{border:1px solid var(--line);border-radius:16px;padding:12px;margin:6px 0 14px;background:var(--panel)}
+.calh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.calh b{font-size:16px;min-width:110px;text-align:center}
+.calh .btn{padding:4px 12px}
+.calleg{margin-left:auto;display:flex;align-items:center;gap:6px}
+.lg{display:inline-block;width:10px;height:10px;border-radius:3px}.lg.c{background:var(--accent)}.lg.d{background:var(--warn)}
+.calg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.calg .wd{font-size:11px;text-align:center;color:var(--muted);padding:2px 0}
+.calg .day{min-height:74px;border:1px solid var(--line);border-radius:8px;padding:3px;background:var(--panel2);cursor:pointer;text-align:left;font:inherit;color:inherit;display:flex;flex-direction:column;gap:2px;min-width:0}
+.calg .day.out{opacity:.4}
+.calg .day.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.calg .day.sel{background:var(--soft)}
+.calg .day .n{font-size:11px;font-weight:700}
+.calg .day.sun .n{color:var(--bad)}
+.calg .ev{font-size:10.5px;line-height:1.25;padding:1px 4px;border-radius:4px;background:var(--accent);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.calg .ev.dl{background:transparent;color:var(--warn);border:1px solid var(--warn)}
+.calg .more2{font-size:10px;color:var(--muted)}
+.calday{margin-top:8px}
+.calday .it{padding:6px 0;border-top:1px dashed var(--line);font-size:13px}
+@media (max-width:640px){.calg .day{min-height:50px}.calg .ev{font-size:0;height:6px;padding:0}.calg .ev.dl{height:4px}}
 .prep{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .prep span{font-size:11.5px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
 .prep .ok{color:var(--ok);border-color:var(--ok)}.prep .wip{color:var(--warn);border-color:var(--warn)}.prep .no{color:var(--bad);border-color:var(--bad)}
@@ -308,15 +350,28 @@ form.order input[type=checkbox]{flex:none}
   <section class="panel" data-pane="sched" hidden>
     <h2>내 수업 일정</h2>
     <p class="note" style="margin-top:-4px">수업을 적어 두면 일정관리팀 다온이 수업마다 필요한 자료(교안, 활동지, 영상 등)를 점검하고, <b>수업 3일 전까지 최종 컨펌</b>이 나도록 각 부서를 챙겨요. 2주 뒤 수업이 비어 있으면 다온이 입력을 요청해요.</p>
-    <form class="order" id="classForm">
-      <div class="r">
-        <input type="date" id="clsDate" aria-label="수업 날짜" required style="flex:0 1 160px">
-        <input type="time" id="clsTime" aria-label="시작 시간" style="flex:0 1 120px">
-        <input id="clsTitle" placeholder="수업 이름 (예: 레고사이언스 29차시 서리내린 털과 얼어붙은 발)" aria-label="수업 이름" required>
+    <div class="cal" id="cal">
+      <div class="calh"><button type="button" class="btn ghost" id="calPrev" aria-label="이전 달">‹</button><b id="calTitle"></b><button type="button" class="btn ghost" id="calNext" aria-label="다음 달">›</button><button type="button" class="more" id="calToday">오늘</button><span class="note calleg"><i class="lg c"></i>내 수업 <i class="lg d"></i>자료·컨펌 마감</span></div>
+      <div class="calg" id="calGrid"></div>
+      <div id="calDay" class="calday"></div>
+    </div>
+    <form class="order" id="classForm" novalidate>
+      <h3 style="margin:0 0 6px;font-size:15px">수업 일정 넣기</h3>
+      <div class="r"><input id="clsTitle" placeholder="수업 이름 (예: 레고사이언스 29차시 서리내린 털과 얼어붙은 발)" aria-label="수업 이름"></div>
+      <div class="r" role="radiogroup" aria-label="일정 종류">
+        <span class="note" style="align-self:center">일정 종류</span>
+        <label class="ck"><input type="radio" name="clsKind" value="once" checked> 하루 수업</label>
+        <label class="ck"><input type="radio" name="clsKind" value="daily"> 기간 수업 (매일, 예: 캠프)</label>
+        <label class="ck"><input type="radio" name="clsKind" value="weekly"> 기간 수업 (매주 같은 요일)</label>
       </div>
       <div class="r">
-        <input id="clsWhere" placeholder="반·대상·장소 (예: 라온반 온돌봄 · 초등 고학년)" aria-label="반, 대상, 장소">
+        <label class="fld">시작일<input type="date" id="clsDate" aria-label="시작일"></label>
+        <label class="fld" id="clsEndWrap" hidden>종료일<input type="date" id="clsEnd" aria-label="종료일"></label>
+        <label class="fld">시작 시간<input type="time" id="clsTime" aria-label="시작 시간"></label>
+        <label class="fld">끝 시간<input type="time" id="clsTimeEnd" aria-label="끝나는 시간"></label>
       </div>
+      <div class="note" id="clsSpan"></div>
+      <div class="r"><input id="clsWhere" placeholder="반·대상·장소 (예: 라온반 온돌봄 · 초등 고학년)" aria-label="반, 대상, 장소"></div>
       <div class="r" role="group" aria-label="필요한 자료">
         <span class="note" style="align-self:center">필요한 자료</span>
         <label class="ck"><input type="checkbox" id="needLesson" checked> 교안·지도안</label>
@@ -325,10 +380,12 @@ form.order input[type=checkbox]{flex:none}
         <label class="ck"><input type="checkbox" id="needApp"> 앱</label>
         <label class="ck"><input type="checkbox" id="needKit"> 교구 준비물</label>
       </div>
-      <textarea id="clsNote" placeholder="메모 (선택): 꼭 넣을 내용, 바꾸고 싶은 점" aria-label="메모"></textarea>
+      <textarea id="clsNote" placeholder="교안 요청 코멘트: 꼭 넣을 내용, 원하는 방향, 학생 수준, 참고할 점. 직원이 교안을 만들기 전에 반드시 읽어요." aria-label="교안 요청 코멘트" style="min-height:90px"></textarea>
+      <div class="att" id="clsAtt"><label class="btn ghost" for="clsFile">📎 참고 파일 첨부</label><input type="file" id="clsFile" multiple accept="image/*,application/pdf,.txt,.md,.csv,.json,.pptx,.docx,.hwp"><span class="note" id="clsAttHint">예전 교안·활동지·사진·캡처 등. 코멘트 칸에 붙여넣기(Ctrl+V)해도 돼요.</span><div class="chips" id="clsChips"></div></div>
       <details>
         <summary class="note" style="cursor:pointer">여러 수업 한꺼번에 넣기</summary>
-        <textarea id="clsBulk" placeholder="한 줄에 수업 하나씩: 날짜 (시간) 수업 이름&#10;11/27 레고사이언스 29차시 서리내린 털과 얼어붙은 발&#10;12/4 14:00 레고사이언스 30차시 닮았지만 안 닮은 외계인" aria-label="여러 수업" style="margin-top:8px;min-height:110px"></textarea>
+        <textarea id="clsBulk" placeholder="한 줄에 수업 하나씩: 날짜 (시간) 수업 이름&#10;11/27 레고사이언스 29차시 서리내린 털과 얼어붙은 발&#10;12/4 14:00 레고사이언스 30차시 닮았지만 안 닮은 외계인&#10;12/22~12/24 겨울방학 코딩 캠프" aria-label="여러 수업" style="margin-top:8px;min-height:110px"></textarea>
+        <div class="note">기간 수업은 "12/22~12/24 수업 이름"처럼 적어요. 위 코멘트·참고 파일·필요한 자료는 모든 줄에 함께 붙어요.</div>
       </details>
       <div class="r"><button class="btn pri" type="submit" id="clsBtn">수업 일정 넣기</button><span class="note" id="clsMsg" aria-live="polite"></span></div>
     </form>
@@ -602,6 +659,7 @@ function working(){ const k=kstParts(); const wk=!["Sat","Sun"].includes(k.wd); 
 let last=performance.now(), tick=0;
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 function step(now){
+  if(window.__office3d) return;
   const dt=Math.min(.05,(now-last)/1000); last=now; tick+=dt;
   const awake = working();
   ctx.drawImage(bg,0,0);
@@ -808,53 +866,126 @@ const PREP_ST={ready:["ok","컨펌 완료"],confirm:["wip","컨펌 대기"],doin
 const ymd=d=>kstParts(d).date;
 const addDays=(dateStr,n)=>{ const d=new Date(dateStr+"T00:00:00+09:00"); d.setDate(d.getDate()+n); return ymd(d); };
 const dayDiff=(a,b)=>Math.round((new Date(a+"T00:00:00+09:00")-new Date(b+"T00:00:00+09:00"))/864e5);
+const WD="일월화수목금토";
+const wdOf=d=>new Date(d+"T00:00:00Z").getUTCDay();
+const fmtMD=d=>d?`${+d.slice(5,7)}/${+d.slice(8,10)}(${WD[wdOf(d)]})`:"";
+function sessionsOf(c){
+  if(Array.isArray(c.sessions)&&c.sessions.length) return c.sessions;
+  if(!c.date) return [];
+  const end=c.endDate&&c.endDate>c.date?c.endDate:c.date, step=c.repeat==="weekly"?7:1, out=[];
+  for(let d=c.date; d<=end && out.length<80; d=addDays(d,step)) out.push(d);
+  return out;
+}
+function makeSessions(start,end,kind){ return sessionsOf({date:start,endDate:kind==="once"?"":end,repeat:kind}); }
+const KINDTXT={once:"하루 수업",daily:"기간 수업 · 매일",weekly:"기간 수업 · 매주"};
+function classSpan(c){ const ss=sessionsOf(c); if(ss.length<=1) return fmtMD(c.date); return `${fmtMD(ss[0])} ~ ${fmtMD(ss[ss.length-1])} · ${KINDTXT[c.repeat]||"기간 수업"} ${ss.length}회`; }
 function renderClasses(){
   const today=kstParts().date;
-  const up=classes.filter(c=>c.status!=="canceled" && (c.date||"")>=today).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
-  $("#classList").innerHTML = up.length ? up.map(c=>{
-    const dd=dayDiff(c.date,today); const due=c.confirmDue||addDays(c.date,-3);
+  const live=classes.filter(c=>c.status!=="canceled");
+  const up=live.filter(c=>{ const ss=sessionsOf(c); return (ss[ss.length-1]||c.date||"")>=today; }).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+  $("#classList").innerHTML = (up.length?`<h3 style="margin:14px 0 4px;font-size:15px">다가오는 수업 ${up.length}개</h3>`:"") + (up.length ? up.map(c=>{
+    const ss=sessionsOf(c); const next=ss.find(d=>d>=today)||c.date;
+    const dd=dayDiff(next,today); const due=c.confirmDue||addDays(c.date,-3);
     const prep=PREP_KEYS.filter(([k])=>c.needs&&c.needs[k]).map(([k,label])=>{ const st=(c.prep&&c.prep[k])||"none"; const [cls,txt]=PREP_ST[st]||PREP_ST.none; return `<span class="${cls}">${esc(label)} · ${esc(txt)}</span>`; }).join("");
-    return `<div class="cls"><div class="dd">${esc(c.date.slice(5).replace("-","/"))}${c.time?` ${esc(c.time)}`:""}<br><span class="dday ${dd<=3?"near":""}">${dd===0?"오늘":"D-"+dd}</span></div>
+    return `<div class="cls"><div class="dd">${esc(next.slice(5).replace("-","/"))}${c.time?` ${esc(c.time)}`:""}<br><span class="dday ${dd<=3?"near":""}">${dd===0?"오늘":"D-"+dd}</span></div>
       <div style="min-width:0"><div style="font-weight:600;overflow-wrap:anywhere">${esc(c.title)}</div>
-      <div class="note">${c.where?esc(c.where)+" · ":""}컨펌 마감 ${esc(due.slice(5).replace("-","/"))}${c.prepNote?" · "+esc(c.prepNote):""}</div>
+      <div class="note">${esc(classSpan(c))}${c.time?` · ${esc(c.time)}${c.timeEnd?"~"+esc(c.timeEnd):""}`:""}${c.where?" · "+esc(c.where):""} · 컨펌 마감 ${esc(due.slice(5).replace("-","/"))}${c.prepNote?" · "+esc(c.prepNote):""}</div>
       ${prep?`<div class="prep">${prep}</div>`:""}
-      ${c.note?`<div class="note">메모: ${esc(c.note)}</div>`:""}
+      ${c.note?`<div class="note" style="white-space:pre-wrap;color:var(--ink)">💬 ${esc(c.note)}</div>`:""}
+      ${attList(c.attachments)}
       ${canWrite!==false?`<div class="acts" style="margin-top:4px"><button class="more" type="button" data-clsdel="${esc(c._id)}">이 수업 취소</button></div>`:""}</div></div>`;
-  }).join("") : `<div class="empty">아직 입력한 수업이 없어요. 위 칸에 수업 날짜와 이름을 넣어 주세요.</div>`;
+  }).join("") : `<div class="empty">아직 입력한 수업이 없어요. 위 칸에 수업 날짜와 이름을 넣어 주세요.</div>`);
+  renderCal();
 }
+// ---- calendar ----
+let calMonth=kstParts().date.slice(0,7), calSel="";
+function calEvents(){
+  const m={}; const add=(d,e)=>{ (m[d]=m[d]||[]).push(e); };
+  classes.filter(c=>c.status!=="canceled").forEach(c=>{ const ss=sessionsOf(c); ss.forEach((d,i)=>add(d,{k:"c",t:c.title+(ss.length>1?` (${i+1}/${ss.length})`:""),c})); });
+  schedule.filter(x=>/마감/.test(x.title||"")).forEach(x=>add(x.date,{k:"d",t:x.title}));
+  return m;
+}
+function renderCal(){
+  if(!$("#calGrid")) return;
+  const today=kstParts().date, ev=calEvents();
+  const [y,mo]=calMonth.split("-").map(Number);
+  $("#calTitle").textContent=`${y}년 ${mo}월`;
+  const first=new Date(Date.UTC(y,mo-1,1)), startWd=first.getUTCDay();
+  let d=new Date(Date.UTC(y,mo-1,1-startWd)); let h=[..."일월화수목금토"].map(w=>`<div class="wd">${w}</div>`).join("");
+  for(let i=0;i<42;i++){
+    const ds=d.toISOString().slice(0,10), list=ev[ds]||[];
+    if(i===35 && ds.slice(0,7)!==calMonth) break;
+    const cls=["day", ds.slice(0,7)!==calMonth?"out":"", ds===today?"today":"", ds===calSel?"sel":"", d.getUTCDay()===0?"sun":""].join(" ");
+    h+=`<button type="button" class="${cls}" data-day="${ds}"><span class="n">${d.getUTCDate()}</span>${list.slice(0,3).map(e=>`<span class="ev ${e.k==="d"?"dl":""}" title="${esc(e.t)}">${esc(e.t)}</span>`).join("")}${list.length>3?`<span class="more2">+${list.length-3}</span>`:""}</button>`;
+    d=new Date(d.getTime()+864e5);
+  }
+  $("#calGrid").innerHTML=h;
+  const sel=calSel&&ev[calSel]||[];
+  $("#calDay").innerHTML = calSel ? `<div class="note"><b>${esc(fmtMD(calSel))}</b> ${sel.length?"":"일정 없음 · 아래 칸에 이 날짜로 수업을 넣을 수 있어요."}</div>`+sel.map(e=>`<div class="it">${e.k==="c"?"📘":"⏰"} ${esc(e.t)}${e.c&&e.c.time?` · ${esc(e.c.time)}`:""}${e.c&&e.c.where?` · ${esc(e.c.where)}`:""}${e.c&&e.c.note?`<div class="note" style="white-space:pre-wrap">💬 ${esc(e.c.note)}</div>`:""}${e.c?attList(e.c.attachments):""}</div>`).join("") : "";
+}
+$("#calPrev").addEventListener("click",()=>{ const [y,m]=calMonth.split("-").map(Number); const d=new Date(Date.UTC(y,m-2,1)); calMonth=d.toISOString().slice(0,7); renderCal(); });
+$("#calNext").addEventListener("click",()=>{ const [y,m]=calMonth.split("-").map(Number); const d=new Date(Date.UTC(y,m,1)); calMonth=d.toISOString().slice(0,7); renderCal(); });
+$("#calToday").addEventListener("click",()=>{ calMonth=kstParts().date.slice(0,7); calSel=kstParts().date; renderCal(); });
+$("#calGrid").addEventListener("click",e=>{ const b=e.target.closest("[data-day]"); if(!b) return; calSel=b.dataset.day; if(!$("#clsDate").value) $("#clsDate").value=calSel; renderCal(); });
+// ---- form ----
+const clsKind=()=>document.querySelector('input[name="clsKind"]:checked')?.value||"once";
+function updSpan(){
+  const k=clsKind(); $("#clsEndWrap").hidden = k==="once";
+  const s0=$("#clsDate").value, e0=$("#clsEnd").value;
+  if(k!=="once" && s0 && e0 && e0>=s0){ const ss=makeSessions(s0,e0,k); $("#clsSpan").textContent=`${fmtMD(ss[0])} ~ ${fmtMD(ss[ss.length-1])} · 수업 ${ss.length}회${k==="weekly"?" (매주 "+WD[new Date(s0+"T12:00:00+09:00").getDay()]+"요일)":""}`; }
+  else $("#clsSpan").textContent = k!=="once" ? "시작일과 종료일을 넣어 주세요." : "";
+}
+document.querySelectorAll('input[name="clsKind"]').forEach(r=>r.addEventListener("change",updSpan));
+["clsDate","clsEnd"].forEach(k=>$("#"+k).addEventListener("change",updSpan));
 function parseBulk(text){
   const year=+kstParts().date.slice(0,4); const out=[]; const bad=[];
+  const fix=(mo,d)=>{ let y=year; const cand=`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`; if(cand<kstParts().date && dayDiff(kstParts().date,cand)>60) y=year+1; return `${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`; };
   text.split(/\n+/).map(l=>l.trim()).filter(Boolean).forEach(l=>{
-    let m=l.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})\s*(.*)$/), y, mo, d, rest;
-    if(m){ [ ,y,mo,d,rest]=m; } else { m=l.match(/^(\d{1,2})\s*[/.월-]\s*(\d{1,2})\s*일?\s*(.*)$/); if(!m){ bad.push(l); return; } [ ,mo,d,rest]=m; y=year; const cand=`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`; if(cand<kstParts().date && dayDiff(kstParts().date,cand)>60) y=year+1; }
+    let m=l.match(/^(?:(\d{4})[-./])?(\d{1,2})\s*[-./월]\s*(\d{1,2})\s*일?\s*(?:[~∼-]\s*(?:(\d{1,2})\s*[-./월]\s*)?(\d{1,2})\s*일?)?\s*(.*)$/);
+    if(!m){ bad.push(l); return; }
+    let [ ,yy,mo,d,mo2,d2,rest]=m;
+    const start = yy ? `${yy}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}` : fix(mo,d);
+    let end=""; if(d2){ end = fix(mo2||mo, d2); if(end<start) end=addDays(end,365); }
     let time=""; const tm=rest.match(/^\(?(\d{1,2}):(\d{2})\)?\s*(.*)$/); if(tm){ time=`${tm[1].padStart(2,"0")}:${tm[2]}`; rest=tm[3]; }
     rest=rest.replace(/^[\s|·,-]+/,"").trim(); if(!rest){ bad.push(l); return; }
-    out.push({date:`${y}-${String(mo).padStart(2,"0")}-${String(d).padStart(2,"0")}`, time, title:rest});
+    out.push({date:start, endDate:end, repeat:end?"daily":"once", time, title:rest});
   });
   return {out,bad};
 }
 $("#classForm").addEventListener("submit", async e=>{
   e.preventDefault();
-  if(!dbRef){ $("#clsMsg").textContent="사무실 데이터에 연결되지 않아 저장할 수 없어요."; return; }
+  const msg=t=>$("#clsMsg").textContent=t;
+  if(!dbRef){ msg("사무실 데이터에 연결되지 않아 저장할 수 없어요. 페이지를 새로고침해 주세요."); return; }
   const needs={lesson:$("#needLesson").checked, sheet:$("#needSheet").checked, video:$("#needVideo").checked, app:$("#needApp").checked, kit:$("#needKit").checked};
   const where=$("#clsWhere").value.trim(), note=$("#clsNote").value.trim();
   let items=[]; const bulk=$("#clsBulk").value.trim();
-  if(bulk){ const {out,bad}=parseBulk(bulk); if(bad.length){ $("#clsMsg").textContent=`날짜를 읽지 못한 줄이 있어요: "${bad[0]}" — "11/27 수업 이름"처럼 적어 주세요.`; return; } items=out; }
-  const one={date:$("#clsDate").value, time:$("#clsTime").value, title:$("#clsTitle").value.trim()};
-  if(one.date && one.title) items.unshift(one);
-  if(!items.length){ $("#clsMsg").textContent="날짜와 수업 이름을 넣어 주세요."; return; }
-  const btn=$("#clsBtn"); btn.disabled=true; $("#clsMsg").textContent="저장하는 중…";
-  const now=new Date().toISOString(); let ok=0;
+  if(bulk){ const {out,bad}=parseBulk(bulk); if(bad.length){ msg(`날짜를 읽지 못한 줄이 있어요: "${bad[0]}" — "11/27 수업 이름"처럼 적어 주세요.`); return; } items=out; }
+  const k=clsKind(), title=$("#clsTitle").value.trim(), d0=$("#clsDate").value, d1=$("#clsEnd").value;
+  if(title||d0){
+    if(!d0){ msg("시작일(날짜)을 넣어 주세요."); $("#clsDate").focus(); return; }
+    if(!title){ msg("수업 이름을 넣어 주세요."); $("#clsTitle").focus(); return; }
+    if(k!=="once" && (!d1 || d1<d0)){ msg("기간 수업은 종료일을 시작일 이후로 넣어 주세요."); $("#clsEnd").focus(); return; }
+    items.unshift({date:d0, endDate:k==="once"?"":d1, repeat:k, time:$("#clsTime").value, timeEnd:$("#clsTimeEnd").value, title});
+  }
+  if(!items.length){ msg("수업 이름과 날짜를 넣어 주세요."); return; }
+  const btn=$("#clsBtn"); btn.disabled=true; msg("저장하는 중…");
+  let attachments=[];
+  try{ attachments = await uploadAtt("cls", msg); }catch(err){ btn.disabled=false; msg(attErr(err?.code)); return; }
+  const now=new Date().toISOString(); let ok=0, lastErr="";
   for(const [i,c] of items.entries()){
     const id="c-"+c.date.replace(/-/g,"")+"-"+Date.now().toString(36)+i;
-    try{ await dbRef.doc("classes/"+id).set({...c, where, note, needs, prep:{}, confirmDue:addDays(c.date,-3), status:"planned", by:"대표", createdAt:now, updatedAt:now}); ok++; }catch(_){ break; }
+    const sessions=makeSessions(c.date,c.endDate,c.repeat||"once");
+    const doc={...c, sessions, where, note, needs, prep:{}, confirmDue:addDays(c.date,-3), materialsDue:addDays(c.date,-5), status:"planned", by:"대표", createdAt:now, updatedAt:now};
+    if(attachments.length) doc.attachments=attachments;
+    try{ await dbRef.doc("classes/"+id).set(doc); ok++; }catch(err){ lastErr=err?.message||String(err); break; }
   }
   btn.disabled=false;
-  if(!ok){ $("#clsMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; return; }
-  ["clsDate","clsTime","clsTitle","clsNote","clsBulk"].forEach(k=>$("#"+k).value="");
-  $("#clsMsg").textContent=`수업 ${ok}개를 넣었어요. 다온을 부르는 중…`;
+  if(!ok){ msg("저장하지 못했어요. "+(lastErr?`(${lastErr}) `:"")+"이 페이지를 편집할 권한이 있는 계정인지 확인해 주세요."); return; }
+  ["clsDate","clsEnd","clsTime","clsTimeEnd","clsTitle","clsNote","clsBulk"].forEach(k=>$("#"+k).value=""); clearAtt("cls"); updSpan();
+  calMonth=items[0].date.slice(0,7); calSel=items[0].date; renderCal();
+  msg(`수업 ${ok}개를 넣었어요${attachments.length?` (참고 파일 ${attachments.length}개)`:""}. 다온을 부르는 중…`);
   const r=await wakeOffice("class-"+ok);
-  $("#clsMsg").textContent = r==="ok" ? `수업 ${ok}개를 넣었어요. 다온이 지금 자료를 점검하고 일정을 짜요.` : `수업 ${ok}개를 넣었어요. 다음 정기 점검 때 다온이 자료를 점검해요.`;
+  msg(r==="ok" ? `수업 ${ok}개를 넣었어요. 다온이 지금 코멘트와 참고 파일을 확인하고 자료를 준비해요.` : `수업 ${ok}개를 넣었어요. 다음 정기 점검 때 다온이 자료를 점검해요.`);
 });
 document.addEventListener("click", async e=>{
   const b=e.target.closest("[data-clsdel]"); if(!b||!dbRef) return;
@@ -1030,7 +1161,7 @@ document.addEventListener("click", e=>{
 
 // ---------- Attachments ----------
 let assetsNS; const assetsReady = (async()=>{ try{ assetsNS = await window.claude?.use?.("assets"); }catch(_){ assetsNS=null; } return assetsNS; })();
-const attPending = {order:[], urg:[]};
+const attPending = {order:[], urg:[], cls:[]};
 const MAXB = 20*1024*1024;
 function addFiles(k, files){
   for(const f of files){
@@ -1058,15 +1189,15 @@ async function uploadAtt(k, msg){
   return out;
 }
 const attErr = c => c==="no_assets" ? "첨부는 이 페이지를 편집할 수 있는 계정에서만 올릴 수 있어요." : c==="unsupported_type" ? "이 형식의 파일은 올릴 수 없어요. 이미지·PDF·텍스트로 바꿔 주세요." : c==="too_large" ? "파일이 너무 커요(20MB까지)." : c==="quota_exceeded" ? "사무실 저장 공간이 가득 찼어요." : "첨부를 올리지 못했어요. 다시 시도해 주세요.";
-["order","urg"].forEach(k=>{
+["order","urg","cls"].forEach(k=>{
   $("#"+k+"File").addEventListener("change", e=>{ addFiles(k, e.target.files); e.target.value=""; });
   $("#"+k+"Chips").addEventListener("click", e=>{ const b=e.target.closest("button[data-rm]"); if(!b) return; const i=+b.dataset.rm.split(":")[1]; const p=attPending[k].splice(i,1)[0]; if(p&&p.preview) URL.revokeObjectURL(p.preview); drawChips(k); });
-  const ta = $(k==="order"?"#orderDetail":"#urgText");
+  const ta = $(k==="order"?"#orderDetail":k==="cls"?"#clsNote":"#urgText");
   ta.addEventListener("paste", e=>{ const fs=[...(e.clipboardData?.files||[])]; if(fs.length){ e.preventDefault(); addFiles(k, fs); } });
   ta.addEventListener("dragover", e=>{ if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault(); });
   ta.addEventListener("drop", e=>{ const fs=[...(e.dataTransfer?.files||[])]; if(fs.length){ e.preventDefault(); addFiles(k, fs); } });
 });
-assetsReady.then(a=>{ if(!a){ ["order","urg"].forEach(k=>{ $("#"+k+"Att").querySelector("label").hidden=true; $("#"+k+"AttHint").textContent="첨부는 이 페이지를 편집할 수 있는 계정에서만 쓸 수 있어요."; }); } });
+assetsReady.then(a=>{ if(!a){ ["order","urg","cls"].forEach(k=>{ $("#"+k+"Att").querySelector("label").hidden=true; $("#"+k+"AttHint").textContent="첨부는 이 페이지를 편집할 수 있는 계정에서만 쓸 수 있어요."; }); } });
 
 $("#orderForm").addEventListener("submit", async e=>{
   e.preventDefault();
@@ -1139,7 +1270,7 @@ $("#urgForm").addEventListener("submit", async e=>{
   db.doc("office/state").onSnapshot(s=>{ office = s.exists? s.data() : {}; tickClock(); render(); if(!s.metadata.fromCache) done(); }, err);
   db.collection("tasks").orderBy("createdAt","desc").limit(200).onSnapshot(s=>{ tasks=rows(s); render(); }, err);
   db.collection("feed").orderBy("at","desc").limit(150).onSnapshot(s=>{ feed=rows(s); render(); }, err);
-  db.collection("schedule").orderBy("date","asc").limit(200).onSnapshot(s=>{ schedule=rows(s); render(); }, err);
+  db.collection("schedule").orderBy("date","asc").limit(200).onSnapshot(s=>{ schedule=rows(s); render(); renderCal(); }, err);
   db.collection("docs").orderBy("createdAt","desc").limit(100).onSnapshot(s=>{ docs=rows(s); render(); }, err);
   db.collection("apps").orderBy("order","asc").limit(100).onSnapshot(s=>{ apps=rows(s); render(); }, err);
   db.collection("notices").orderBy("createdAt","desc").limit(20).onSnapshot(s=>{ notices=rows(s); render(); }, err);
@@ -1151,5 +1282,271 @@ $("#urgForm").addEventListener("submit", async e=>{
 
 render();
 requestAnimationFrame(step);
+window.__office={ROOMS,MEMBERS,DEPTS,esc,deptChip,fmtTime,working,latestLine,get feed(){ return feed; }};
 })();
 </script>
+<script type="module">
+// ---------- 3D office (diorama). Falls back to the pixel office if WebGL or the library is unavailable ----------
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js";
+(function(){
+  const O=window.__office; if(!O) return;
+  const {ROOMS,MEMBERS,DEPTS,esc,deptChip,fmtTime,latestLine}=O; const working=()=>O.working();
+  const host=document.getElementById("floor"); if(!host) return;
+  const test=document.createElement("canvas"); if(!(test.getContext("webgl2")||test.getContext("webgl"))) return;
+  const W=24, D=16, SX=.6, SZ=.64, HALLZ=7.36;
+  const wx=t=>t*SX, wz=t=>t*SZ;
+  const wrap=document.createElement("div"); wrap.className="o3d"; wrap.innerHTML=`<div class="o3lbl" id="o3lbl"></div>
+    <div class="o3bar" role="toolbar" aria-label="사무실 보기">
+      <button type="button" data-v="rotL" title="왼쪽으로 돌리기" aria-label="왼쪽으로 돌리기">⟲</button>
+      <button type="button" data-v="rotR" title="오른쪽으로 돌리기" aria-label="오른쪽으로 돌리기">⟳</button>
+      <button type="button" data-v="in" aria-label="가까이">＋</button>
+      <button type="button" data-v="out" aria-label="멀리">－</button>
+      <button type="button" data-v="top" title="위에서 보기">위</button>
+      <button type="button" data-v="all" title="전체 보기">전체</button>
+      <button type="button" data-v="spin" aria-pressed="false" title="천천히 돌기">자동 회전</button>
+    </div>
+    <div class="o3rooms" id="o3rooms"></div>
+    <div class="o3hint">드래그해서 돌려 보고, 직원을 누르면 하는 일이 보여요</div>`;
+  const renderer=new THREE.WebGLRenderer({antialias:true, alpha:false});
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio||1));
+  renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.domElement.className="o3c"; renderer.domElement.setAttribute("aria-label","AI 직원들이 일하는 3D 사무실");
+  wrap.prepend(renderer.domElement);
+
+  const scene=new THREE.Scene();
+  const SKY_DAY=new THREE.Color("#eef2f8"), SKY_NIGHT=new THREE.Color("#1c2233");
+  scene.background=SKY_DAY.clone();
+  const hemi=new THREE.HemisphereLight("#ffffff","#c9d2e3",1.25); scene.add(hemi);
+  const sun=new THREE.DirectionalLight("#fff4e2",1.9); sun.position.set(30,38,22); sun.target.position.set(W/2,0,D/2);
+  sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); Object.assign(sun.shadow.camera,{left:-20,right:20,top:20,bottom:-20,near:5,far:120}); sun.shadow.bias=-.0006; sun.shadow.normalBias=.02;
+  scene.add(sun, sun.target);
+  const fill=new THREE.DirectionalLight("#dfe8ff",.45); fill.position.set(-10,14,30); scene.add(fill);
+
+  const mats={};
+  const M=(c,o={})=>{ const k=c+JSON.stringify(o); return mats[k]||(mats[k]=new THREE.MeshStandardMaterial({color:c, roughness:.85, metalness:0, ...o})); };
+  const G=new THREE.BoxGeometry(1,1,1);
+  function box(p,w,h,d,c,x,y,z,o={}){ const m=new THREE.Mesh(G, typeof c==="string"?M(c,o.mat||{}):c); m.scale.set(w,h,d); m.position.set(x,y+h/2,z); m.castShadow=o.cast!==false; m.receiveShadow=true; p.add(m); return m; }
+  const world=new THREE.Group(); scene.add(world);
+
+  // base slab + floors
+  box(world,W+.6,.5,D+.6,"#d8d2c8",W/2,-.5,D/2,{cast:false});
+  box(world,W+.6,.06,D+.6,"#ebe7e0",W/2,-.06,D/2,{cast:false});
+  const FLOOR={strategy:"#dde7f4",edu:"#e2efdf",media:"#ebe5f6",ceo:"#e8d3b4",meet:"#f2e9d6",app:"#f6e3d2",lounge:"#dcecee"};
+  const ROOMW=ROOMS.map(r=>({...r, x0:wx(r.x), z0:wz(r.y), x1:wx(r.x+r.w), z1:wz(r.y+r.h)}));
+  ROOMW.forEach(r=>{ box(world,r.x1-r.x0-.04,.03,r.z1-r.z0-.04,FLOOR[r.key]||"#eee",(r.x0+r.x1)/2,0,(r.z0+r.z1)/2,{cast:false});
+    if(r.key==="ceo"||r.key==="lounge"){ for(let x=r.x0+.3;x<r.x1-.1;x+=.6) box(world,.012,.032,r.z1-r.z0-.1,"#d9c29f",x,0,(r.z0+r.z1)/2,{cast:false}); } });
+  // walls (back z=0, left x=0) with windows
+  const walls={back:new THREE.Group(), left:new THREE.Group()}; world.add(walls.back, walls.left);
+  const WH=2.7, WALL="#f6f3ee", WIN=M("#bfe2f7",{emissive:"#9fd3f2", emissiveIntensity:.35, roughness:.2});
+  box(walls.back,W+.3,WH,.22,WALL,W/2-.15,0,-.11); box(walls.back,W+.3,.12,.24,"#cfc8bd",W/2-.15,0,-.1);
+  box(walls.left,.22,WH,D+.3,WALL,-.11,0,D/2-.15); box(walls.left,.24,.12,D+.3,"#cfc8bd",-.1,0,D/2-.15);
+  const winMeshes=[];
+  for(let x=1.4;x<W-.6;x+=2.6){ winMeshes.push(box(walls.back,1.7,1.25,.04,WIN,x,1.05,.01,{cast:false})); box(walls.back,1.8,.06,.08,"#ffffff",x,1.0,.03); box(walls.back,.05,1.25,.06,"#ffffff",x,1.05,.03); }
+  for(let z=1.6;z<D-.6;z+=2.8){ winMeshes.push(box(walls.left,.04,1.25,1.7,WIN,.01,1.05,z,{cast:false})); box(walls.left,.08,.06,1.8,"#ffffff",.03,1.0,z); box(walls.left,.06,1.25,.05,"#ffffff",.03,1.05,z); }
+  // glass partitions
+  const GLASS=new THREE.MeshStandardMaterial({color:"#cde8fb", transparent:true, opacity:.28, roughness:.1, metalness:.1, depthWrite:false});
+  function glass(x1,z1,x2,z2,gaps=[]){ const horiz=z1===z2; const a=horiz?x1:z1, b=horiz?x2:z2; let segs=[[a,b]];
+    gaps.forEach(g=>{ segs=segs.flatMap(([s,e])=> g-.7>s && g+.7<e ? [[s,g-.7],[g+.7,e]] : [[s,e]]); });
+    segs.forEach(([s,e])=>{ const L=e-s, c=(s+e)/2; if(L<.05) return; const H=1.9;
+      const pane=box(world, horiz?L:.05, H, horiz?.05:L, GLASS, horiz?c:x1, 0, horiz?z1:c, {cast:false}); pane.receiveShadow=false;
+      box(world, horiz?L:.08, .06, horiz?.08:L, "#8a93a3", horiz?c:x1, H, horiz?z1:c);
+      box(world, horiz?L:.08, .08, horiz?.08:L, "#9aa2b0", horiz?c:x1, 0, horiz?z1:c, {cast:false});
+      [s,e].forEach(p=>box(world,.07,H,.07,"#8a93a3",horiz?p:x1,0,horiz?z1:p)); }); }
+  const door=r=>(r.x0+r.x1)/2;
+  const back=ROOMW.filter(r=>r.y===0), front=ROOMW.filter(r=>r.y>0);
+  glass(0,wz(10),W,wz(10),back.map(door));
+  back.slice(0,-1).forEach(r=>glass(r.x1,0,r.x1,r.z1));
+  glass(0,wz(13),W,wz(13),front.map(door));
+  front.slice(0,-1).forEach(r=>glass(r.x1,r.z0,r.x1,D));
+
+  // props
+  function plant(x,z,s=1){ const g=new THREE.Group(); box(g,.42*s,.42*s,.42*s,"#e9e4dc",0,0,0); const leaf=M("#5fae62"), leaf2=M("#4a9a55");
+    [[0,.55,0,.6],[.16,.85,.08,.42],[-.14,.8,-.1,.4],[.02,1.08,-.02,.32]].forEach(([dx,dy,dz,sz],i)=>{ const m=new THREE.Mesh(new THREE.IcosahedronGeometry(sz*.6*s,0), i%2?leaf2:leaf); m.position.set(dx*s,dy*s,dz*s); m.castShadow=true; g.add(m); });
+    g.position.set(x,0,z); world.add(g); }
+  function shelf(x,z,w=1.6,rot=0){ const g=new THREE.Group(); box(g,w,1.7,.4,"#c9a77c",0,0,0); const cols=["#e0794f","#4f9e7a","#3f7fb8","#c9a14a","#7b6cc9","#e07aa0"];
+    for(let r=0;r<3;r++){ box(g,w-.1,.04,.36,"#b48f63",0,.12+r*.52,.0); for(let i=0;i<Math.floor(w/.14)-2;i++){ const h=.3+((i*7+r*3)%4)*.04; box(g,.1,h,.28,cols[(i+r)%cols.length],-w/2+.18+i*.14,.16+r*.52,.02,{cast:false}); } }
+    g.position.set(x,0,z); g.rotation.y=rot; world.add(g); }
+  function board(x,z,w,rot=0){ const g=new THREE.Group(); box(g,w,.9,.05,"#ffffff",0,1.1,0); box(g,w+.08,.05,.08,"#9aa2b0",0,1.08,0);
+    [["#e0794f",.5],["#3f7fb8",.7],["#4f9e7a",.4]].forEach(([c,f],i)=>box(g,w*f,.05,.02,c,-w*(1-f)/2+.08,1.7-i*.18,.035,{cast:false}));
+    g.position.set(x,0,z); g.rotation.y=rot; world.add(g); }
+  const screens=[];
+  function desk(x,z,col){ const g=new THREE.Group();
+    box(g,1.45,.06,.74,"#e3c49c",0,.7,0); [[-.66,-.31],[.66,-.31],[-.66,.31],[.66,.31]].forEach(([a,b])=>box(g,.05,.7,.05,"#6b6f7a",a,0,b));
+    box(g,.62,.4,.04,"#2b2f3a",0,.86,-.24); const scr=box(g,.56,.34,.01,M("#9fd7ff",{emissive:"#7cc6ff",emissiveIntensity:.55}),0,.89,-.215,{cast:false}); screens.push(scr);
+    box(g,.06,.14,.06,"#2b2f3a",0,.76,-.26); box(g,.42,.02,.13,"#f2f2f4",0,.76,.06,{cast:false}); box(g,.07,.1,.07,col,.5,.76,-.05,{cast:false});
+    box(g,.18,.04,.24,"#ffffff",-.48,.76,.0,{cast:false});
+    // chair
+    box(g,.48,.07,.46,"#3d4252",0,.42,.68); box(g,.46,.55,.07,col,0,.5,.92); box(g,.06,.4,.06,"#555a66",0,0,.68); box(g,.4,.04,.4,"#555a66",0,.02,.68,{cast:false});
+    g.position.set(x,0,z); world.add(g); return g; }
+  // people
+  const LOOKS=["short","long","bun","short","bob","spiky"];
+  const SKIN=["#ffdcc2","#f6c9a5","#eab48c","#ffe3cf"];
+  function person(m,i,o={}){ const g=new THREE.Group(); const pants="#3b4256", skin=SKIN[i%SKIN.length];
+    const look=(typeof LOOK!=="undefined"&&LOOK[m.id]&&LOOK[m.id][0])||LOOKS[i%LOOKS.length];
+    const mk=(w,h,d,c,x,y,z)=>{ const mm=new THREE.Mesh(G,M(c)); mm.scale.set(w,h,d); mm.position.set(x,y,z); mm.castShadow=true; return mm; };
+    const hipL=new THREE.Group(), hipR=new THREE.Group(); hipL.position.set(-.1,.5,0); hipR.position.set(.1,.5,0);
+    hipL.add(mk(.15,.5,.17,pants,0,-.25,0)); hipR.add(mk(.15,.5,.17,pants,0,-.25,0));
+    hipL.add(mk(.16,.07,.22,"#2a2d36",0,-.47,-.03)); hipR.add(mk(.16,.07,.22,"#2a2d36",0,-.47,-.03));
+    const torso=mk(.44,.5,.25,m.shirt,0,.76,0);
+    const shL=new THREE.Group(), shR=new THREE.Group(); shL.position.set(-.29,.98,0); shR.position.set(.29,.98,0);
+    shL.add(mk(.13,.36,.15,m.shirt,0,-.16,0), mk(.11,.12,.12,skin,0,-.4,0)); shR.add(mk(.13,.36,.15,m.shirt,0,-.16,0), mk(.11,.12,.12,skin,0,-.4,0));
+    const head=new THREE.Group(); head.position.set(0,1.02,0);
+    head.add(mk(.38,.38,.36,skin,0,.2,0));
+    head.add(mk(.4,.12,.4,m.hair,0,.42,.01)); head.add(mk(.4,.28,.08,m.hair,0,.28,.17));
+    if(look==="long"||look==="pony") { head.add(mk(.4,.42,.1,m.hair,0,.12,.19)); }
+    if(look==="bun") head.add(mk(.16,.14,.16,m.hair,0,.53,.12));
+    if(look==="bob") { head.add(mk(.07,.3,.36,m.hair,-.2,.25,.02)); head.add(mk(.07,.3,.36,m.hair,.2,.25,.02)); }
+    if(look==="spiky") { head.add(mk(.12,.12,.12,m.hair,-.1,.52,0)); head.add(mk(.12,.14,.12,m.hair,.08,.53,.05)); }
+    head.add(mk(.05,.06,.02,"#232633",-.08,.21,-.185)); head.add(mk(.05,.06,.02,"#232633",.08,.21,-.185));
+    head.add(mk(.06,.03,.02,"#e79a9a",-.13,.13,-.185)); head.add(mk(.06,.03,.02,"#e79a9a",.13,.13,-.185));
+    if(o.badge){ g.add(mk(.1,.1,.02,"#f4b400",-.12,.86,-.13)); }
+    g.add(hipL,hipR,torso,shL,shR,head);
+    g.userData.parts={hipL,hipR,shL,shR,head};
+    world.add(g); return g; }
+
+  // place desks + people
+  const roomOf=(x,z)=>ROOMW.find(r=>x>=r.x0&&x<r.x1&&z>=r.z0&&z<r.z1);
+  const actors=MEMBERS.map((m,i)=>{ const dx=wx(m.desk[0]), dz=wz(m.desk[1]); const col=(DEPTS[m.dept]||{}).color||"#888"; desk(dx,dz,col);
+    const g=person(m,i); const home=[dx,dz+.6]; g.position.set(home[0],0,home[1]);
+    const a={m,g,home,room:roomOf(dx,dz),x:home[0],z:home[1],path:[],state:"desk",wait:4+Math.random()*24,phase:Math.random()*6,sel:false}; g.userData.actor=a; return a; });
+  // CEO room
+  { const r=ROOMW.find(r=>r.key==="ceo"); const cx=(r.x0+r.x1)/2, cz=r.z0+2.2;
+    box(world,3.6,.02,2.6,"#c8796a",cx,0,cz+.4,{cast:false}); box(world,3.3,.02,2.3,"#d99a86",cx,.005,cz+.4,{cast:false});
+    const g=new THREE.Group(); box(g,2.0,.08,.9,"#7a5232",0,.72,0); box(g,1.95,.7,.08,"#6a4428",0,0,-.4); box(g,.08,.7,.8,"#6a4428",-.95,0,0); box(g,.08,.7,.8,"#6a4428",.95,0,0);
+    box(g,.6,.4,.04,"#2b2f3a",0,.86,.22); box(g,.18,.1,.24,"#f4b400",-.6,.8,0); box(g,.55,.08,.5,"#2b2f3a",0,.42,-.78); box(g,.55,.9,.08,"#1F2A44",0,.5,-1.02);
+    g.position.set(cx,0,cz); g.rotation.y=Math.PI; world.add(g);
+    const ceo=person({id:"ceo",shirt:"#1F2A44",hair:"#2a2220"},2,{badge:true}); ceo.position.set(cx,0,cz-.75); ceo.rotation.y=Math.PI; const p=ceo.userData.parts; p.hipL.rotation.x=p.hipR.rotation.x=Math.PI/2; ceo.position.y=-.06;
+    shelf(r.x0+.35,r.z1-1.6,1.6,Math.PI/2); plant(r.x1-.45,r.z1-.45); plant(r.x0+.45,r.z0+.5,.8);
+    ceo.userData.label="대표"; window.__ceo3d=ceo; }
+  // meeting room
+  const meet=ROOMW.find(r=>r.key==="meet"); const mcx=(meet.x0+meet.x1)/2, mcz=(meet.z0+meet.z1)/2+.3;
+  box(world,3.4,.08,1.3,"#c89a6a",mcx,.72,mcz); box(world,.12,.72,.6,"#7a7f8a",mcx-1.2,0,mcz); box(world,.12,.72,.6,"#7a7f8a",mcx+1.2,0,mcz);
+  const MSPOT=[]; [-1.1,0,1.1].forEach(dx=>{ [-1,1].forEach(s=>{ box(world,.42,.06,.42,"#e0794f",mcx+dx,.42,mcz+s*.95); box(world,.42,.45,.06,"#e0794f",mcx+dx,.45,mcz+s*1.15); box(world,.05,.42,.05,"#666",mcx+dx,0,mcz+s*.95); MSPOT.push({x:mcx+dx,z:mcz+s*1.5,face:[0,-s],room:meet}); }); });
+  board(mcx,meet.z0+.12,2.6);
+  // app room: server racks
+  const app=ROOMW.find(r=>r.key==="app");
+  for(let i=0;i<3;i++){ const x=app.x1-.5, z=app.z0+.9+i*.75; box(world,.6,1.9,.7,"#2b2f3a",x,0,z); for(let j=0;j<6;j++){ box(world,.02,.05,.4,j%2?"#5fe3b0":"#f4b400",x-.31,.3+j*.27,z,{cast:false,mat:{emissive:j%2?"#5fe3b0":"#f4b400",emissiveIntensity:.8}}); } }
+  board((app.x0+app.x1)/2-1,app.z0+.12,2.2); plant(app.x0+.45,app.z1-.45);
+  // lounge (대표지원실)
+  const lng=ROOMW.find(r=>r.key==="lounge"); const lx=(lng.x0+lng.x1)/2;
+  box(world,2.6,.4,.9,"#5f9ea6",lx,0,lng.z1-.7); box(world,2.6,.6,.25,"#4f8f96",lx,.2,lng.z1-.22); box(world,.25,.55,.9,"#4f8f96",lx-1.3,0,lng.z1-.7); box(world,.25,.55,.9,"#4f8f96",lx+1.3,0,lng.z1-.7);
+  box(world,1.1,.35,.6,"#d9b48a",lx,0,lng.z1-1.9); box(world,.14,.2,.14,"#ffffff",lx+.2,.35,lng.z1-1.9);
+  box(world,.55,.95,.45,"#7a6a58",lng.x1-.4,0,lng.z0+.45); box(world,.4,.2,.05,"#f6efe0",lng.x1-.4,.65,lng.z0+.67,{cast:false});
+  box(world,.35,1.1,.35,"#d5e9f2",lng.x1-.4,0,lng.z0+1.2); plant(lng.x1-.45,lng.z1-1.8,.9);
+  const LSPOT=[{x:lx-.7,z:lng.z1-1.35,face:[0,1],room:lng},{x:lx+.7,z:lng.z1-1.35,face:[0,1],room:lng},{x:lng.x1-.4,z:lng.z0+1.0,face:[0,-1],room:lng}];
+  // media studio corner
+  const med=ROOMW.find(r=>r.key==="media");
+  { const x=med.x1-.7, z=med.z1-.9; box(world,1.3,1.8,.05,"#56c27a",x-.2,0,med.z1-.25,{cast:false}); box(world,.05,1.5,.05,"#333",x+.35,0,z-.4); box(world,.3,.2,.2,"#222",x+.35,1.5,z-.4);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(.25,.035,8,24),M("#ffffff",{emissive:"#ffffff",emissiveIntensity:.6})); ring.position.set(x-.6,1.45,z-.3); world.add(ring); box(world,.04,1.45,.04,"#333",x-.6,0,z-.3); }
+  // decor
+  board(wx(4.5),.12,1.6); board(wx(16),.12,2.4); board(wx(30),.12,2.4);
+  shelf(wx(22.6),.32,1.5);
+  [[.45,.45],[wx(8.4),.45],[wx(23.4),.5],[wx(39.2),.45],[.45,wz(12.6)],[wx(31.4),wz(12.4)]].forEach(([x,z])=>plant(x,z,.9));
+  const HSPOT=[3,9,13,17,21].map(x=>({x,z:HALLZ,face:null,room:null}));
+  const CSPOT=[{x:wx(3)-.3,z:wz(13)+3.2,face:[0,-1],room:ROOMW.find(r=>r.key==="ceo")},{x:wx(6)+.3,z:wz(13)+3.2,face:[0,-1],room:ROOMW.find(r=>r.key==="ceo")}];
+
+  // routing
+  const doorPts=r=>{ const x=door(r); return r.y===0 ? [[x,r.z1-.5],[x,HALLZ]] : [[x,r.z0+.5],[x,HALLZ]]; };
+  function route(a,to){ const pts=[[a.home[0],a.home[1]+.55]]; const fr=a.room;
+    if(!to.room || to.room!==fr){ if(fr) pts.push(...doorPts(fr)); if(to.room) pts.push(...doorPts(to.room).reverse()); }
+    pts.push([to.x,to.z]); return pts; }
+  function routeHome(a){ const pts=[]; const fr=a.at&&a.at.room; if(fr!==a.room){ if(fr) pts.push(...doorPts(fr)); else pts.push([a.x,HALLZ]); if(a.room) pts.push(...doorPts(a.room).reverse()); } pts.push([a.home[0],a.home[1]+.55],[a.home[0],a.home[1]]); return pts; }
+
+  // camera
+  const cam=new THREE.OrthographicCamera(-10,10,6,-6,.1,300);
+  const small=()=>host.clientWidth<640; const view={az:Math.PI/4, el:.62, zoom:1, tx:W/2, tz:D/2+.6};
+  const goal={...view}; let spin=false;
+  function placeCam(){ const r=60; cam.position.set(view.tx+r*Math.cos(view.el)*Math.sin(view.az), r*Math.sin(view.el), view.tz+r*Math.cos(view.el)*Math.cos(view.az)); cam.lookAt(view.tx,0,view.tz);
+    const w=host.clientWidth||640, h=host.clientHeight||400, asp=w/h, s=Math.max(10.6,15.6/asp)/view.zoom; cam.left=-s*asp; cam.right=s*asp; cam.top=s; cam.bottom=-s; cam.updateProjectionMatrix();
+    walls.back.visible = cam.position.z>-1; walls.left.visible = cam.position.x>-1; }
+  function resize(){ const w=host.clientWidth, h=host.clientHeight; if(!w||!h) return; renderer.setSize(w,h,false); placeCam(); }
+  new ResizeObserver(resize).observe(host);
+
+  // interaction
+  const cvs=renderer.domElement; let drag=null;
+  cvs.addEventListener("pointerdown",e=>{ drag={x:e.clientX,y:e.clientY,moved:0,id:e.pointerId}; });
+  window.addEventListener("pointermove",e=>{ if(!drag||e.pointerId!==drag.id) return; const dx=e.clientX-drag.x, dy=e.clientY-drag.y; drag.moved+=Math.abs(dx)+Math.abs(dy); drag.x=e.clientX; drag.y=e.clientY;
+    if(drag.moved>4){ goal.az-=dx*.008; if(e.pointerType!=="touch") goal.el=Math.min(1.45,Math.max(.32,goal.el+dy*.006)); spin=false; setSpin(); } });
+  window.addEventListener("pointerup",e=>{ if(!drag||e.pointerId!==drag.id) return; const click=drag.moved<=4; drag=null; if(click) pick(e); });
+  cvs.addEventListener("wheel",e=>{ if(!e.ctrlKey && !e.metaKey) return; e.preventDefault(); goal.zoom=Math.min(3.2,Math.max(.7,goal.zoom*(e.deltaY<0?1.12:.89))); },{passive:false});
+  let pinch=null; cvs.addEventListener("touchmove",e=>{ if(e.touches.length===2){ e.preventDefault(); const d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); if(pinch) goal.zoom=Math.min(3.2,Math.max(.7,goal.zoom*d/pinch)); pinch=d; } },{passive:false});
+  cvs.addEventListener("touchend",()=>pinch=null);
+  const bar=wrap.querySelector(".o3bar");
+  function setSpin(){ const b=bar.querySelector('[data-v="spin"]'); b.setAttribute("aria-pressed",spin); }
+  bar.addEventListener("click",e=>{ const b=e.target.closest("button[data-v]"); if(!b) return; const v=b.dataset.v;
+    if(v==="rotL") goal.az+=Math.PI/2; if(v==="rotR") goal.az-=Math.PI/2; if(v==="in") goal.zoom=Math.min(3.2,goal.zoom*1.3); if(v==="out") goal.zoom=Math.max(.7,goal.zoom/1.3);
+    if(v==="top"){ goal.el=1.45; } if(v==="all"){ Object.assign(goal,{az:Math.round((goal.az-Math.PI/4)/(Math.PI/2))*Math.PI/2+Math.PI/4, el:.62, zoom:1, tx:W/2, tz:D/2+.6}); }
+    if(v==="spin"){ spin=!spin; setSpin(); } });
+  const roomsBar=wrap.querySelector("#o3rooms");
+  const RLABEL=r=>r.label;
+  roomsBar.innerHTML=ROOMW.map(r=>`<button type="button" data-room="${r.key}" style="--c:${roomColor(r)}">${esc(RLABEL(r))}</button>`).join("");
+  roomsBar.addEventListener("click",e=>{ const b=e.target.closest("[data-room]"); if(!b) return; const r=ROOMW.find(x=>x.key===b.dataset.room); Object.assign(goal,{tx:(r.x0+r.x1)/2, tz:(r.z0+r.z1)/2, zoom:Math.min(2.6, 16/Math.max(r.x1-r.x0, (r.z1-r.z0)*1.4))}); });
+  function roomColor(r){ return r.key==="ceo"?"#1F2A44":r.key==="meet"?"#8a7a5a":r.key==="lounge"?(DEPTS.ceo||{}).color:(DEPTS[r.key]||{}).color||"#555"; }
+  const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+  function pick(e){ const rc=cvs.getBoundingClientRect(); ndc.set((e.clientX-rc.left)/rc.width*2-1, -((e.clientY-rc.top)/rc.height*2-1)); ray.setFromCamera(ndc,cam);
+    const hits=ray.intersectObjects(actors.map(a=>a.g),true); actors.forEach(a=>a.sel=false);
+    if(!hits.length){ document.getElementById("who").hidden=true; return; }
+    let o=hits[0].object; while(o&&!o.userData.actor) o=o.parent; if(!o) return; const a=o.userData.actor; a.sel=true; const m=a.m;
+    const mine=O.feed.filter(f=>f.member===m.name).slice(0,3);
+    document.getElementById("whoBody").innerHTML=`<b>${esc(m.name)}</b> ${deptChip(m.dept)}<div>${esc(m.team)} · ${esc(m.role)}</div>`+(mine.length?`<div class="note" style="margin-top:6px">${mine.map(f=>`${esc(fmtTime(f.at))} ${esc(f.text)}`).join("<br>")}</div>`:`<div class="note" style="margin-top:6px">아직 기록된 업무가 없어요.</div>`);
+    document.getElementById("who").hidden=false; }
+  document.getElementById("whoX").addEventListener("click",()=>actors.forEach(a=>a.sel=false));
+
+  // labels
+  const lblLayer=wrap.querySelector("#o3lbl");
+  const roomLbls=ROOMW.map(r=>{ const el=document.createElement("div"); el.className="o3room"; el.style.setProperty("--c",roomColor(r)); lblLayer.appendChild(el); return {r,el}; });
+  const bubs=actors.map(a=>{ const el=document.createElement("div"); el.className="bub o3bub"; el.style.opacity=0; lblLayer.appendChild(el); return el; });
+  const tags=actors.map(a=>{ const el=document.createElement("div"); el.className="o3tag"; el.textContent=a.m.name; el.style.setProperty("--c",(DEPTS[a.m.dept]||{}).color||"#555"); lblLayer.appendChild(el); return el; });
+  const v3=new THREE.Vector3();
+  function toScreen(x,y,z){ v3.set(x,y,z).project(cam); return [(v3.x+1)/2*100,(1-v3.y)/2*100,v3.z]; }
+  let bubT=0, turn=0;
+  function placeLabels(dt,awake){
+    roomLbls.forEach(({r,el})=>{ const [sx,sy]=toScreen((r.x0+r.x1)/2, 2.35, r.y===0? r.z0+.6 : r.z0+.6); el.style.left=sx+"%"; el.style.top=sy+"%";
+      const n=actors.filter(a=>a.room===r && a.state==="desk").length, any=actors.some(a=>a.room===r);
+      el.innerHTML=`<b>${esc(r.label)}</b>${any?`<span>${awake?(n?`${n}명 작업 중`:"회의·이동 중"):"퇴근"}</span>`:""}`; });
+    bubT+=dt; if(bubT>4){ bubT=0; turn=(turn+1)%actors.length; }
+    actors.forEach((a,i)=>{ const top=a.state==="desk"?1.55:1.75; const [sx,sy]=toScreen(a.x,top,a.z);
+      const t=tags[i]; const showTag = a.sel || view.zoom>1.7; t.style.opacity=showTag?1:0; t.style.left=sx+"%"; t.style.top=sy+"%";
+      const b=bubs[i]; const line=latestLine(a.m); const show=awake && line && (i===turn || i===(turn+7)%actors.length || a.sel);
+      if(show){ b.textContent=`${a.m.name}: ${line}`; b.style.left=sx+"%"; b.style.top=(sy-(showTag?3.5:0))+"%"; b.style.opacity=1; } else b.style.opacity=0; }); }
+
+  // actor update
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const SPEED=1.7;
+  function pickTrip(a){ const r=Math.random(); const pool = r<.4?MSPOT: r<.65?LSPOT: r<.78?CSPOT: HSPOT;
+    const free=pool.filter(s=>!actors.some(b=>b.at===s)); if(!free.length) return false; const s=free[Math.floor(Math.random()*free.length)];
+    a.at=s; a.path=route(a,s); a.state="walk"; return true; }
+  function update(a,dt,awake){ const p=a.g.userData.parts;
+    if(!awake||reduce){ if(a.state!=="desk"){ a.x=a.home[0]; a.z=a.home[1]; a.path=[]; a.state="desk"; a.at=null; } }
+    else if(a.path.length){ const [tx,tz]=a.path[0]; const dx=tx-a.x, dz=tz-a.z, d=Math.hypot(dx,dz), sp=SPEED*dt;
+      if(d<=sp){ a.x=tx; a.z=tz; a.path.shift(); if(!a.path.length){ if(a.state==="home"){ a.state="desk"; a.at=null; a.wait=10+Math.random()*25; } else { a.state="away"; a.wait=5+Math.random()*9; } } }
+      else { a.x+=dx/d*sp; a.z+=dz/d*sp; a.g.rotation.y=Math.atan2(-dx,-dz); a.phase+=dt*9; } }
+    else { a.wait-=dt; if(a.wait<=0){ if(a.state==="away"){ a.path=routeHome(a); a.state="home"; } else if(a.state==="desk"){ const walkers=actors.filter(b=>b.state!=="desk").length; if(walkers<6 && Math.random()<.45 && pickTrip(a)){} else a.wait=6+Math.random()*14; } } }
+    a.g.position.set(a.x,0,a.z);
+    const t=performance.now()/1000;
+    if(a.state==="desk"){ a.g.rotation.y=0; a.g.position.y=-.06; p.hipL.rotation.x=p.hipR.rotation.x=Math.PI/2;
+      const typing=awake?Math.sin(t*14+a.phase)*.12:0; p.shL.rotation.x=1.15+typing; p.shR.rotation.x=1.15-typing; p.head.rotation.x=awake?Math.sin(t*.7+a.phase)*.05:.45; }
+    else if(a.path.length){ const s=Math.sin(a.phase)*.6; p.hipL.rotation.x=s; p.hipR.rotation.x=-s; p.shL.rotation.x=-s*.8; p.shR.rotation.x=s*.8; p.head.rotation.x=0; a.g.position.y=Math.abs(Math.cos(a.phase))*.04; }
+    else { p.hipL.rotation.x=p.hipR.rotation.x=0; p.shL.rotation.x=p.shR.rotation.x=0; p.head.rotation.x=0; if(a.at&&a.at.face){ a.g.rotation.y=Math.atan2(-a.at.face[0],-a.at.face[1]); } if(a.at&&a.at.room===lng){ /* chat */ p.shR.rotation.x=.9+Math.sin(t*3+a.phase)*.2; } }
+  }
+  // selection ring
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.38,.48,28),new THREE.MeshBasicMaterial({color:"#f4b400",side:THREE.DoubleSide})); ring.rotation.x=-Math.PI/2; ring.visible=false; world.add(ring);
+
+  let last=performance.now(), lastAwake=null;
+  function frame(now){ const dt=Math.min(.05,(now-last)/1000); last=now;
+    const awake=working();
+    if(awake!==lastAwake){ lastAwake=awake; scene.background.copy(awake?SKY_DAY:SKY_NIGHT); hemi.intensity=awake?1.25:.45; sun.intensity=awake?1.9:.25; fill.intensity=awake?.45:.15;
+      screens.forEach(s=>s.material=awake?M("#9fd7ff",{emissive:"#7cc6ff",emissiveIntensity:.55}):M("#20263a")); WIN.emissiveIntensity=awake?.35:.05; WIN.color.set(awake?"#bfe2f7":"#2c3a5c"); }
+    if(spin && !drag) goal.az+=dt*.12;
+    const k=Math.min(1,dt*6); ["az","el","zoom","tx","tz"].forEach(key=>view[key]+=(goal[key]-view[key])*k);
+    placeCam();
+    actors.forEach(a=>update(a,dt,awake));
+    const s=actors.find(a=>a.sel); ring.visible=!!s; if(s) ring.position.set(s.x,.04,s.z);
+    renderer.render(scene,cam); placeLabels(dt,awake);
+    requestAnimationFrame(frame); }
+
+  host.classList.add("is3d"); host.appendChild(wrap); window.__office3d=true; resize();
+  requestAnimationFrame(frame);
+})();
+</script>
+
