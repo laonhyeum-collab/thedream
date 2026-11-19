@@ -23,7 +23,7 @@ export function createAccountsAdmin({ getApi, getKey, setKey, onLogin }) {
         h('p', { class: 'pill warn' }, '지금은 설치 열쇠로 연결되어 있어요. 아래에서 관리자 계정을 만들어 로그인하면 더 안전해요.'), setupForm());
       return;
     }
-    const id = h('input', { type: 'text', maxlength: 20, autocomplete: 'username', placeholder: '관리자 아이디' });
+    const id = h('input', { type: 'text', maxlength: 20, autocomplete: 'off', autocapitalize: 'off', spellcheck: 'false', placeholder: '관리자 아이디' });
     const pw = h('input', { type: 'password', autocomplete: 'current-password', placeholder: '비밀번호' });
     const msg = h('span', { class: 'small' });
     const login = async () => {
