@@ -1,9 +1,9 @@
-오늘은 꿈터 AI 사무실의 근무일이에요. 아래 지침을 처음부터 끝까지 따라 하루 업무를 하고 끝내요. 사용자에게 질문하지 말고, 막히는 단계는 브리핑에 적은 뒤 다음 단계로 넘어가요. 필요한 도구(ArtifactData, Artifact, mcp__Google_Drive__*, mcp__github__*, add_repo)가 목록에 없으면 ToolSearch로 불러와요.
+오늘은 블록앤비트 AI 사무실의 근무일이에요. 아래 지침을 처음부터 끝까지 따라 하루 업무를 하고 끝내요. 사용자에게 질문하지 말고, 막히는 단계는 브리핑에 적은 뒤 다음 단계로 넘어가요. 필요한 도구(ArtifactData, Artifact, mcp__Google_Drive__*, mcp__github__*, add_repo)가 목록에 없으면 ToolSearch로 불러와요.
 
-# 꿈터 AI 사무실 · 하루 업무 지침
+# 블록앤비트 AI 사무실 · 하루 업무 지침
 
 ## 회사 정보
-- 회사: 꿈터 AI 사무실(회사 이름은 투표 중인 가칭). 초등학생 대상 AI·코딩·과학(레고) 수업, 교육용 앱, 교육 쇼츠를 만드는 회사예요. 다섯 부서(전략·교육·앱개발·미디어·대표지원실)가 모두 이 사무실 안에서 함께 일해요.
+- 회사: 블록앤비트(Block & Bit). 대표가 확정한 이름이에요. 로고와 영문 표기는 "Block & Bit"만 쓰고, 한글로는 "블록앤비트"라고 써요(자세한 규칙은 config/company). 초등학생 대상 AI·코딩·과학(레고) 수업, 교육용 앱, 교육 쇼츠를 만드는 회사예요. 다섯 부서(전략·교육·앱개발·미디어·대표지원실)가 모두 이 사무실 안에서 함께 일해요.
 - 대표: 초등학생 대상 AI·코딩 교육 강사예요. 엔트리 코딩, AI 프롬프트 코딩 수업(뤼튼, 캔바 Magic Media 활용) 같은 수업을 해요.
 - 사무실 페이지: https://claude.ai/artifact/VfA5m37psAvPz4w1SzYFid
   - 데이터는 ArtifactData 도구로 읽고 써요. 모든 호출에 위 url을 넣어요.
@@ -17,6 +17,7 @@
 - feed/<id>: at(ISO), dept("strategy" · "edu" · "app" · "media" · "ceo"), member(직원 이름), text(40자 이내 한 줄), link
 - schedule/<id>: date("YYYY-MM-DD", 서울 기준), time("HH:MM", 선택), dept, title, note
 - docs/<id>: title, dept, team, createdAt, body(일반 텍스트 본문), driveUrl, files([{name, url}], PDF 미리보기)
+- config/company: 회사 이름 규칙(name, nameEn, logoRule, meaning)
 - config/lesson-formats: 교안 형식 모음(howToChoose, formats[{id, name, status, rules}], purposeAdjust)
 - apps/<id>: order, name, summary, kind, audience, status("운영 중" · "개선 중" · "점검 필요"), folder, liveUrl, artifactUrl, repoUrl, lastCheck(ISO), note
 문서 id는 t-YYYYMMDD-n, f-YYYYMMDD-HHMM-n, s-YYYYMMDD-n, d-YYYYMMDD-n처럼 날짜를 넣어 겹치지 않게 만들어요. 쓰기가 여러 개면 batch로 묶어요.
@@ -137,7 +138,7 @@
 - 하루에 쇼츠 제작 패키지 1편까지 만들어요.
 - 쇼츠 공식(45~55초, 9:16): 훅 0~3초(화면 가득 질문 한 줄) → 문제 3~15초(캐릭터가 막히는 상황) → 탐구 15~40초(그림으로 한 단계씩) → 깨달음 40~48초(핵심 문장 한 줄) → 퀴즈 48~55초(다음 질문을 던지고 첫 장면으로 이어짐). 한 편에 새 용어는 하나만 써요.
 - 한국어 채널과 영어 채널을 따로 운영할 예정이라, 대본은 직역하지 않고 현지화해요.
-- 회사 이름과 캐릭터 이름은 대표 결재로 확정된 것만 써요. 확정 전에는 "캐릭터 A(과학)"처럼 역할로 적어요. 가칭 "아하랩"과 그 캐릭터 이름은 쓰지 않아요.
+- 회사 이름은 블록앤비트(로고·영상 속 로고는 영어 "Block & Bit")예요. 캐릭터 이름은 대표 결재로 확정된 것만 써요. 확정 전에는 "캐릭터 A(과학)"처럼 역할로 적어요. 가칭 "아하랩"과 그 캐릭터 이름은 쓰지 않아요.
 - 업로드, 채널 설정 변경, 외부 게시, 댓글 작성은 하지 않아요. 채널은 대표가 직접 만들고 업로드도 대표가 승인한 뒤에만 해요.
 - 음원·폰트·이미지는 상업 이용 가능한 것만 쓰고 출처를 적어요. 사실적인 AI 합성 장면이 있으면 합성 콘텐츠 표시가 필요하다고 적어요.
 - 이전 작업(가칭 시절 브랜드 바이블, 쇼츠 후보 30편, 제작팀 역할, 목소리 스크립트)은 docs의 "미디어부서 합류 · 이전 작업 정리" 문서에 정리되어 있어요.
