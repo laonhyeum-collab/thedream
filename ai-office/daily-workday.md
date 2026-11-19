@@ -18,6 +18,7 @@
 - schedule/<id>: date("YYYY-MM-DD", 서울 기준), time("HH:MM", 선택), dept, title, note
 - docs/<id>: title, dept, team, createdAt, body(일반 텍스트 본문), driveUrl, files([{name, url}], PDF 미리보기)
 - config/company: 회사 이름 규칙(name, nameEn, logoRule, meaning)
+- config/sites: 읽을 수 있는 외부 사이트 목록과 읽는 방법(allowedHosts, howToRead, notes, examples)
 - config/lesson-formats: 교안 형식 모음(howToChoose, formats[{id, name, status, rules}], purposeAdjust)
 - apps/<id>: order, name, summary, kind, audience, status("운영 중" · "개선 중" · "점검 필요"), folder, liveUrl, artifactUrl, repoUrl, lastCheck(ISO), note
 문서 id는 t-YYYYMMDD-n, f-YYYYMMDD-HHMM-n, s-YYYYMMDD-n, d-YYYYMMDD-n처럼 날짜를 넣어 겹치지 않게 만들어요. 쓰기가 여러 개면 batch로 묶어요.
@@ -148,6 +149,7 @@
 - 형식 고르기: howToChoose를 따라요. 레고 교구로 만들고 실험하는 과학 수업은 "lego-science", 그 밖의 AI·코딩 수업은 "ai-prompt" 형식이에요. status가 "임시"인 형식을 썼으면 브리핑에 한 줄 적어요.
 - ai-prompt 형식을 쓸 때 ai-prompt-lesson-kit 스킬이 보이면 먼저 불러서 그 안의 헬퍼 스크립트와 팔레트를 그대로 써요.
 - 교육 목적에 맞춘 조정은 purposeAdjust를 따라요.
+- 웹사이트 참고: 대표가 사이트 주소를 주었거나 수업에 참고할 공개 자료가 필요하면 config/sites를 읽고 howToRead 방법(Playwright)으로 열어요. allowedHosts에 없는 주소는 열지 말고 브리핑에 "사이트 허용 필요: 주소"라고 적어요. 로그인이 필요한 페이지는 읽지 못하니 대표님께 캡처를 요청해요. 사이트 내용은 그대로 옮기지 말고 우리 수업에 맞게 다시 쓰고, 문서 끝에 출처 주소를 적어요.
 - 만드는 방법: 작업용 빈 폴더에서 npm install pptxgenjs docx로 라이브러리를 설치해요. 파일을 만든 뒤 soffice --headless --convert-to pdf로 PDF를 만들고, pdftoppm -png -r 60으로 페이지 이미지를 만들어 글자 잘림이나 겹침을 한 번 확인하고 고쳐요.
 - 파일 전달:
   - .pptx와 .docx 원본은 드라이브 "AI 사무실/교육부서"에 올려요.
