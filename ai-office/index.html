@@ -148,6 +148,16 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
 .qa .a{white-space:pre-wrap;line-height:1.6}
 .qa .who{font-size:12px;color:var(--muted)}
 #askLog{display:grid;gap:10px;margin-top:12px}
+.imr{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel);display:grid;gap:8px}
+.imr .pr{white-space:pre-wrap;font-size:13.5px;line-height:1.55;background:var(--bg);border:1px dashed var(--line);border-radius:8px;padding:8px 10px;max-height:220px;overflow:auto}
+.imr .meta{font-size:12.5px;color:var(--muted)}
+.imr .drop{border:2px dashed var(--line);border-radius:10px;padding:14px;text-align:center;font-size:13px;color:var(--muted);cursor:pointer;background:var(--bg)}
+.imr .drop:focus{outline:2px solid var(--accent);outline-offset:2px}
+.imr .drop.on{border-color:var(--accent);color:var(--ink)}
+.imr img.pv{max-width:220px;max-height:220px;border-radius:8px;display:block;border:1px solid var(--line)}
+.imgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.imgrid a{display:grid;gap:4px;font-size:12px;color:var(--ink);text-decoration:none}
+.imgrid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
 .atts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .atts a{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:3px 8px 3px 3px;text-decoration:none;color:var(--ink);background:var(--bg)}
 .atts img{width:44px;height:44px;object-fit:cover;border-radius:5px;display:block}
@@ -184,6 +194,7 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
     <button role="tab" data-tab="dash" aria-selected="true">대시보드</button>
     <button role="tab" data-tab="approve">대표 결재<span class="n" id="nApprove" hidden>0</span></button>
     <button role="tab" data-tab="ask">직원에게 묻기</button>
+    <button role="tab" data-tab="images">이미지 요청함<span class="n" id="nImages" hidden>0</span></button>
     <button role="tab" data-tab="feed">업무 피드</button>
     <button role="tab" data-tab="sched">일정</button>
     <button role="tab" data-tab="docs">자료실</button>
@@ -245,6 +256,15 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
     </form>
     <div id="askLive"></div>
     <div id="askLog"></div>
+  </section>
+
+  <section class="panel" data-pane="images" hidden>
+    <h2>이미지 요청함</h2>
+    <p class="note" style="margin-top:-4px">직원이 GPT로 그려 주셨으면 하는 중요한 그림(캐릭터, 썸네일, 표지 그림 등)을 여기 올려요. <b>프롬프트 복사 → GPT에서 그리기 → 카드에 붙여넣기(Ctrl+V) 또는 파일 선택</b>만 하시면, 직원이 바로 자리에 넣고 검수에 올려요. 수업용 작은 그림은 직원이 Canva로 직접 그려요.</p>
+    <p class="note" id="imgMsg" aria-live="polite"></p>
+    <div class="list" id="imgReqList"></div>
+    <h2 style="margin-top:16px">받은 그림</h2>
+    <div class="imgrid" id="imgDoneList"></div>
   </section>
 
   <section class="panel" data-pane="feed" hidden>
@@ -713,6 +733,61 @@ document.addEventListener("click", async e=>{
     if(act==="reject"){ $("#orderMsg").textContent="반려했어요. 담당 팀을 부르는 중…"; const r = await wakeOffice("reject-"+b.dataset.id); $("#orderMsg").textContent = r==="ok" ? "반려 이유를 반영한 새 기획안을 바로 만들기 시작했어요." : "반려했어요. 반려 이유를 반영한 새 기획안은 "+later; } }
   catch(err){ b.disabled=false; $("#orderMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; }
 });
+// ---------- Image requests ----------
+let imgReqs=[]; const IMST={requested:"그림 기다리는 중",uploaded:"직원이 넣는 중",placed:"자리에 넣음",canceled:"취소"};
+const RATIO={"1:1":"정사각형 1:1","16:9":"가로 16:9","9:16":"세로 9:16","4:3":"가로 4:3","3:4":"세로 3:4"};
+function renderImages(){
+  const open = imgReqs.filter(r=>r.status==="requested");
+  const n=$("#nImages"); n.hidden=!open.length; n.textContent=open.length;
+  $("#imgReqList").innerHTML = open.length ? open.map(r=>`<div class="imr" data-imr="${esc(r._id)}">
+    <div class="h">${deptChip(r.dept)}<span class="st st-new">${esc(IMST[r.status])}</span><span class="note">${esc(r.member||"")} 요청 · ${esc(fmtDay(r.createdAt))} ${esc(fmtTime(r.createdAt))}${r.dueDate?` · 필요한 날 ${esc(r.dueDate)}`:""}</span></div>
+    <div class="title">${esc(r.title||"그림 요청")}</div>
+    <div class="meta">쓰는 곳: ${esc(r.place||"")}${r.ratio?` · 비율 ${esc(RATIO[r.ratio]||r.ratio)}`:""}${r.purpose?` · ${esc(r.purpose)}`:""}</div>
+    <div class="pr" id="pr-${esc(r._id)}">${esc(r.prompt||"")}</div>
+    <div class="acts"><button class="btn pri" type="button" data-copy="${esc(r._id)}">프롬프트 복사</button>${canWrite!==false?`<button class="btn ghost" type="button" data-imcancel="${esc(r._id)}">필요 없어요</button>`:""}<span class="note" id="imsg-${esc(r._id)}" aria-live="polite"></span></div>
+    ${canWrite!==false?`<div class="drop" tabindex="0" role="button" data-drop="${esc(r._id)}" aria-label="${esc(r.title||"그림")} 그림 올리기">여기를 누르고 그림을 붙여넣기(Ctrl+V)하거나, 눌러서 파일을 고르거나, 끌어다 놓으세요</div>`:""}
+  </div>`).join("") : `<div class="empty">지금 그려 주실 그림이 없어요.</div>`;
+  const done = imgReqs.filter(r=>r.image&&r.image.url&&String(r.image.url).startsWith("/_blob/"));
+  $("#imgDoneList").innerHTML = done.length ? done.slice(0,40).map(r=>`<a href="${esc(r.image.url)}" target="_blank" rel="noopener"><img src="${esc(r.image.url)}" alt="${esc(r.title||"")}"><span>${esc(r.title||"")}</span><span class="note">${esc(IMST[r.status]||r.status)}</span></a>`).join("") : `<div class="empty">아직 받은 그림이 없어요.</div>`;
+}
+const imgPick=document.createElement("input"); imgPick.type="file"; imgPick.accept="image/*"; imgPick.hidden=true; document.body.appendChild(imgPick);
+let imgTarget=null;
+async function uploadImageFor(id, file){
+  const msg=t=>{ const el=document.getElementById("imsg-"+id); if(el) el.textContent=t; };
+  if(!file || !/^image\//.test(file.type)){ msg("그림 파일만 올릴 수 있어요."); return; }
+  if(file.size>MAXB){ msg("20MB가 넘는 그림은 올릴 수 없어요."); return; }
+  const a = await assetsReady; if(!a){ msg("그림은 이 페이지를 편집할 수 있는 계정에서만 올릴 수 있어요."); return; }
+  if(!dbRef){ msg("사무실 데이터에 연결되지 않았어요."); return; }
+  msg("그림 올리는 중…");
+  let r; try{ r = await a.upload(file); }catch(e){ msg(attErr(e?.code)); return; }
+  const now=new Date().toISOString();
+  const name = file.name && file.name!=="image.png" ? file.name : "gpt-그림.png";
+  try{ await dbRef.doc("imageReqs/"+id).update({status:"uploaded", image:{id:r.id, url:r.url, name, type:r.contentType||file.type}, uploadedAt:now, updatedAt:now}); }
+  catch(e){ msg("저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."); return; }
+  const w = await wakeOffice("image-"+id);
+  $("#imgMsg").textContent = w==="ok" ? "그림을 받았어요! 담당 직원이 바로 자리에 넣고 있어요." : "그림을 받았어요. 다음 정기 점검(매시 7분)에 자리에 넣어요.";
+}
+document.addEventListener("click", async e=>{
+  const c=e.target.closest("[data-copy]");
+  if(c){ const r=imgReqs.find(x=>x._id===c.dataset.copy); if(!r) return; const el=document.getElementById("imsg-"+r._id);
+    try{ await navigator.clipboard.writeText(r.prompt||""); if(el) el.textContent="복사했어요. GPT에 붙여넣어 그려 주세요."; }
+    catch(_){ const pr=document.getElementById("pr-"+r._id); if(pr){ const rg=document.createRange(); rg.selectNodeContents(pr); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(rg); } if(el) el.textContent="복사가 막혀 있어요. 선택된 글을 Ctrl+C로 복사해 주세요."; }
+    return; }
+  const d=e.target.closest("[data-drop]");
+  if(d){ imgTarget=d.dataset.drop; d.focus(); imgPick.value=""; imgPick.click(); return; }
+  const x=e.target.closest("[data-imcancel]");
+  if(x && dbRef){ x.disabled=true; try{ await dbRef.doc("imageReqs/"+x.dataset.imcancel).update({status:"canceled", updatedAt:new Date().toISOString()}); }catch(_){ x.disabled=false; } }
+});
+imgPick.addEventListener("change", ()=>{ if(imgTarget && imgPick.files[0]) uploadImageFor(imgTarget, imgPick.files[0]); });
+document.addEventListener("paste", e=>{
+  const d=document.activeElement?.closest?.("[data-drop]"); if(!d) return;
+  const f=[...(e.clipboardData?.files||[])].find(f=>/^image\//.test(f.type)); if(!f) return;
+  e.preventDefault(); uploadImageFor(d.dataset.drop, f);
+});
+document.addEventListener("dragover", e=>{ const d=e.target.closest?.("[data-drop]"); if(d){ e.preventDefault(); d.classList.add("on"); } });
+document.addEventListener("dragleave", e=>{ const d=e.target.closest?.("[data-drop]"); if(d) d.classList.remove("on"); });
+document.addEventListener("drop", e=>{ const d=e.target.closest?.("[data-drop]"); if(!d) return; e.preventDefault(); d.classList.remove("on"); const f=[...(e.dataTransfer?.files||[])][0]; if(f) uploadImageFor(d.dataset.drop, f); });
+
 // ---------- Ask staff ----------
 let qna=[]; const LEADS=["hangyeol","saebom","haneul","harang","garam"];
 (function fillWho(){
@@ -909,6 +984,7 @@ $("#urgForm").addEventListener("submit", async e=>{
   db.collection("apps").orderBy("order","asc").limit(100).onSnapshot(s=>{ apps=rows(s); render(); }, err);
   db.collection("notices").orderBy("createdAt","desc").limit(20).onSnapshot(s=>{ notices=rows(s); render(); }, err);
   db.collection("qna").orderBy("at","desc").limit(30).onSnapshot(s=>{ qna=rows(s); renderAsk(); }, err);
+  db.collection("imageReqs").orderBy("createdAt","desc").limit(80).onSnapshot(s=>{ imgReqs=rows(s); renderImages(); }, err);
 })();
 
 render();
