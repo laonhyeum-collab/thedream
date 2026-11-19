@@ -105,7 +105,13 @@ form.order textarea{width:100%;min-height:64px;resize:vertical}
 .sched .d{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;padding:8px 0;border-bottom:1px dashed var(--line)}
 .sched .dd{font-family:var(--f-pixel);font-size:13px}
 .sched .dd.today{color:var(--accent)}
-.doc-view{white-space:pre-wrap;background:var(--bg);border-radius:8px;padding:12px;font-size:13.5px;max-height:480px;overflow:auto;overflow-wrap:anywhere}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(20,18,28,.55);display:flex;align-items:flex-start;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 16px) max(12px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 16px) max(12px,env(safe-area-inset-left,0px))}
+.sheet{background:var(--panel);color:var(--ink);border-radius:14px;width:min(820px,100%);max-height:100%;display:flex;flex-direction:column;gap:10px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.sheet-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sheet-h .btn{white-space:nowrap;flex:none}
+.sheet-h h2{font-family:var(--f-display);font-weight:400;font-size:19px;margin:0;line-height:1.35;overflow-wrap:anywhere}
+.doc-view{white-space:pre-wrap;background:var(--bg);color:var(--ink);border-radius:10px;padding:14px 16px;font-size:15px;line-height:1.75;overflow:auto;overflow-wrap:anywhere;flex:1 1 auto;min-height:0}
+.doc-view b{display:inline-block;margin-top:6px;color:var(--strat)}
 .apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
 .app{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:6px;min-width:0}
 .app .nm{font-family:var(--f-display);font-size:17px}
@@ -221,7 +227,7 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
     <h2>자료실</h2>
     <p class="note" style="margin-top:-4px">AI 직원이 만든 수업 기획안, 강의 자료, 브리핑이 모여요. 구글 드라이브 링크가 있으면 함께 보여줘요.</p>
     <div class="list" id="docList"></div>
-    <div id="docView" hidden style="margin-top:12px"><div class="h" style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h2 id="docTitle" style="margin:0"></h2><button class="btn ghost" id="docClose">닫기</button></div><div class="acts" id="docFiles" style="margin:8px 0"></div><div class="doc-view" id="docBody"></div></div>
+
   </section>
 
   <section class="panel" data-pane="apps" hidden>
@@ -283,6 +289,14 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
       </tbody>
     </table></div>
   </section>
+</div>
+
+<div class="modal" id="docView" hidden role="dialog" aria-modal="true" aria-labelledby="docTitle">
+  <div class="sheet">
+    <div class="sheet-h"><h2 id="docTitle"></h2><button class="btn ghost" id="docClose">닫기</button></div>
+    <div class="acts" id="docFiles"></div>
+    <div class="doc-view" id="docBody"></div>
+  </div>
 </div>
 
 <script>
@@ -610,15 +624,16 @@ function render(){
       ${links?`<div class="links">${links}</div>`:""}</div>`;
   }).join("") : `<div class="empty">앱 목록을 불러오는 중이에요.</div>`;
   $("#urgList").innerHTML = notices.slice(0,5).map(n=>`<div class="item"><div class="h"><span class="st st-${esc(n.status)}">${esc(NSTATUS[n.status]||n.status)}</span><span class="note">${esc(fmtDay(n.createdAt))} ${esc(fmtTime(n.createdAt))}${n.processedAt?" → "+esc(fmtTime(n.processedAt))+" 완료":""}</span></div><div class="det" style="color:var(--ink)">${esc(n.text)}</div>${n.result?`<div class="det">보고: ${esc(n.result)}</div>`:""}${n.docId?`<div class="acts"><button class="btn ghost" data-doc="${esc(n.docId)}">결과 자료 보기</button></div>`:""}</div>`).join("");
-  if(docLinkedOpen) openDoc(docLinkedOpen);
 }
 function openDoc(id){
   const d = docs.find(x=>x._id===id); if(!d) return;
   docLinkedOpen=id;
-  document.querySelector('#tabs button[data-tab="docs"]').click();
-  $("#docTitle").textContent=d.title; $("#docBody").textContent=d.body||"(내용 없음)"; $("#docFiles").innerHTML=fileLinks(d); $("#docView").hidden=false;
+  $("#docTitle").textContent=d.title; $("#docBody").innerHTML=esc(d.body||"(내용 없음)").replace(/^(■[^\n]*)$/gm,"<b>$1</b>"); $("#docFiles").innerHTML=fileLinks(d); $("#docView").hidden=false; document.body.style.overflow="hidden"; $("#docBody").scrollTop=0;
 }
-$("#docClose").addEventListener("click",()=>{ $("#docView").hidden=true; docLinkedOpen=null; });
+const closeDoc=()=>{ $("#docView").hidden=true; docLinkedOpen=null; document.body.style.overflow=""; };
+$("#docClose").addEventListener("click",closeDoc);
+$("#docView").addEventListener("click",e=>{ if(e.target.id==="docView") closeDoc(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("#docView").hidden) closeDoc(); });
 document.addEventListener("click",e=>{ const b=e.target.closest("[data-doc]"); if(b) openDoc(b.dataset.doc); });
 
 // org chart
