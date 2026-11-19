@@ -6,7 +6,7 @@ import { readFileText } from '../shared/files.js';
 import { cleanWorldSettings, worldName, DEFAULT_WORLD, WORLD_ASSET_KEYS, hasHotspots, presetById, presetUrl } from '../shared/worldart.js';
 import { cleanAvatar, randomAvatar, avatarFromText, avatarPixels, avatarBuilder, AVATAR_W, AVATAR_H } from '../shared/avatar.js';
 import { layoutWorld, layoutIllustrated, moveWithin, nearestDoor, buildingAt, PLAYER_R } from './worldmap.js';
-import { CELL, buildMask, finishMask, buildingBlocks, makeWalk, moveOnPath, nearestWalkable, findPath, walkable } from './walkmask.js';
+import { CELL, buildMask, finishMask, buildingBlocks, makeWalk, moveOnPath, nearestWalkable, findPath, walkable, lineClear, waterCells, landMask, groundCost } from './walkmask.js';
 import { PX, buildGround, boothSprite, emptyLotSprite, hallSprite, fountainSprite, archSprite, sparkles } from './pixelart.js';
 import { h, $, toast } from '../shared/ui.js';
 
@@ -130,19 +130,23 @@ function rebuild(first) {
   }[state.source];
 }
 
-// 그림 지도에서 길(크림색 돌길)을 찾아 캐릭터가 길로만 다니게. 길을 거의 못 찾은 그림이면 null(어디든 걷기)
+// 그림 지도에서 길(크림색 돌길)을 찾아 캐릭터가 길로만 다니게. 물(바다·강·연못·계곡 물)은 절대 건너지 않아요.
+// 길을 거의 못 찾은 그림(직접 그린 지도 등)은 물이 아닌 땅 어디든. 그것도 못 찾으면 null(어디든 걷기)
 function walkFor(world, img) {
   try {
     const gw = Math.ceil(world.width / CELL), gh = Math.ceil(world.height / CELL), sub = 3;
     const c = document.createElement('canvas'); c.width = gw * sub; c.height = gh * sub;
     const x = c.getContext('2d', { willReadFrequently: true });
     x.drawImage(img, 0, 0, c.width, c.height);
-    const raw = buildMask(x.getImageData(0, 0, c.width, c.height).data, gw, gh, sub);
-    let n = 0; for (const v of raw) n += v;
-    if (n < gw * gh * 0.04) return null;
+    const px = x.getImageData(0, 0, c.width, c.height).data;
+    const water = waterCells(px, gw, gh, sub);
+    const count = (a) => { let n = 0; for (const v of a) n += v; return n; };
+    let raw = buildMask(px, gw, gh, sub);
+    if (count(raw) < gw * gh * 0.04) raw = landMask(water);
+    if (count(raw) < gw * gh * 0.04) return null;
     const doors = [world.spawn, ...(world.hall ? [world.hall.door] : []), ...world.booths.map((b) => b.door)];
-    const m = finishMask(raw, gw, gh, doors, buildingBlocks(world.hall && world.hall.door, world.booths.map((b) => b.door)));
-    return makeWalk(m, gw, gh);
+    const m = finishMask(raw, gw, gh, doors, buildingBlocks(world.hall && world.hall.door, world.booths.map((b) => b.door)), groundCost(px, gw, gh, sub));
+    return { ...makeWalk(m, gw, gh), water };
   } catch { return null; }   // 그림을 읽을 수 없으면(다른 주소 그림 등) 예전처럼
 }
 const walkMove = (from, dx, dy) => (state.world.walk ? moveOnPath(state.world.walk, from, dx, dy) : moveWithin(state.world, from, dx, dy));
@@ -150,6 +154,7 @@ const snap = (p) => (state.world.walk ? nearestWalkable(state.world.walk, p) : m
 // 누른 곳까지 가는 길: 그림 지도는 길을 따라 돌아가는 경로, 픽셀 섬은 곧게
 function setTarget(p) {
   if (state.world.walk) {
+    if (!walkable(state.world.walk, pos.x, pos.y)) pos = snap(pos);   // 길 밖이면 먼저 가까운 길 위로
     const r = findPath(state.world.walk, pos, p);
     route = r || [];
     target = route.length ? route[route.length - 1] : null;
@@ -465,10 +470,11 @@ function step(dt) {
     if (keys.has('ArrowDown') || keys.has('KeyS')) dy += 1;
     if (joy && joy.active) { dx = joy.dx; dy = joy.dy; }
     if (dx || dy) { target = null; route = []; autoEnter = null; } else if (target) {
-      while (route.length > 1 && Math.hypot(route[0].x - pos.x, route[0].y - pos.y) < 8) route.shift();
+      // 꺾이는 점은 정확히 밟은 뒤에 다음 점으로 (8px 앞에서 미리 꺾으면 모서리를 잘라 물·풀밭을 스쳐요)
+      while (route.length > 1 && Math.hypot(route[0].x - pos.x, route[0].y - pos.y) < 0.5) route.shift();
       const wp = route[0] || target;
       const tx = wp.x - pos.x, ty = wp.y - pos.y, d = Math.hypot(tx, ty);
-      if (d < 8 && route.length <= 1) { target = null; route = []; if (autoEnter) { const a = autoEnter; autoEnter = null; enter(a); } } else if (d >= 1) { const k = Math.min(1, d / 10); dx = (tx / d) * k; dy = (ty / d) * k; }
+      if (d < 8 && route.length <= 1) { target = null; route = []; if (autoEnter) { const a = autoEnter; autoEnter = null; enter(a); } } else if (d > 0) { const k = route.length <= 1 ? Math.min(1, d / 10) : 1; dx = (tx / d) * k; dy = (ty / d) * k; }
     }
   }
   const len = Math.hypot(dx, dy);
@@ -490,11 +496,12 @@ function step(dt) {
   $('#enterBooth').textContent = nearWish && !near ? '소원 빌기 ⭐' : '들어가기 ▶';
 }
 
-// 경로 점까지는 길 위로 계산된 구간이라 그대로 따라가요 (지나치지 않게)
+// 경로 점까지는 길 위로 계산된 구간이라 그대로 따라가요 (지나치지 않게). 혹시 길 밖으로 나가는 걸음이면 길 가장자리로만
 function stepToward(wp, mx, my) {
   const d = Math.hypot(wp.x - pos.x, wp.y - pos.y), m = Math.hypot(mx, my);
-  if (m >= d) return { x: wp.x, y: wp.y };
-  return state.world.walk ? { x: pos.x + mx, y: pos.y + my } : moveWithin(state.world, pos, mx, my);
+  const next = m >= d ? { x: wp.x, y: wp.y } : { x: pos.x + mx, y: pos.y + my };
+  if (!state.world.walk) return m >= d ? next : moveWithin(state.world, pos, mx, my);
+  return !walkable(state.world.walk, pos.x, pos.y) || lineClear(state.world.walk, pos, next) ? next : moveOnPath(state.world.walk, pos, mx, my);
 }
 
 let last = performance.now();
@@ -780,6 +787,27 @@ window.__worldDebug = {
       if (!walkable(state.world.walk, x, y)) allOnPath = false;
     }
     return { points: route.length, allOnPath };
+  },
+  // 여러 곳(풀밭·물 위 포함)을 눌러 실제로 걸어 보며, 한 걸음이라도 길 밖·물 칸을 스치는지 확인
+  walkCheck: (n = 40, seed = 1) => {
+    const w = state.world.walk;
+    let s = seed, routes = 0, steps = 0, bad = 0, wet = 0, arrived = 0;
+    const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+    // 문 바로 앞 칸(파란 유리문 등)은 물 색이어도 늘 설 수 있게 둔 자리라 빼고 세요
+    const doorCell = new Set([state.world.spawn, ...(state.world.hall ? [state.world.hall.door] : []), ...state.world.booths.map((b) => b.door)].map((d) => Math.floor(d.y / CELL) * w.gw + Math.floor(d.x / CELL)));
+    for (let i = 0; i < w.mask.length; i++) if (w.mask[i] && w.water && w.water[i] && !doorCell.has(i)) wet++;
+    for (let t = 0; t < n; t++) {
+      setTarget({ x: rnd() * state.world.width, y: rnd() * state.world.height });
+      if (!target) continue;
+      routes++;
+      for (let f = 0; f < 4000 && target; f++) {
+        const before = { ...pos };
+        step(1 / 60); steps++;
+        if (!walkable(w, pos.x, pos.y) || !lineClear(w, before, pos)) bad++;
+      }
+      if (!target) arrived++;
+    }
+    return { routes, steps, bad, wet, arrived };
   },
 };
 

@@ -386,6 +386,11 @@ try {
   const walked = await wd.evaluate(() => window.__worldDebug.goFar());
   assert.ok(walked.points >= 3, '여러 번 꺾이는 길');
   assert.equal(walked.allOnPath, true, '경로가 모두 길 위');
+  // 여러 곳(풀밭·연못·바다 위 포함)을 눌러 실제로 걸어 봄: 한 걸음도 길 밖·물 칸을 스치지 않고, 물 칸은 길이 아님
+  const checked = await wd.evaluate(() => window.__worldDebug.walkCheck(30, 3));
+  assert.equal(checked.bad, 0, `계곡·연못 가로지르기 없음 ${JSON.stringify(checked)}`);
+  assert.equal(checked.wet, 0, '물 칸은 길이 아님');
+  assert.equal(checked.arrived, checked.routes, '누른 곳(가까운 길)까지 도착');
   await snap(wd, 'world-walk');
   await wd.click('[data-side="explore"]');
   await wd.click('.dir-item[data-booth]');
