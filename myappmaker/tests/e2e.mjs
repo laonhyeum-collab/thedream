@@ -352,19 +352,40 @@ try {
   await wd.goto(`${base}/world/?${q}`);
   await wd.waitForFunction(() => document.querySelector('#sourceInfo').textContent.includes('부스 1개'));
   assert.match(await wd.textContent('#lobbyTitle'), /해솔초등학교/);
-  await wd.fill('#nick', '바다');
-  await wd.click('#lobbyAvatar .avatar-opt[data-k="hair"][data-i="2"]');
-  assert.equal(await wd.inputValue('#nick'), '바다', '캐릭터를 골라도 이름 유지');
-  await wd.click('#idLogin summary');
-  await wd.fill('#wLoginId', '01'); await wd.fill('#wLoginPin', pinOf('01'));
+  assert.equal(await wd.isVisible('#loginForm'), true, '저장소가 있으면 아이디 로그인부터');
+  assert.equal(await wd.isHidden('#enterBtn'), true);
+  await wd.fill('#wLoginId', '01'); await wd.fill('#wLoginPin', '99999');
+  await wd.click('#loginBtn');
+  await wd.waitForSelector('#loginMsg:not([hidden])');
+  assert.equal(await wd.isHidden('#stage'), true, '비밀번호가 틀리면 못 들어감');
+  await wd.fill('#wLoginPin', pinOf('01'));
   await snap(wd, 'world-lobby');
-  await wd.click('#enterBtn');
+  await wd.click('#loginBtn');
   await wd.waitForFunction(() => document.querySelector('.toast') && document.querySelector('.toast').textContent.includes('내 부스를 찾았어요'));
+  // 로그인한 뒤 ⚙️ 설정에서 별명·캐릭터 (학생 앱에서 만든 캐릭터·별명으로 시작)
+  await wd.waitForSelector('#panel:not([hidden])');
+  assert.match(await wd.textContent('#panelBody'), /아이디 01/, '설정 창에 내 아이디');
+  await wd.fill('#panelBody input[aria-label="내 별명"]', '바다');
+  await wd.click('#panelBody .avatar-opt[data-k="gender"][data-i="1"]');
+  await wd.click('#panelBody .avatar-opt[data-k="hair"][data-i="2"]');
+  assert.equal(await wd.inputValue('#panelBody input[aria-label="내 별명"]'), '바다', '캐릭터를 골라도 이름 유지');
+  await snap(wd, 'world-settings');
+  await wd.click('#panelBody button:has-text("다 했어요")');
+  assert.equal(await wd.textContent('#meNick'), '바다');
   await wd.click('[data-nav="myapp"]');
   await wd.waitForSelector('#panelBody >> text=내 부스로 가기');
   await wd.click('#closePanel');
   assert.equal(await wd.getAttribute('#map', 'data-mode'), 'preset:castle', '지도 그림을 안 올리면 준비된 지도(기본: 별빛 성 섬)');
-  await wd.keyboard.down('ArrowUp'); await wd.waitForTimeout(600); await wd.keyboard.up('ArrowUp');
+  // 길을 따라 걷기: 어떤 방향으로 걸어도 길(크림색 돌길) 밖으로 나가지 않음
+  assert.equal(await wd.evaluate(() => window.__worldDebug.hasWalk()), true, '준비된 지도는 길을 찾음');
+  for (const k of ['ArrowUp', 'ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']) {
+    await wd.keyboard.down(k); await wd.waitForTimeout(700); await wd.keyboard.up(k);
+    assert.equal(await wd.evaluate(() => window.__worldDebug.onPath()), true, `${k}: 길 위`);
+  }
+  // 멀리 있는 부스를 누르면 길을 따라 돌아가는 경로 (곧게 가로지르지 않음)
+  const walked = await wd.evaluate(() => window.__worldDebug.goFar());
+  assert.ok(walked.points >= 3, '여러 번 꺾이는 길');
+  assert.equal(walked.allOnPath, true, '경로가 모두 길 위');
   await snap(wd, 'world-walk');
   await wd.click('[data-side="explore"]');
   await wd.click('.dir-item[data-booth]');
@@ -400,6 +421,9 @@ try {
   await demo.goto(`${base}/world/?demo=1`);
   await demo.click('#enterBtn');
   await demo.waitForSelector('#stage:not([hidden])');
+  await demo.waitForSelector('#panel:not([hidden])');   // 처음엔 별명·캐릭터 설정부터
+  await demo.click('#closePanel');
+  assert.equal(await demo.textContent('#meNick'), '방문자', '별명을 안 쓰면 방문자');
   await snap(demo, 'world-demo-tablet');
   await demo.click('[data-side="explore"]');
   assert.equal(await demo.locator('.dir-item').count(), 3, '선생님 앱 + 샘플 2');
@@ -460,10 +484,12 @@ try {
 
   const wf = await newPage();
   await wf.goto(`${base}/world/`);
-  await wf.click('#lobby details:not(#idLogin) summary');
+  await wf.click('#lobby details summary');
   await wf.setInputFiles('#worldFile', worldFile);
   await wf.waitForFunction(() => document.querySelector('#sourceInfo').textContent.includes('메타버스 파일'));
   await wf.click('#enterBtn');
+  await wf.fill('#panelBody input[aria-label="내 별명"]', '별');
+  await wf.click('#closePanel');
   assert.equal(await wf.getAttribute('#map', 'data-mode'), 'illustrated', '지도 그림 + 문 자리 = 그림 지도 모드');
   await snap(wf, 'world-illustrated');
   await wf.click('[data-side="explore"]');

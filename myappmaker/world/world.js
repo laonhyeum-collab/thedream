@@ -6,6 +6,7 @@ import { readFileText } from '../shared/files.js';
 import { cleanWorldSettings, worldName, DEFAULT_WORLD, WORLD_ASSET_KEYS, hasHotspots, presetById, presetUrl } from '../shared/worldart.js';
 import { cleanAvatar, randomAvatar, avatarFromText, avatarPixels, avatarBuilder, AVATAR_W, AVATAR_H } from '../shared/avatar.js';
 import { layoutWorld, layoutIllustrated, moveWithin, nearestDoor, buildingAt, PLAYER_R } from './worldmap.js';
+import { CELL, buildMask, finishMask, buildingBlocks, makeWalk, moveOnPath, nearestWalkable, findPath, walkable } from './walkmask.js';
 import { PX, buildGround, boothSprite, emptyLotSprite, hallSprite, fountainSprite, archSprite, sparkles } from './pixelart.js';
 import { h, $, toast } from '../shared/ui.js';
 
@@ -14,6 +15,7 @@ const LIKED = 'myappmaker.world.liked';
 const PROGRESS = 'myappmaker.world.progress';
 const MYBOOTH = 'myappmaker.world.mybooth';
 const SPEED = 260;
+const FACE_ROWS = 13;   // 캐릭터 그림에서 얼굴(머리)까지의 줄 수
 
 const cfg = loadConfig('world');
 const api = createApi(cfg);
@@ -34,7 +36,7 @@ const state = {
 };
 let me = loadJSON(PREF, null) || { nick: '', avatar: randomAvatar() };
 me.avatar = cleanAvatar(me.avatar);
-let pos = { x: 0, y: 0 }, target = null, autoEnter = null, joy = null, near = null, nearWish = false, moving = false, walkT = 0;
+let pos = { x: 0, y: 0 }, target = null, route = [], autoEnter = null, joy = null, near = null, nearWish = false, moving = false, walkT = 0;
 let roomOpen = false, panelOpen = false, overview = false, current = null;
 const keys = new Set();
 
@@ -109,8 +111,11 @@ function rebuild(first) {
     // 그림 지도 + 문 자리가 있으면 그 그림 그대로, 없으면 앱이 그린 픽셀 섬
     state.world = illustrated ? layoutIllustrated(state.items, hotspots, 1920, Math.round((1920 * map.height) / map.width)) : layoutWorld(state.items);
     if (!illustrated) state.ground = state.ground || buildGround(state.world);
+    else state.world.walk = walkFor(state.world, map);
     canvasEl.dataset.mode = illustrated ? (pre ? `preset:${pre.id}` : 'illustrated') : 'pixel';   // 시험·디버깅용 표시
-    if (first) pos = { ...state.world.spawn }; else pos = moveWithin(state.world, pos, 0, 0);
+    if (state.world.walk) state.world.spawn = nearestWalkable(state.world.walk, state.world.spawn);
+    if (first) pos = { ...state.world.spawn }; else pos = snap(pos);
+    target = null; route = [];
   }
   const name = worldName(state.settings);
   $('#lobbyTitle').textContent = name;
@@ -125,41 +130,99 @@ function rebuild(first) {
   }[state.source];
 }
 
-// ---------- 입장 ----------
-function renderLobby() {
-  $('#idLogin').hidden = !api.enabled || params.has('demo');
-  $('#nick').value = me.nick;
-  $('#lobbyAvatar').replaceChildren(avatarBuilder(h, me.avatar, (a) => { me.avatar = a; saveJSON(PREF, me); paintMe(); }));
+// 그림 지도에서 길(크림색 돌길)을 찾아 캐릭터가 길로만 다니게. 길을 거의 못 찾은 그림이면 null(어디든 걷기)
+function walkFor(world, img) {
+  try {
+    const gw = Math.ceil(world.width / CELL), gh = Math.ceil(world.height / CELL), sub = 3;
+    const c = document.createElement('canvas'); c.width = gw * sub; c.height = gh * sub;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, c.width, c.height);
+    const raw = buildMask(x.getImageData(0, 0, c.width, c.height).data, gw, gh, sub);
+    let n = 0; for (const v of raw) n += v;
+    if (n < gw * gh * 0.04) return null;
+    const doors = [world.spawn, ...(world.hall ? [world.hall.door] : []), ...world.booths.map((b) => b.door)];
+    const m = finishMask(raw, gw, gh, doors, buildingBlocks(world.hall && world.hall.door, world.booths.map((b) => b.door)));
+    return makeWalk(m, gw, gh);
+  } catch { return null; }   // 그림을 읽을 수 없으면(다른 주소 그림 등) 예전처럼
 }
-// (선택) 선생님이 만든 아이디로 들어오면 내 부스를 자동으로 찾아요. 아이디는 저장하지 않아요.
-async function findMyBooth() {
+const walkMove = (from, dx, dy) => (state.world.walk ? moveOnPath(state.world.walk, from, dx, dy) : moveWithin(state.world, from, dx, dy));
+const snap = (p) => (state.world.walk ? nearestWalkable(state.world.walk, p) : moveWithin(state.world, p, 0, 0));
+// 누른 곳까지 가는 길: 그림 지도는 길을 따라 돌아가는 경로, 픽셀 섬은 곧게
+function setTarget(p) {
+  if (state.world.walk) {
+    const r = findPath(state.world.walk, pos, p);
+    route = r || [];
+    target = route.length ? route[route.length - 1] : null;
+  } else { target = moveWithin(state.world, p, 0, 0); route = [target]; }
+}
+
+// ---------- 입장 ----------
+// 우리 반 저장소가 있으면 아이디로 로그인한 뒤 들어가요. 별명·캐릭터는 아이디마다 이 기기에 따로 저장(비밀번호는 저장 안 함).
+let account = null;   // { id } 로그인한 아이디 (이 창을 닫으면 사라짐)
+const prefKey = () => (account ? `${PREF}@${account.id}` : PREF);
+function loadMe() {
+  const v = loadJSON(prefKey(), null);
+  me = v ? { nick: String(v.nick || ''), avatar: cleanAvatar(v.avatar) } : { nick: '', avatar: randomAvatar() };
+}
+const saveMe = () => saveJSON(prefKey(), me);
+const canLogin = () => api.enabled && !params.has('demo') && state.source !== 'file';
+
+function renderLobby() {
+  $('#loginForm').hidden = !canLogin();
+  $('#openEnter').hidden = canLogin();
+  $('#loginMsg').hidden = true;
+}
+function loginMsg(t) { const m = $('#loginMsg'); m.textContent = t; m.hidden = !t; }
+
+$('#loginForm').onsubmit = async (e) => {
+  e.preventDefault();
   const id = $('#wLoginId').value.trim(), pin = $('#wLoginPin').value.trim();
-  if (!api.enabled || !id || !pin) return;
+  if (!id || !pin) { loginMsg('아이디와 비밀번호를 모두 넣어 주세요'); return; }
+  const btn = $('#loginBtn'); btn.disabled = true; loginMsg('');
   try {
     const { token } = await api.studentLogin(id, pin);
-    const r = await api.mine('', token);
     $('#wLoginPin').value = '';
-    if (r.found && r.status === 'approved') { saveJSON(MYBOOTH, r.id); toast('⭐ 내 부스를 찾았어요! 위의 「⭐ 내 앱」을 눌러 봐요', 4500); }
-    else if (r.found) toast('내 앱은 아직 선생님이 확인하는 중이에요', 4000);
-    else toast('아직 입점 신청한 앱이 없어요', 4000);
-  } catch (e) { toast(`아이디 확인: ${e.message}`, 4500); }
-}
-$('#enterBtn').onclick = () => {
-  findMyBooth();
-  me.nick = $('#nick').value.trim().slice(0, 10) || '방문자';
-  saveJSON(PREF, me);
+    account = { id };
+    const fresh = !loadJSON(prefKey(), null);   // 이 기기에서 이 아이디로 처음
+    loadMe();
+    let mine = null;
+    try { mine = await api.mine('', token); } catch { /* 부스 찾기는 못 해도 입장 */ }
+    if (mine && mine.found && mine.status === 'approved') {
+      saveJSON(MYBOOTH, mine.id);
+      // 처음 들어온 아이디는 학생 앱에서 만든 캐릭터·별명으로 시작
+      const it = state.items.find((x) => x.id === mine.id);
+      if (it && !loadJSON(prefKey(), null)) { if (it.avatar) me.avatar = cleanAvatar(it.avatar); if (it.developer) me.nick = String(it.developer).slice(0, 10); }
+    }
+    enterWorld(fresh);
+    if (mine && mine.found) toast(mine.status === 'approved' ? '⭐ 내 부스를 찾았어요! 위의 「⭐ 내 앱」을 눌러 봐요' : '내 앱은 아직 선생님이 확인하는 중이에요', 4500);
+  } catch (err) { loginMsg(`로그인하지 못했어요: ${err.message}`); }
+  finally { btn.disabled = false; }
+};
+$('#guestBtn').onclick = () => { account = null; loadMe(); enterWorld(); };
+$('#enterBtn').onclick = () => { account = null; loadMe(); enterWorld(); };
+
+function enterWorld(openSettings = false) {
   paintMe();
   $('#lobby').hidden = true;
   $('#stage').hidden = false;
   resize();
   $('#map').focus();
-};
+  // 별명을 아직 안 정했으면 설정 창부터
+  if (openSettings || !me.nick) { saveMe(); settingsPanel(true); }
+}
+function leaveWorld() {
+  closeRoom(); closePanel();
+  account = null; target = null; route = [];
+  $('#stage').hidden = true; $('#lobby').hidden = false;
+  renderLobby();
+}
 $('#worldFile').onchange = async (e) => {
   const f = e.target.files[0]; e.target.value = '';
   if (!f) return;
   try {
     await loadFile(JSON.parse(await readFileText(f, 40_000_000)));
     await loadPreset(); state.sig = null; rebuild(true);
+    renderLobby();
     toast(`📁 부스 ${state.items.length}개를 열었어요`);
   } catch (err) { toast(`불러오지 못했어요: ${err.message}`, 4000); }
 };
@@ -203,7 +266,7 @@ function avatarCanvas(a, frame) {
   avatarCache.set(key, c);
   return c;
 }
-function drawChar(a, x, bottom, frame, scale = 4) {
+function drawChar(a, x, bottom, frame, scale = 3) {
   ctx.fillStyle = 'rgba(0,0,0,.2)';
   ctx.beginPath(); ctx.ellipse(x, bottom, 18, 6, 0, 0, Math.PI * 2); ctx.fill();
   ctx.drawImage(avatarCanvas(a, frame), x - (AVATAR_W * scale) / 2, bottom - AVATAR_H * scale, AVATAR_W * scale, AVATAR_H * scale);
@@ -318,8 +381,8 @@ function drawIllustrated(t) {
   if (near && near.kind === 'teacher' && w.hall) ring(w.hall.door.x, w.hall.door.y);
   if (near && near.booth) ring(near.booth.door.x, near.booth.door.y);
   const list = [
-    ...w.booths.filter((b) => b.item).map((b) => ({ y: b.host.y, fn: () => drawChar(b.item.avatar ? cleanAvatar(b.item.avatar) : avatarFromText(b.item.developer), b.host.x, b.host.y, 0, 3) })),
-    { y: pos.y + PLAYER_R, fn: () => drawChar(me.avatar, pos.x, pos.y + PLAYER_R, moving ? Math.floor(walkT / 0.16) % 2 : 0, 3) },
+    ...w.booths.filter((b) => b.item).map((b) => ({ y: b.host.y, fn: () => drawChar(b.item.avatar ? cleanAvatar(b.item.avatar) : avatarFromText(b.item.developer), b.host.x, b.host.y, 0) })),
+    { y: pos.y + PLAYER_R, fn: () => drawChar(me.avatar, pos.x, pos.y + PLAYER_R, moving ? Math.floor(walkT / 0.16) % 2 : 0) },
   ].sort((a, b) => a.y - b.y);
   for (const d of list) d.fn();
   for (const b of w.booths) {
@@ -330,8 +393,12 @@ function drawIllustrated(t) {
   }
   if (w.hall && state.teacherApp) label(small ? state.teacherApp.title : `🎓 ${state.teacherApp.title}`, w.hall.x, w.hall.y + 36, { size: small ? 13 : 20, maxW: 240 });
   if (state.settings.schoolName) label(`🏫 ${worldName(state.settings)}`, w.width / 2, 34, { size: 22, maxW: 600 });
-  label(me.nick || '나', pos.x, pos.y - 54, { size: 14, maxW: 120 });
-  if (target) { ctx.strokeStyle = 'rgba(110,79,192,.7)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(target.x, target.y, 12 + Math.sin(t / 120) * 3, 0, Math.PI * 2); ctx.stroke(); }
+  label(me.nick || '나', pos.x, pos.y - 62, { size: 14, maxW: 120 });
+  if (target) {
+    ctx.setLineDash([6, 10]); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(pos.x, pos.y + PLAYER_R); for (const r of route) ctx.lineTo(r.x, r.y + PLAYER_R); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgba(110,79,192,.8)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(target.x, target.y + PLAYER_R, 12 + Math.sin(t / 120) * 3, 0, Math.PI * 2); ctx.stroke();
+  }
 }
 
 function draw(t) {
@@ -383,7 +450,7 @@ function draw(t) {
   ctx.font = `400 ${24 * Math.min(1.2, labelScale)}px "Jua",sans-serif`;
   ctx.fillStyle = '#4A3A8A'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(worldName(state.settings), a.x, a.y - (state.assets.arch ? a.h * 0.72 : 86), state.assets.arch ? a.w - 40 : 255);
-  label(me.nick || '나', pos.x, pos.y - 70, { size: 15, maxW: 120 });
+  label(me.nick || '나', pos.x, pos.y - 64, { size: 15, maxW: 120 });
   if (target) { ctx.strokeStyle = 'rgba(110,79,192,.7)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(target.x, target.y, 12 + Math.sin(t / 120) * 3, 0, Math.PI * 2); ctx.stroke(); }
   if (!state.items.length && state.source === 'server') label('선생님이 입점을 승인하면 부스가 열려요!', state.world.fountain.x, state.world.fountain.y + 120, { size: 18, maxW: 520 });
 }
@@ -397,17 +464,19 @@ function step(dt) {
     if (keys.has('ArrowUp') || keys.has('KeyW')) dy -= 1;
     if (keys.has('ArrowDown') || keys.has('KeyS')) dy += 1;
     if (joy && joy.active) { dx = joy.dx; dy = joy.dy; }
-    if (dx || dy) { target = null; autoEnter = null; } else if (target) {
-      const tx = target.x - pos.x, ty = target.y - pos.y, d = Math.hypot(tx, ty);
-      if (d < 8) { target = null; if (autoEnter) { const a = autoEnter; autoEnter = null; enter(a); } } else { dx = tx / d; dy = ty / d; }
+    if (dx || dy) { target = null; route = []; autoEnter = null; } else if (target) {
+      while (route.length > 1 && Math.hypot(route[0].x - pos.x, route[0].y - pos.y) < 8) route.shift();
+      const wp = route[0] || target;
+      const tx = wp.x - pos.x, ty = wp.y - pos.y, d = Math.hypot(tx, ty);
+      if (d < 8 && route.length <= 1) { target = null; route = []; if (autoEnter) { const a = autoEnter; autoEnter = null; enter(a); } } else if (d >= 1) { const k = Math.min(1, d / 10); dx = (tx / d) * k; dy = (ty / d) * k; }
     }
   }
   const len = Math.hypot(dx, dy);
   moving = len > 0.05;
   if (moving) {
     const k = Math.min(1, len) / (len || 1);
-    const next = moveWithin(state.world, pos, dx * k * SPEED * dt, dy * k * SPEED * dt);
-    if (target && Math.hypot(next.x - pos.x, next.y - pos.y) < 0.2) { target = null; autoEnter = null; }
+    const next = target && route.length ? stepToward(route[0], dx * k * SPEED * dt, dy * k * SPEED * dt) : walkMove(pos, dx * k * SPEED * dt, dy * k * SPEED * dt);
+    if (target && Math.hypot(next.x - pos.x, next.y - pos.y) < 0.2) { target = null; route = []; autoEnter = null; }
     pos = next; walkT += dt;
   }
   near = nearestDoor(state.world, pos);
@@ -419,6 +488,13 @@ function step(dt) {
   else if (near) $('#enterText').textContent = `${String(near.booth.n).padStart(2, '0')}번 부스 · ${near.booth.item.appName}`;
   else if (nearWish) $('#enterText').textContent = '⭐ 분수에 소원 빌기';
   $('#enterBooth').textContent = nearWish && !near ? '소원 빌기 ⭐' : '들어가기 ▶';
+}
+
+// 경로 점까지는 길 위로 계산된 구간이라 그대로 따라가요 (지나치지 않게)
+function stepToward(wp, mx, my) {
+  const d = Math.hypot(wp.x - pos.x, wp.y - pos.y), m = Math.hypot(mx, my);
+  if (m >= d) return { x: wp.x, y: wp.y };
+  return state.world.walk ? { x: pos.x + mx, y: pos.y + my } : moveWithin(state.world, pos, mx, my);
 }
 
 let last = performance.now();
@@ -460,8 +536,7 @@ function endJoy(e) {
     const p = toWorld(e);
     const b = buildingAt(state.world, p.x, p.y);
     if (overview) { overview = false; setNav('home'); }
-    if (b) { target = b.kind === 'teacher' ? { ...state.world.hall.door } : { ...b.booth.door }; autoEnter = b; } else { target = p; autoEnter = null; }
-    if (target) target = moveWithin(state.world, target, 0, 0);
+    if (b) { setTarget(b.kind === 'teacher' ? state.world.hall.door : b.booth.door); autoEnter = target ? b : null; } else { setTarget(p); autoEnter = null; }
   }
   joy = null;
   $('#joystick').style.display = 'none';
@@ -579,15 +654,15 @@ function openPanel(title, ...body) {
   $('#panelBody').replaceChildren(...body);
   $('#panel').hidden = false;
 }
-function closePanel() { if (!panelOpen) return; panelOpen = false; $('#panel').hidden = true; canvasEl.focus(); }
+function closePanel() { if (!panelOpen) return; panelOpen = false; $('#panel').hidden = true; if (!$('#stage').hidden) { if (!me.nick) me.nick = '방문자'; saveMe(); paintMe(); } canvasEl.focus(); }
 $('#closePanel').onclick = closePanel;
 for (const id of ['#appRoom', '#panel']) $(id).addEventListener('click', (e) => { if (e.target === $(id)) { closeRoom(); closePanel(); } });
 
-function goTo(door) { pos = moveWithin(state.world, { x: door.x, y: door.y + 10 }, 0, 0); overview = false; setNav('home'); }
+function goTo(door) { pos = snap({ x: door.x, y: door.y + 10 }); target = null; route = []; overview = false; setNav('home'); }
 function faceCanvas(a, size = 44) {
   const c = h('canvas', { width: size, height: size, class: 'face', style: 'image-rendering:pixelated;border-radius:50%;background:#E8F7FF' });
   const x = c.getContext('2d'); x.imageSmoothingEnabled = false;
-  x.drawImage(avatarCanvas(a, 0), 0, 0, AVATAR_W, 10, (size - size * 1.1) / 2, size * 0.08, size * 1.1, (size * 1.1 * 10) / AVATAR_W);
+  x.drawImage(avatarCanvas(a, 0), 0, 0, AVATAR_W, FACE_ROWS, (size - size * 1.05) / 2, size * 0.04, size * 1.05, (size * 1.05 * FACE_ROWS) / AVATAR_W);
   return c;
 }
 
@@ -625,13 +700,35 @@ function badgesPanel() {
 function noticePanel() {
   openPanel('📢 선생님 공지', state.settings.notice ? h('p', { class: 'notice-text' }, state.settings.notice) : h('p', { class: 'muted' }, '아직 공지가 없어요.'));
 }
-function mePanel() {
-  const nick = h('input', { type: 'text', maxlength: 10, value: me.nick || '' });
+// ⚙️ 설정: 내 계정 · 별명 · 캐릭터 · 기록 · 나가기 (나의 공간 버튼도 여기로)
+const NAME_LIKE = /^[가-힣]{3}$/;   // 성+이름처럼 보이는 세 글자
+const PRIVATE = /\d{2,3}[-\s]?\d{3,4}[-\s]?\d{4}|@|초등학교|학교/;
+function settingsPanel(first = false) {
+  const p = progress();
+  const warn = h('p', { class: 'set-warn small', hidden: true });
+  const nick = h('input', { type: 'text', maxlength: 10, placeholder: '예) 별빛코더', 'aria-label': '내 별명' });
   nick.value = me.nick || '';
-  nick.oninput = () => { me.nick = nick.value.trim().slice(0, 10) || '방문자'; saveJSON(PREF, me); paintMe(); };
-  openPanel('🙂 나의 공간', h('label', { class: 'field' }, h('span', {}, '내 별명 (🔒 진짜 이름 ✕)'), nick),
-    avatarBuilder(h, me.avatar, (a) => { me.avatar = a; saveJSON(PREF, me); paintMe(); }),
-    h('p', { class: 'small muted' }, `🏅 배지 ${progress().badges.length}개 · 가 본 부스 ${progress().visited.length}곳`));
+  const check = () => {
+    const v = nick.value.trim();
+    warn.hidden = true;
+    if (PRIVATE.test(v)) { warn.textContent = '🔒 전화번호·이메일·학교 이름은 별명에 쓰지 않아요'; warn.hidden = false; return false; }
+    if (NAME_LIKE.test(v)) { warn.textContent = '혹시 진짜 이름인가요? 친구들이 부를 별명을 써 주세요 (그대로 써도 저장은 돼요)'; warn.hidden = false; }
+    return true;
+  };
+  nick.oninput = () => { if (check()) { me.nick = nick.value.replace(/[<>]/g, '').trim().slice(0, 10); saveMe(); paintMe(); } };
+  const who = account
+    ? h('div', { class: 'set-who' }, h('span', {}, `🔑 아이디 `, h('b', {}, account.id), ' 로 로그인했어요'), h('span', { class: 'small muted' }, '별명·캐릭터는 이 아이디에 저장돼요'))
+    : h('div', { class: 'set-who' }, h('span', {}, canLogin() ? '👀 로그인하지 않고 둘러보는 중이에요' : '🧪 이 기기에서 둘러보는 중이에요'), canLogin() ? h('button', { type: 'button', class: 'ghost', onclick: leaveWorld }, '🔑 아이디로 로그인') : '');
+  openPanel(first ? '⚙️ 설정 — 별명과 캐릭터를 정해요' : '⚙️ 설정',
+    h('section', { class: 'set-sec' }, h('h3', {}, '👤 내 계정'), who),
+    h('section', { class: 'set-sec' }, h('h3', {}, '🙂 별명 ', h('small', { class: 'muted' }, '(🔒 진짜 이름 ✕ · 10자까지)')), nick, warn),
+    h('section', { class: 'set-sec' }, h('h3', {}, '🎨 내 캐릭터'), avatarBuilder(h, me.avatar, (a) => { me.avatar = a; saveMe(); paintMe(); })),
+    h('section', { class: 'set-sec' }, h('h3', {}, '🏅 내 기록'), h('p', { class: 'small muted', style: 'margin:0' }, `배지 ${p.badges.length}개 · 가 본 부스 ${p.visited.length}곳 · 좋아요 ${likedSet().size}번`)),
+    h('section', { class: 'set-sec' }, h('h3', {}, '🎮 움직이는 법'), h('p', { class: 'small muted', style: 'margin:0' }, '방향키·WASD로 길을 따라 걸어요. 가고 싶은 곳을 누르면 길을 따라 찾아가요. Space = 들어가기, M = 전체 지도')),
+    h('div', { class: 'set-actions' },
+      h('button', { type: 'button', class: 'primary', onclick: () => { if (!me.nick) { me.nick = '방문자'; saveMe(); paintMe(); } closePanel(); } }, '✅ 다 했어요'),
+      h('button', { type: 'button', class: 'ghost', onclick: leaveWorld }, account ? '🚪 로그아웃' : '🚪 처음 화면으로')));
+  if (first) setTimeout(() => nick.focus(), 50);
 }
 // ⭐ 내 앱: 내 부스를 한 번 골라 두면 바로 갈 수 있어요
 function myAppPanel() {
@@ -649,7 +746,7 @@ function myAppPanel() {
 function paintMe() {
   $('#meNick').textContent = me.nick || '나의 공간';
   const c = $('#meFace'); const x = c.getContext('2d'); x.clearRect(0, 0, 48, 48); x.imageSmoothingEnabled = false;
-  x.drawImage(avatarCanvas(me.avatar, 0), 0, 0, AVATAR_W, 10, -2, 4, 52, 43);
+  x.drawImage(avatarCanvas(me.avatar, 0), 0, 0, AVATAR_W, FACE_ROWS, -1, 2, 50, (50 * FACE_ROWS) / AVATAR_W);
 }
 
 function setNav(id) { document.querySelectorAll('[data-nav]').forEach((b) => b.classList.toggle('on', b.dataset.nav === id)); }
@@ -658,17 +755,33 @@ document.addEventListener('click', (e) => {
   const n = e.target.closest('[data-nav]');
   if (n) {
     const id = n.dataset.nav;
-    if (id === 'home') { overview = false; pos = { ...state.world.spawn }; setNav('home'); }
+    if (id === 'home') { overview = false; pos = { ...state.world.spawn }; target = null; route = []; setNav('home'); }
     if (id === 'map') toggleMap();
     if (id === 'myapp') myAppPanel();
     if (id === 'friends') friendsPanel();
-    if (id === 'me') mePanel();
-    if (id === 'exit') { closeRoom(); closePanel(); $('#stage').hidden = true; $('#lobby').hidden = false; renderLobby(); }
+    if (id === 'settings') settingsPanel();
     return;
   }
   const s = e.target.closest('[data-side]');
   if (s) ({ explore: explorePanel, missions: missionsPanel, badges: badgesPanel, notice: noticePanel })[s.dataset.side]();
 });
+
+// 시험용 (e2e): 길 찾기 확인
+window.__worldDebug = {
+  hasWalk: () => !!(state.world && state.world.walk),
+  onPath: () => !state.world.walk || walkable(state.world.walk, pos.x, pos.y),
+  goFar: () => {
+    const far = state.world.booths.reduce((a, b) => (Math.hypot(b.door.x - pos.x, b.door.y - pos.y) > Math.hypot(a.door.x - pos.x, a.door.y - pos.y) ? b : a));
+    setTarget(far.door);
+    const pts = [pos, ...route];
+    let allOnPath = true;
+    for (let i = 1; i < pts.length; i++) for (let k = 0; k <= 20; k++) {
+      const x = pts[i - 1].x + ((pts[i].x - pts[i - 1].x) * k) / 20, y = pts[i - 1].y + ((pts[i].y - pts[i - 1].y) * k) / 20;
+      if (!walkable(state.world.walk, x, y)) allOnPath = false;
+    }
+    return { points: route.length, allOnPath };
+  },
+};
 
 // ---------- 시작 ----------
 renderLobby();
