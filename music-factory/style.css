@@ -79,6 +79,8 @@ img[data-optional].loaded { display: block; }
 .logo-emoji { font-size: 4rem; animation: wobble 2.4s ease-in-out infinite; }
 h1 { margin: 6px 0 4px; font-size: clamp(2rem, 5vw, 3rem); color: var(--pink-deep); letter-spacing: -0.02em; }
 .slogan { margin: 0 0 24px; font-size: 1.25rem; color: var(--ink-soft); }
+.qr-dl { margin: 16px 0 0; font-size: 0.95rem; color: var(--ink-soft); }
+.qr-dl a { color: #6b52c8; font-weight: 700; padding: 6px 4px; }
 .menu { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .menu-btn {
   border: none; border-radius: 26px; padding: 22px 12px; min-height: 120px;
