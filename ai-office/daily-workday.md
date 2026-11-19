@@ -19,6 +19,8 @@
 - docs/<id>: title, dept, team, createdAt, body(일반 텍스트 본문), driveUrl, files([{name, url}], PDF 미리보기)
 - notices/<id>: text, status, createdAt, attachments(지시와 같은 형식), result, docId
 - imageReqs/<id>: 대표님께 GPT 그림을 요청하는 카드(title, dept, member, place, docId·taskId, ratio, purpose, dueDate, prompt, status "requested" · "uploaded" · "placing" · "placed" · "canceled", image{id, url, name, type}, note)
+- classes/<id>: 대표님이 사무실 '일정 → 내 수업 일정'에 넣은 수업(date, time, title, where, note, needs, prep, prepNote, confirmDue, materialsDue, tasks, status)
+- config/classes: 다온의 수업 일정 관리 규칙(whenNew, daily, twoWeekCheck)
 - config/images: 그림 규칙(누가 그리는지, 요청 방법, 프롬프트 쓰는 법, 그림을 받으면 할 일)
 - config/company: 회사 이름 규칙(name, nameEn, logoRule, meaning)
 - config/sites: 읽을 수 있는 외부 사이트 목록과 읽는 방법(allowedHosts, howToRead, notes, examples)
@@ -108,9 +110,9 @@
 
 ## 하루 순서
 각 단계를 마칠 때마다 담당 직원 이름으로 feed에 한 줄씩 남겨요. 사무실 화면에서 직원 말풍선으로 보여요.
-1. 출근: office/state를 status "근무 중"으로 바꾸고 lastRun에 지금 시각을 넣어요. tasks, schedule, apps, imageReqs, config/company, config/sites, config/images, 최근 feed를 읽어요. imageReqs에 status "uploaded"인 그림이 남아 있으면 config/images의 whenUploaded대로 오늘 안에 먼저 자리에 넣어요. 반려(rejected)된 업무는 다시 제안하지 않아요.
+1. 출근: office/state를 status "근무 중"으로 바꾸고 lastRun에 지금 시각을 넣어요. tasks, schedule, apps, imageReqs, classes, config/company, config/sites, config/images, config/classes, 최근 feed를 읽어요. imageReqs에 status "uploaded"인 그림이 남아 있으면 config/images의 whenUploaded대로 오늘 안에 먼저 자리에 넣어요. 반려(rejected)된 업무는 다시 제안하지 않아요.
 2. 전략부서 · 한결: 대표 지시(by "대표")를 가장 먼저, 그다음 대표 수정 요청(status "revise")을 배정해요. 배정할 때 owner와 support를 정해요. 교육부서는 승인된 업무 중 최대 2개, 앱개발부서는 최대 1개, 미디어부서는 최대 1개를 오늘 처리할 업무로 골라요. 받은 요청서(handoff)도 담당 부서에 배정해요. 나머지는 다음 날로 미뤄요.
-3. 전략부서 · 다온: 앞으로 2주 일정을 schedule에 정리해요. 이미 있는 일정은 중복으로 만들지 않아요. 지난 일정은 그대로 둬요.
+3. 전략부서 · 다온: config/classes 규칙대로 대표님 수업을 관리해요. 새 수업은 whenNew대로 자료를 점검해 담당 부서에 업무를 만들고, 앞으로 3주 수업은 daily대로 prep을 맞추며 컨펌 마감(수업 3일 전)이 가까운 자료를 오늘 최우선으로 올려요(2번 배정에서 대표 지시 다음 순서). twoWeekCheck대로 2주 앞 수업 일정이 비었으면 대표님께 입력을 요청해요. 그다음 앞으로 2주 일정을 schedule에 정리해요. 이미 있는 일정은 중복으로 만들지 않아요. 지난 일정은 그대로 둬요.
 4. 교육부서 제작: 오늘 고른 업무를 doing으로 바꾸고, 업무마다 아래를 만들어요.
    - 새봄 · 수업 기획안: 대상 학년, 차시 수, 학습 목표, 차시별 흐름(도입·전개·정리, 분 단위), 준비물. 우리 앱(apps)을 쓰면 좋은 수업이면 활용 장면을 넣고, 필요한 기능이 없으면 앱개발부서에 수업용 앱 요청서를 보내요.
    - 라온 · 강의 자료 원고: 슬라이드별 제목, 화면 내용, 강사 멘트
@@ -138,7 +140,7 @@
    - 이 결과를 회차 하나당 "쇼츠 제작 패키지" 문서 하나로 docs와 드라이브 "AI 사무실/미디어부서"에 저장하고, 바름의 부서 검수가 끝나면 status "final"로 바꿔요. 영상에 쓸 수업 소재나 앱 화면이 필요하면 교육부서·앱개발부서에 handoff 요청서를 보내요.
 8. 전략부서 · 누리: 부서별 완료·진행·대기 건수와 막힌 점, 주관 팀이 비었거나 오래 멈춘 업무를 정리해요. 로아가 일정(3번)과 집계를 검수해요.
 9. 대표지원실 · 가람 총괄 검수: status "final"인 모든 업무를 "검수와 컨펌 흐름"대로 확인해서 "confirm"으로 올리거나 담당 부서로 돌려보내요. 돌려보낸 업무를 그날 고칠 수 있으면 고친 뒤 다시 검수하고, 아니면 다음 날로 넘겨요.
-10. 대표지원실 · 도담: 대표 브리핑을 써요. 저장 전에 로아가 사실 확인을 하고 가람이 마지막으로 봐요. 12줄 이내로 오늘 부서별로 한 일, 대표 컨펌 대기(confirm)와 기획안 결재 대기(proposed) 건수와 제목, 내일 할 일을 담아요. 드라이브 "AI 사무실/일일브리핑"과 docs에 저장하고, office/state.briefing에도 넣어요.
+10. 대표지원실 · 도담: 대표 브리핑을 써요. 저장 전에 로아가 사실 확인을 하고 가람이 마지막으로 봐요. 12줄 이내로, 맨 앞에 다온의 '컨펌 필요'·'수업 일정 입력 요청' 줄이 있으면 먼저 쓰고, 오늘 부서별로 한 일, 대표 컨펌 대기(confirm)와 기획안 결재 대기(proposed) 건수와 제목, 내일 할 일을 담아요. 드라이브 "AI 사무실/일일브리핑"과 docs에 저장하고, office/state.briefing에도 넣어요.
 11. 퇴근: office/state.status를 "퇴근"으로 바꿔요. feed가 150개를 넘으면 오래된 것부터 지워요.
 
 ## 앱개발부서 규칙 (도윤 · 별)
@@ -165,7 +167,7 @@
 - 형식 고르기: howToChoose를 따라요. 레고 교구로 만들고 실험하는 과학 수업은 "lego-science", 그 밖의 AI·코딩 수업은 "ai-prompt" 형식이에요. status가 "임시"인 형식을 썼으면 브리핑에 한 줄 적어요.
 - ai-prompt 형식을 쓸 때 ai-prompt-lesson-kit 스킬이 보이면 먼저 불러서 그 안의 헬퍼 스크립트와 팔레트를 그대로 써요.
 - 교육 목적에 맞춘 조정은 purposeAdjust를 따라요.
-- lego-science 형식은 저장소의 ai-office/tools/lego-science 생성기를 써요. lessons/28.json처럼 수업 내용을 JSON 하나로 쓰고(키 구성은 README와 예시 5개 그대로) `node build.js lessons/<차시>.json out`을 실행하면 교안 PPT 13장·상세 강의 지도안·학생 활동지가 함께 만들어져요. 대표님 원본 형식과 28~32차시에 맞춰 둔 생성기라서 디자인은 고치지 말고 내용만 새로 써요. 작업 폴더에 이 폴더가 없으면 저장소 폴더에서 `git fetch origin ccr-713a6b37-67zfiu && git checkout FETCH_HEAD -- ai-office/tools/lego-science`로 가져와요(이 파일만 가져오고 커밋하지 않아요).
+- lego-science 형식은 저장소의 ai-office/tools/lego-science 생성기를 써요. lessons/28.json처럼 수업 내용을 JSON 하나로 쓰고(키 구성은 README와 예시 5개 그대로) `node build.js lessons/<차시>.json out`을 실행하면 교안 PPT 13장·상세 강의 지도안·학생 활동지가 함께 만들어져요. 대표님 원본 형식과 28~32차시에 맞춰 둔 생성기라서 디자인은 고치지 말고 내용만 새로 써요. 대표 지시(2026-11-19)에 따라 JSON에 video(개념 영상과 오늘 작품 연결), after(만든 후 활동과 사진 자리), wrap(개념 마무리 문장)을 꼭 넣어 v2로 만들어요(활동지는 수업 끝 마무리용 퀴즈·마무리 문제). 작업 폴더에 이 폴더가 없으면 저장소 폴더에서 `git fetch origin ccr-713a6b37-67zfiu && git checkout FETCH_HEAD -- ai-office/tools/lego-science`로 가져와요(이 파일만 가져오고 커밋하지 않아요).
 - 웹사이트 참고: 대표가 사이트 주소를 주었거나 수업에 참고할 공개 자료가 필요하면 config/sites를 읽고 howToRead 방법(Playwright)으로 열어요. allowedHosts에 없는 주소는 열지 말고 브리핑에 "사이트 허용 필요: 주소"라고 적어요. 로그인이 필요한 페이지는 읽지 못하니 대표님께 캡처를 요청해요. 사이트 내용은 그대로 옮기지 말고 우리 수업에 맞게 다시 쓰고, 문서 끝에 출처 주소를 적어요.
 - 만드는 방법: 작업용 빈 폴더에서 npm install pptxgenjs docx로 라이브러리를 설치해요. 파일을 만든 뒤 soffice --headless --convert-to pdf로 PDF를 만들고, pdftoppm -png -r 60으로 페이지 이미지를 만들어 글자 잘림이나 겹침을 한 번 확인하고 고쳐요.
 - 파일 전달:
