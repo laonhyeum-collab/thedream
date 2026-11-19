@@ -157,7 +157,7 @@
 - 형식 고르기: howToChoose를 따라요. 레고 교구로 만들고 실험하는 과학 수업은 "lego-science", 그 밖의 AI·코딩 수업은 "ai-prompt" 형식이에요. status가 "임시"인 형식을 썼으면 브리핑에 한 줄 적어요.
 - ai-prompt 형식을 쓸 때 ai-prompt-lesson-kit 스킬이 보이면 먼저 불러서 그 안의 헬퍼 스크립트와 팔레트를 그대로 써요.
 - 교육 목적에 맞춘 조정은 purposeAdjust를 따라요.
-- lego-science 형식은 저장소의 ai-office/tools/lego-science 생성기를 써요. lessons/28.json처럼 수업 내용을 JSON 하나로 쓰고(키 구성은 README와 예시 5개 그대로) `node build.js lessons/<차시>.json out`을 실행하면 교안 PPT 13장·상세 강의 지도안·학생 활동지가 함께 만들어져요. 대표님 원본 형식과 28~32차시에 맞춰 둔 생성기라서 디자인은 고치지 말고 내용만 새로 써요.
+- lego-science 형식은 저장소의 ai-office/tools/lego-science 생성기를 써요. lessons/28.json처럼 수업 내용을 JSON 하나로 쓰고(키 구성은 README와 예시 5개 그대로) `node build.js lessons/<차시>.json out`을 실행하면 교안 PPT 13장·상세 강의 지도안·학생 활동지가 함께 만들어져요. 대표님 원본 형식과 28~32차시에 맞춰 둔 생성기라서 디자인은 고치지 말고 내용만 새로 써요. 작업 폴더에 이 폴더가 없으면 저장소 폴더에서 `git fetch origin ccr-713a6b37-67zfiu && git checkout FETCH_HEAD -- ai-office/tools/lego-science`로 가져와요(이 파일만 가져오고 커밋하지 않아요).
 - 웹사이트 참고: 대표가 사이트 주소를 주었거나 수업에 참고할 공개 자료가 필요하면 config/sites를 읽고 howToRead 방법(Playwright)으로 열어요. allowedHosts에 없는 주소는 열지 말고 브리핑에 "사이트 허용 필요: 주소"라고 적어요. 로그인이 필요한 페이지는 읽지 못하니 대표님께 캡처를 요청해요. 사이트 내용은 그대로 옮기지 말고 우리 수업에 맞게 다시 쓰고, 문서 끝에 출처 주소를 적어요.
 - 만드는 방법: 작업용 빈 폴더에서 npm install pptxgenjs docx로 라이브러리를 설치해요. 파일을 만든 뒤 soffice --headless --convert-to pdf로 PDF를 만들고, pdftoppm -png -r 60으로 페이지 이미지를 만들어 글자 잘림이나 겹침을 한 번 확인하고 고쳐요.
 - 파일 전달:
