@@ -34,6 +34,8 @@ export interface Mission {
   initialCode?: () => Block[];
   /** 이 블록 수 이하로 완성하면 효율 보너스 별 */
   par: number;
+  /** 계절 미션: 앞 미션을 풀지 않아도 처음부터 열려 있어요 (수업에서 바로 쓰기) */
+  open?: boolean;
 }
 
 const MOVES: NewBlockKind[] = ['move-up', 'move-down', 'move-left', 'move-right'];
@@ -350,6 +352,65 @@ export const MISSIONS: Mission[] = [
       ]),
     ],
     par: 20,
+  },
+  {
+    id: 'm13',
+    num: 13,
+    title: '반짝반짝 눈송이',
+    concept: '반복으로 대칭 무늬 (겨울)',
+    level: 'normal',
+    art: ['S.S.S', '.SSS.', 'SSSSS', '.SSS.', 'S.S.S'],
+    startColor: 'sky',
+    colors: ['sky', 'blue'],
+    blocks: ALL,
+    intro: '눈송이는 위아래·왼쪽오른쪽이 똑같은 대칭 모양이에요. 같은 움직임을 「반복하기」 블록으로 묶으면 눈송이를 빠르게 그릴 수 있어요!',
+    goal: '하늘색 눈송이를 30개 이하의 블록으로 그려 보세요.',
+    hints: [
+      '첫 줄은 「칠하기 → 오른쪽 → 오른쪽」을 2번 반복한 뒤 한 번 더 칠해요.',
+      '줄을 바꿀 때는 「아래로 → 왼쪽으로」로 다음 줄 시작 칸에 가요.',
+      '가운데 줄은 다섯 칸을 모두 칠해요: 「칠하기 → 오른쪽」 4번 반복 + 칠하기.',
+    ],
+    solution: () => [
+      repeat(2, [P(), right(), right()]), P(),
+      down(), left(), repeat(2, [P(), left()]), P(),
+      down(), left(), repeat(4, [P(), right()]), P(),
+      down(), left(), repeat(2, [P(), left()]), P(),
+      down(), left(), repeat(2, [P(), right(), right()]), P(),
+    ],
+    par: 30,
+    open: true,
+  },
+  {
+    id: 'm14',
+    num: 14,
+    title: '눈사람 친구',
+    concept: '색 바꾸기와 반복 (겨울)',
+    level: 'normal',
+    art: ['.SSS.', '.DSD.', '.SOS.', 'SSSSS', 'SSSSS', 'SSSSS'],
+    startColor: 'sky',
+    colors: ['sky', 'black', 'orange'],
+    blocks: ALL,
+    intro: '눈사람의 머리는 색을 자주 바꾸고, 몸통은 같은 줄이 되풀이돼요. 「색 고르기」와 「반복하기」를 함께 써 봐요!',
+    goal: '먹색 눈과 주황 코가 있는 눈사람을 그려 보세요.',
+    hints: [
+      '머리 윗줄은 오른쪽으로 한 칸 간 뒤 「칠하기 → 오른쪽」을 3번 반복해요.',
+      '눈을 칠할 때는 먹색, 얼굴은 하늘색, 코는 주황으로 색을 바꿔요.',
+      '몸통 세 줄은 지그재그로: 한 줄을 「칠하기 → 옆으로」 4번 반복 + 칠하기로 그리고 아래로 내려가요.',
+    ],
+    solution: () => [
+      right(), repeat(3, [P(), right()]),
+      down(), left(), color('black'), P(),
+      left(), color('sky'), P(),
+      left(), color('black'), P(),
+      down(), color('sky'), P(),
+      right(), color('orange'), P(),
+      right(), color('sky'), P(),
+      down(), right(), repeat(4, [P(), left()]), P(),
+      down(), repeat(4, [P(), right()]), P(),
+      down(), repeat(4, [P(), left()]), P(),
+    ],
+    par: 39,
+    open: true,
   },
 ];
 

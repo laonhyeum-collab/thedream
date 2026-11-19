@@ -32,7 +32,7 @@ interface Props {
 }
 
 export function isUnlocked(i: number, progress: Progress, unlockAll: boolean) {
-  return unlockAll || i === 0 || !!progress[MISSIONS[i - 1].id];
+  return unlockAll || i === 0 || !!MISSIONS[i]?.open || !!progress[MISSIONS[i - 1].id];
 }
 
 function initialProgram(m: Mission): Block[] {
