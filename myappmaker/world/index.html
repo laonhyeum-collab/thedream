@@ -20,16 +20,21 @@
       <p class="logo-line"><span class="logo-pad">🎮</span><span><b>MY APP</b><br><b>META WORLD</b></span></p>
       <h1 id="lobbyTitle">친구들이 만든 앱 월드</h1>
       <p class="muted">친구들이 만든 게임이 부스로 열려 있어요. 내 캐릭터로 섬을 걸어 다니며 부스에 들어가 놀아 봐요!</p>
-      <label class="field"><span>내 별명 <small class="muted">(🔒 진짜 이름은 쓰지 않아요)</small></span><input id="nick" type="text" maxlength="10" placeholder="예) 별빛코더"></label>
-      <div class="field"><span class="small"><b>내 캐릭터</b></span><div id="lobbyAvatar"></div></div>
-      <details id="idLogin" class="small" hidden>
-        <summary>🔑 (선택) 내 아이디로 들어가면 ⭐ 내 앱이 내 부스를 바로 찾아요</summary>
+      <!-- 우리 반 저장소가 있으면: 아이디로 로그인 → 입장. 별명·캐릭터는 입장한 뒤 ⚙️ 설정에서 -->
+      <form id="loginForm" class="login-box" hidden autocomplete="off">
+        <h2 class="login-title">🔑 내 아이디로 로그인</h2>
         <div class="row">
-          <label class="field grow"><span>아이디</span><input id="wLoginId" type="text" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
-          <label class="field grow"><span>비밀번호</span><input id="wLoginPin" type="password" inputmode="numeric" maxlength="10" autocomplete="one-time-code"></label>
+          <label class="field grow"><span>아이디</span><input id="wLoginId" type="text" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="예) 01"></label>
+          <label class="field grow"><span>비밀번호</span><input id="wLoginPin" type="password" inputmode="numeric" maxlength="10" autocomplete="one-time-code" placeholder="숫자 4자리"></label>
         </div>
-      </details>
-      <button id="enterBtn" class="primary big">🚪 입장하기</button>
+        <p id="loginMsg" class="login-msg small" role="alert" hidden></p>
+        <button id="loginBtn" class="primary big" type="submit">🚪 로그인하고 입장하기</button>
+        <button id="guestBtn" class="ghost" type="button">로그인 없이 둘러보기</button>
+      </form>
+      <div id="openEnter">
+        <button id="enterBtn" class="primary big" type="button">🚪 입장하기</button>
+      </div>
+      <p class="small muted">🙂 별명과 캐릭터는 들어간 뒤 오른쪽 위 <b>⚙️ 설정</b>에서 정해요.</p>
       <p id="sourceInfo" class="small muted"></p>
       <details class="small">
         <summary>📁 선생님: 메타버스 파일로 열기</summary>
@@ -52,8 +57,8 @@
         <button data-nav="myapp"><span>⭐</span><b>내 앱</b></button>
         <button data-nav="friends"><span>👥</span><b>친구 <em id="friendCount">0</em></b></button>
       </nav>
-      <button class="me-btn" data-nav="me" aria-label="나의 공간"><canvas id="meFace" width="48" height="48"></canvas><b id="meNick">나의 공간</b></button>
-      <button class="gear" data-nav="exit" aria-label="나가기">⚙️</button>
+      <button class="me-btn" data-nav="settings" aria-label="나의 공간 · 설정"><canvas id="meFace" width="48" height="48"></canvas><b id="meNick">나의 공간</b></button>
+      <button class="gear" data-nav="settings" aria-label="설정"><span>⚙️</span><b>설정</b></button>
     </header>
 
     <aside class="sidebar" aria-label="활동 메뉴">
