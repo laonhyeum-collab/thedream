@@ -214,3 +214,31 @@ describe('겨울 미션', () => {
     }
   });
 });
+
+describe('겨울 미션 단계별 (1~2학년 · 3~4학년 · 5~6학년)', () => {
+  const winter = MISSIONS.filter((m) => m.concept.includes('겨울'));
+  it('겨울 미션이 쉬움·보통·도전 단계마다 2개 이상 있고 모두 처음부터 열려 있어요', () => {
+    for (const lv of ['easy', 'normal', 'challenge'] as const) {
+      expect(winter.filter((m) => m.level === lv).length, lv).toBeGreaterThanOrEqual(2);
+    }
+    for (const m of winter) expect(m.open, m.id).toBe(true);
+  });
+  it('쉬움 단계 겨울 미션은 반복·좌표 없이 풀 수 있어요(1~2학년)', () => {
+    for (const m of winter.filter((x) => x.level === 'easy')) {
+      expect(m.blocks).not.toContain('repeat');
+      const kinds = JSON.stringify(m.solution());
+      expect(kinds).not.toContain('"repeat"');
+      expect(kinds).not.toContain('"goto"');
+    }
+  });
+  it('트리 불빛·펭귄 템플릿이 있고 프레임이 10×10이에요', () => {
+    for (const id of ['tree', 'penguin']) {
+      const t = TEMPLATES.find((x) => x.id === id)!;
+      expect(t, id).toBeTruthy();
+      expect(t.frames.length).toBeGreaterThanOrEqual(2);
+      for (const f of t.frames) expect(f.cells.length).toBe(100);
+    }
+    const p = TEMPLATES.find((x) => x.id === 'penguin')!;
+    expect(p.frames[0].cells).not.toEqual(p.frames[1].cells);
+  });
+});

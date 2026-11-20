@@ -110,6 +110,28 @@ const snowmanBody = [
 const snowmanUp = stamp(snowmanBody, ['..N', '.N.', 'N..'], 7, 2);
 const snowmanDown = stamp(snowmanBody, ['N..', '.N.', '..N'], 7, 4);
 
+// 8. 반짝반짝 트리 불빛 (겨울) — 장식 색이 번갈아 바뀌어요
+const treeBase = [
+  '....Y.....',
+  '....G.....',
+  '...GGG....',
+  '..GGGGG...',
+  '...GGG....',
+  '..GGGGG...',
+  '.GGGGGGG..',
+  '....N.....',
+  '....N.....',
+  'AAAAAAAAAA',
+];
+const treeA = stamp(treeBase, ['R'], 3, 3);
+const treeLightsA = stamp(stamp(stamp(treeA, ['Y'], 5, 3), ['B'], 4, 5), ['K'], 2, 6);
+const treeLightsB = stamp(stamp(stamp(stamp(treeBase, ['Y'], 3, 3), ['R'], 5, 3), ['K'], 4, 5), ['B'], 6, 6);
+
+// 9. 뒤뚱뒤뚱 펭귄 (겨울) — 왼쪽에서 오른쪽으로 걸어가요
+const penguin = ['.DDD.', 'DCOCD', 'DCCCD', 'DCCCD', '.O.O.'];
+const penguinAt = (x: number, tilt: boolean): Grid =>
+  g(stamp(stamp(blank(), ['AAAAAAAAAA'], 0, 9), tilt ? penguin.map((r, i) => (i === 4 ? '..O.O' : r)) : penguin, x, 4));
+
 export const TEMPLATES: AnimTemplate[] = [
   { id: 'cat', name: '눈 깜빡이는 고양이', desc: '눈을 떴다 감았다', fps: 4, frames: [g(catOpen), g(catOpen), g(catHalf), g(catClosed), g(catHalf)] },
   { id: 'bunny', name: '통통 뛰는 토끼', desc: '위아래로 깡총', fps: 6, frames: [bunnyAt(2), bunnyAt(1), bunnyAt(0), bunnyAt(1)] },
@@ -118,4 +140,6 @@ export const TEMPLATES: AnimTemplate[] = [
   { id: 'dino', name: '걷는 공룡', desc: '뚜벅뚜벅 발걸음', fps: 4, frames: [g(dinoA), g(dinoB)] },
   { id: 'snow', name: '내리는 눈송이', desc: '겨울: 눈이 한 칸씩 사르르', fps: 4, frames: Array.from({ length: 9 }, (_, t) => snowFrame(t)) },
   { id: 'snowman', name: '손 흔드는 눈사람', desc: '겨울: 안녕! 손 인사', fps: 3, frames: [g(snowmanUp), g(snowmanDown)] },
+  { id: 'tree', name: '반짝반짝 트리 불빛', desc: '겨울: 장식이 번쩍번쩍', fps: 2, frames: [g(treeLightsA), g(treeLightsB)] },
+  { id: 'penguin', name: '뒤뚱뒤뚱 펭귄', desc: '겨울: 한 칸씩 걸어가요', fps: 3, frames: [0, 1, 2, 3, 4, 5].map((x) => penguinAt(x, x % 2 === 1)) },
 ];
