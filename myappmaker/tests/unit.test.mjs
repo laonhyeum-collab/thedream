@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TOPICS, CATEGORIES, topicById } from '../shared/topics.js';
-import { SECTIONS, emptyPlan, normalizePlan, missingRequired, progress, buildAppPrompt, buildImagePrompts, buildFixPrompt, planRows } from '../shared/plan.js';
+import { SECTIONS, emptyPlan, normalizePlan, missingRequired, progress, buildAppPrompt, buildImagePrompts, buildFixPrompt, planRows, fixCheck, fixSentence, cleanFixes, FIX_EXAMPLES, FIX_KEEP } from '../shared/plan.js';
 import { extractHtml, srcdocFor, looksLikeApp } from '../shared/sandbox.js';
 import { createStore } from '../student/store.js';
 import { createApi, isValidEndpoint } from '../shared/api.js';
@@ -68,6 +68,38 @@ test('이미지 프롬프트: 배경 16:9, 캐릭터 흰 배경(앱이 지움), 
 test('고쳐 줘 프롬프트', () => {
   const s = buildFixPrompt(fullPlan(), '버튼이 안 돼요', '바로 시작');
   assert.match(s, /과일 비/); assert.match(s, /버튼이 안 돼요/); assert.match(s, /바로 시작/);
+  assert.match(s, /한 가지만/); assert.match(s, /새 기능이나 규칙·레벨을 더하지 마/);
+  assert.match(s, /const IMAGES/, '그림 자리를 지키라고 요청');
+  assert.match(s, /코드 블록 하나/); assert.match(s, /그대로 둘 것: 그 밖의/);
+  const k = buildFixPrompt(fullPlan(), '빨라요', '천천히', ['주인공', '점수', '없는것']);
+  assert.match(k, /그대로 둘 것: 주인공, 점수, 그 밖의/); assert.ok(!k.includes('없는것'));
+});
+
+test('고쳐 줘: 아이용 문장 틀과 확인', () => {
+  assert.equal(fixSentence('너무 빨라요', '천천히 움직여요', ['주인공']), '지금은 「너무 빨라요」인데, 「천천히 움직여요」처럼 되면 좋겠어. 주인공, 그리고 나머지는 그대로 둬.');
+  assert.match(fixSentence('', '', []), /○○.*△△.*나머지는 그대로 둬/);
+  assert.equal(fixCheck('너무 빨라요', '천천히').ok, true);
+  assert.equal(fixCheck('', '천천히').empty, 'problem');
+  assert.equal(fixCheck('빨라요', '').empty, 'want');
+  assert.equal(fixCheck('너무 빨라요 그리고 점수가 안 올라요', '천천히').many, true, '두 가지를 한꺼번에');
+  assert.equal(fixCheck('너무 빨라요. 소리도 안 나요', '천천히').many, true);
+  assert.equal(fixCheck('너무 빨라요', '천천히').many, false);
+  const priv = fixCheck('010-1234-5678 로 연락', '천천히');
+  assert.ok(priv.privacy.length > 0); assert.equal(priv.ok, false, '개인정보는 막음');
+  const bad = fixCheck('총으로 쏘게 해 줘', '피가 나요');
+  assert.ok(bad.blocked.length > 0); assert.equal(bad.ok, false);
+  for (const x of FIX_EXAMPLES) { const c = fixCheck(x.problem, x.want); assert.ok(c.ok && !c.many, x.problem); assert.ok(x.problem.length <= 80 && x.want.length <= 80); }
+  assert.ok(FIX_KEEP.length >= 4);
+});
+
+test('고친 기록 정리: 이상한 값 걸러 내고 20개까지', () => {
+  const many = Array.from({ length: 25 }, (_, i) => ({ problem: `p${i}`, want: 'w', keep: ['주인공', 'x'], at: 't', result: i % 2 ? 'good' : 'weird' }));
+  const c = cleanFixes([...many, null, { problem: 3 }]);
+  assert.equal(c.length, 20); assert.equal(c[0].problem, 'p5', '최근 20개'); assert.deepEqual(c[0].keep, ['주인공']); assert.equal(c[0].result, 'good'); assert.equal(c[1].result, '', '모르는 값은 비움');
+  assert.deepEqual(cleanFixes('nope'), []);
+  const p = fullPlan(); p.app.fixes = many;
+  assert.equal(normalizePlan(JSON.parse(JSON.stringify(p))).app.fixes.length, 20);
+  assert.deepEqual(emptyPlan().app.fixes, []);
 });
 
 test('기획서 파일 정리: 이상한 값 걸러 내기, 제출 파일도 받기, 다른 파일은 거절', () => {
