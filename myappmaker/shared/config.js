@@ -14,6 +14,7 @@
 // 자세한 방법: backend/README.md, docs/우리반_저장소_설치안내.docx
 // ─────────────────────────────────────────────────────────────────────────────
 window.MYAPP_CONFIG = {
-  endpoint: '',   // ← 예) 'https://script.google.com/macros/s/AKfy…/exec'
-  classCode: '',  // ← 예) 'DREAM-5-2'
+  // 대표님이 보내 주신 우리 반 값(2026-11-21 반영)
+  endpoint: 'https://script.google.com/macros/s/AKfycbwLNwgOZgN_ozH_33Mn9ADISx7OIGmrxUnO5jKBkM-A1YyTcGaL7YMEBYSrwVUkkIak/exec',
+  classCode: 'MAGOK-2026',
 };
