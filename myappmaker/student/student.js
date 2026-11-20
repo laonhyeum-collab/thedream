@@ -8,6 +8,7 @@ import {
 import { createStore } from './store.js';
 import { download, readFileText, safeName } from '../shared/files.js';
 import { loadConfig, createApi } from '../shared/api.js';
+import { connectGate } from '../shared/connect.js';
 import { extractHtml, looksLikeApp, mountApp, isHttpUrl, MAX_APP_BYTES } from '../shared/sandbox.js';
 import { applyImages, findImagesBlock, imagesSize } from '../shared/images.js';
 import { processPicture } from '../shared/picture.js';
@@ -18,6 +19,7 @@ import { h, $, toast, copyText } from '../shared/ui.js';
 const store = createStore();
 const cfg = loadConfig('student');
 const api = createApi(cfg);
+connectGate('student', cfg);   // 연결 정보 없는 기기: 「우리 반에 연결하기」 먼저
 // ---------- 로그인 (우리 반 저장소가 있으면 선생님이 만든 아이디로) ----------
 const SESSION = 'myappmaker.student.session';
 function loadSession() { try { const v = JSON.parse(localStorage.getItem(SESSION)); return v && v.token && v.loginId ? v : null; } catch { return null; } }

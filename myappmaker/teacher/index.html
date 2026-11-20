@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="../shared/common.css">
   <link rel="stylesheet" href="teacher.css">
   <script src="../shared/config.js"></script>
+  <script src="../shared/vendor/qrcode.js"></script>
 </head>
 <body>
   <header class="t-top no-print">
@@ -104,11 +105,21 @@
         <p class="muted small">이 주소로 열면 반 저장소가 자동으로 연결돼요. 클래스룸·패들렛 등에 올려 주세요. (관리자 비밀번호·설치 열쇠는 들어 있지 않아요)</p>
         <div class="link-row"><code id="studentLink"></code><button data-copylink="studentLink">📋 복사</button></div>
         <div class="link-row"><code id="worldLinkCode"></code><button data-copylink="worldLinkCode">📋 복사</button></div>
+        <div id="qrBox" class="qr-box" hidden>
+          <div id="studentQr" class="qr" role="img" aria-label="학생 앱 주소 QR 코드"></div>
+          <div class="qr-side">
+            <b>📱 학생 앱 QR 코드</b>
+            <p class="muted small">태블릿 카메라로 찍으면 우리 반에 연결된 학생 앱이 열려요. 칠판 화면에 크게 띄우거나 인쇄해서 붙여 두세요.</p>
+            <button id="qrBig" type="button" class="primary">🔍 QR 크게 보기</button>
+          </div>
+        </div>
+        <p id="qrNone" class="muted small">저장소에 연결하면 여기에 학생용 QR 코드가 생겨요.</p>
       </div>
       <div class="card">
         <h3>🧑‍🏫 다른 기기에서 교사 앱 열기 (선생님만)</h3>
         <p class="muted small">교사 앱의 연결 정보는 기기마다 따로 저장돼요. 다른 컴퓨터·태블릿에서는 이 주소로 열면 저장소 주소와 반 코드가 자동으로 들어가고, 관리자 아이디·비밀번호로 로그인만 하면 돼요. (비밀번호는 들어 있지 않아요)</p>
-        <div class="link-row"><code id="teacherLinkCode"></code><button data-copylink="teacherLinkCode">📋 복사</button></div>
+        <div class="link-row big-link"><code id="teacherLinkCode"></code><button data-copylink="teacherLinkCode" class="primary">📋 교사용 링크 복사</button></div>
+        <p class="muted small">⚠ 이 링크는 선생님 기기에서만 쓰세요. 설치 열쇠(TEACHER_KEY)는 링크·문서·메시지 어디에도 적지 않아요.</p>
       </div>
       <div class="card">
         <h3>🧹 이 기기의 파일 제출 데이터</h3>

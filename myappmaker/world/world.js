@@ -1,6 +1,7 @@
 // [앱 월드] 픽셀 섬 메타버스: 가운데 「선생님의 앱」 + 학생 부스 12개. 내 캐릭터로 걸어 다니며 친구들 앱을 체험해요.
 import { topicById, categoryById } from '../shared/topics.js';
 import { loadConfig, createApi } from '../shared/api.js';
+import { connectGate } from '../shared/connect.js';
 import { mountApp } from '../shared/sandbox.js';
 import { readFileText } from '../shared/files.js';
 import { cleanWorldSettings, worldName, DEFAULT_WORLD, WORLD_ASSET_KEYS, hasHotspots, presetById, presetUrl } from '../shared/worldart.js';
@@ -20,6 +21,7 @@ const FACE_ROWS = 13;   // 캐릭터 그림에서 얼굴(머리)까지의 줄 �
 const cfg = loadConfig('world');
 const api = createApi(cfg);
 const params = new URLSearchParams(location.search);
+connectGate('world', cfg);   // 연결 정보 없는 기기: 「우리 반에 연결하기」 먼저
 
 // 체험용 (저장소도 파일도 없을 때)
 const DEMO = {

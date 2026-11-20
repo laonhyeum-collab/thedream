@@ -1,9 +1,19 @@
-// 선생님이 한 번만 고치는 설정 파일입니다. (backend/README.md 참고)
-// - endpoint: 구글 Apps Script 웹 앱 주소 (비워 두면 "파일로 제출" 방식으로만 동작)
-// - classCode: 우리 반 코드 (Code.gs 의 CLASS_CODE 와 같게)
-// 학생(student/)·교사(teacher/)·앱 월드(world/) 세 앱이 함께 읽습니다.
-// 주소창에 ?api=...&class=... 를 붙여 열면 이 값보다 우선합니다.
+// ─────────────────────────────────────────────────────────────────────────────
+// 우리 반 공용 설정 — 이 두 값만 넣으면 어느 기기(노트북·태블릿)에서 열어도
+// 학생·교사·메타버스 앱이 자동으로 우리 반 저장소에 연결되고 로그인 화면이 나와요.
+//
+//  endpoint : 구글 Apps Script 「웹 앱 URL」 (https://script.google.com/macros/s/…/exec)
+//             찾는 곳: 구글 시트 → 확장 프로그램 → Apps Script → 배포 → 배포 관리 → 웹 앱 URL
+//  classCode: 우리 반 코드 = Code.gs 맨 위의 CLASS_CODE 값과 똑같이
+//
+//  ⚠ 설치 열쇠(TEACHER_KEY)·관리자 비밀번호는 여기에 절대 넣지 않아요. (이 파일은 누구나 볼 수 있어요)
+//  ⚠ 비워 두면: 연결 정보가 없는 기기에서 학생·메타버스 앱이 「우리 반에 연결하기」 화면을 먼저 보여 줘요.
+//  ⚠ Apps Script를 「새 배포」하면 주소가 바뀌어요 → endpoint도 새 주소로 바꿔 주세요.
+//
+// 주소창에 ?api=…&class=… 를 붙여 열면(선생님이 나눠 준 주소·QR) 이 값보다 우선합니다.
+// 자세한 방법: backend/README.md, docs/우리반_저장소_설치안내.docx
+// ─────────────────────────────────────────────────────────────────────────────
 window.MYAPP_CONFIG = {
-  endpoint: '',
-  classCode: '',
+  endpoint: '',   // ← 예) 'https://script.google.com/macros/s/AKfy…/exec'
+  classCode: '',  // ← 예) 'DREAM-5-2'
 };
