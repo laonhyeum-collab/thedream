@@ -102,7 +102,7 @@ console.log('\n[1] 미션 모드');
   await page.locator('.icon-btn[aria-label="선생님 메뉴"]').click();
   await page.locator('.switch-row').nth(1).click();
   await page.keyboard.press('Escape');
-  for (let n = 1; n <= 12; n++) {
+  for (let n = 1; n <= 20; n++) {
     await check(`미션 ${n} 정답 코드가 화면에서 실제로 성공`, async () => {
       await page.locator(`${V} .list-btn`).click();
       await page.locator('.map-card .map-num', { hasText: new RegExp(`^${n}$`) }).click();
@@ -116,12 +116,12 @@ console.log('\n[1] 미션 모드');
   }
   await check('별과 칭호가 상단에 표시', async () => {
     const t = await page.locator('.wizard-badge b').innerText();
-    assert(Number(t) >= 24, `별 개수 ${t}`);
+    assert(Number(t) >= 40, `별 개수 ${t}`);
   });
   await check('새로고침 후에도 미션 기록 유지', async () => {
     await page.reload();
     await page.locator(`${V} .list-btn`).click();
-    assert((await page.locator('.map-card.done').count()) === 12, '완료 12개');
+    assert((await page.locator('.map-card.done').count()) === 20, '완료 20개');
     await page.keyboard.press('Escape');
   });
   await check('도화지 밖 이동 → 오류 블록 표시 (미션 11 고장 난 코드)', async () => {
