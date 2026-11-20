@@ -244,7 +244,7 @@ form.order input[type=checkbox]{flex:none}
 
 <div class="wrap">
   <header class="top">
-    <h1><span class="logo">Block <i>&amp;</i> Bit</span><small>블록앤비트 AI 사무실 · 레고 과학·코딩·AI 교육 · 대표 1명, AI 직원 22명</small></h1>
+    <h1><span class="logo">Block <i>&amp;</i> Bit</span><small>블록앤비트 AI 사무실 · 레고 과학·코딩·AI 교육 · 대표 1명, AI 직원 23명</small></h1>
     <div class="clock" aria-live="polite">
       <div class="t" id="clk">--:--</div>
       <div class="s"><b id="officeStatus">출근 대기</b><span id="nextRun">평일 08:00 출근</span></div>
@@ -494,6 +494,7 @@ const MEMBERS = [
   {id:"daon", name:"다온", dept:"strategy", team:"일정관리팀", role:"수업·제작 일정, 마감 관리", hair:"#7a4a2a", shirt:"#5b9bd5", desk:[6.5,4]},
   {id:"nuri", name:"누리", dept:"strategy", team:"성과분석팀", role:"완료 현황 집계, 개선점 정리", hair:"#1f1f2a", shirt:"#2f6a9a", desk:[2.5,8]},
   {id:"roa", name:"로아", dept:"strategy", team:"검토팀", role:"일정 충돌, 수치, 대표 보고서 사실 확인", hair:"#5a3a2a", shirt:"#4a8cc8", desk:[6.5,8]},
+  {id:"irum", name:"이룸", dept:"strategy", team:"마케팅·수익화팀", role:"앱·게임·유튜브·굿즈·수업의 수익화 가능성 점검과 제안, 홍보 전략", hair:"#8a4b2a", shirt:"#2f86c9", desk:[4.5,6]},
   {id:"saebom", name:"새봄", dept:"edu", team:"수업기획팀", role:"수업 주제 발굴, 차시 구성, 학습 목표", hair:"#a4532e", shirt:"#4f9e7a", desk:[11.5,4]},
   {id:"raon", name:"라온", dept:"edu", team:"교안제작팀", role:"슬라이드 원고, 강의 대본", hair:"#2c2c3a", shirt:"#68b48f", desk:[16,4]},
   {id:"boram", name:"보람", dept:"edu", team:"활동지·평가팀", role:"학생 활동지, 퀴즈, 평가 기준", hair:"#c9a14a", shirt:"#3d8a66", desk:[20.5,4]},
@@ -1082,7 +1083,7 @@ document.addEventListener("dragleave", e=>{ const d=e.target.closest?.("[data-dr
 document.addEventListener("drop", e=>{ const d=e.target.closest?.("[data-drop]"); if(!d) return; e.preventDefault(); d.classList.remove("on"); const f=[...(e.dataTransfer?.files||[])][0]; if(f) uploadImageFor(d.dataset.drop, f); });
 
 // ---------- Ask staff ----------
-let qna=[], company={}; const LEADS=["hangyeol","saebom","haneul","harang","garam"];
+let qna=[], company={}; const LEADS=["hangyeol","irum","saebom","haneul","harang","garam"];
 (function fillWho(){
   const sel=$("#askWho"); const by=id=>MEMBERS.find(m=>m.id===id);
   const lead = LEADS.map(by).filter(Boolean);
@@ -1495,7 +1496,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
     box(world,n*1.5,.5,.05,pastel(col,.35),cx,.76,cz,{cast:false});
     plant(cx-w/2+.35,cz-1.9,.75,false); plant(cx+w/2-.35,cz+1.9,.75,false);
     const p={dept,cx,cz,w,seats,label:DEPTS[dept].name,color:col}; PODS.push(p); return p; }
-  pod("strategy",13.5,12.5,2,2);
+  pod("strategy",14.25,12.5,3,2);
   pod("edu",21.75,12.5,3,2);
   pod("media",14.25,21,4,3);
   pod("app",22.5,21,2,2);
