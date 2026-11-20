@@ -1,9 +1,10 @@
 // [학생 앱] 주제 → 기획서 → 프롬프트 → 내 앱 → 입점
 import { topicById, categoryById } from '../shared/topics.js';
-import { recommend, surprise, ideaFromRec, checkText, EXAMPLE_CHIPS } from '../shared/recommend.js';
+import { recommend, surprise, ideaFromRec, EXAMPLE_CHIPS } from '../shared/recommend.js';
 import {
   SECTIONS, PARTS, DIFFICULTY, topicView, planSafety, planWarnings, emptyPlan, normalizePlan, missingRequired, progress,
   buildAppPrompt, buildImagePrompts, imageSlots, buildAllPromptsText, buildFixPrompt, planRows,
+  FIX_EXAMPLES, FIX_KEEP, fixCheck, fixSentence,
 } from '../shared/plan.js';
 import { createStore } from './store.js';
 import { download, readFileText, safeName } from '../shared/files.js';
@@ -488,11 +489,7 @@ document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-copy]');
   if (!b) return;
   if (b.dataset.copy === 'app') safeCopy(buildAppPrompt(plan), '📋 앱 제작 프롬프트를 복사했어요');
-  if (b.dataset.copy === 'fix') {
-    const c = checkText(`${$('#fixProblem').value} ${$('#fixWant').value}`);
-    if (c.violence.length || c.blocked.length || c.existing.length) { toast('🚫 고쳐 줘 내용에 알맞지 않은 말이나 이미 있는 게임 이름이 있어요. 바꿔서 써 줘요', 4500); return; }
-    safeCopy($('#fixPrompt').textContent, '📋 고쳐 줘 프롬프트를 복사했어요');
-  }
+  if (b.dataset.copy === 'fix') copyFix();
 });
 $('#copyAll').onclick = () => safeCopy(buildAllPromptsText(plan), '📋 프롬프트 전체를 복사했어요');
 
@@ -527,9 +524,86 @@ function renderChecks() {
     touch(); renderChecks();
   })));
 }
-function renderFix() { $('#fixPrompt').textContent = buildFixPrompt(plan, $('#fixProblem').value, $('#fixWant').value); }
+// ---------- 🔧 내 앱 고치기: 지금은 ○○인데, △△가 되면 좋겠어. □□는 그대로 둬. ----------
+let fixKeep = [];
+function renderFix() {
+  const p = $('#fixProblem').value;
+  const w = $('#fixWant').value;
+  $('#fixExamples').replaceChildren(...FIX_EXAMPLES.map((x) => chip(`${x.emoji} ${x.problem}`, p === x.problem, () => {
+    $('#fixProblem').value = x.problem; $('#fixWant').value = x.want; renderFix();
+  })));
+  $('#fixKeep').replaceChildren(...FIX_KEEP.map((k) => chip(`${fixKeep.includes(k) ? '🔒' : '⬜'} ${k}`, fixKeep.includes(k), () => {
+    fixKeep = fixKeep.includes(k) ? fixKeep.filter((x) => x !== k) : [...fixKeep, k]; renderFix();
+  })));
+  $('#fixSentence').textContent = `🗣️ ${fixSentence(p, w, fixKeep)}`;
+  const c = fixCheck(p, w);
+  const hint = $('#fixHint');
+  if (c.privacy.length) hint.replaceChildren(h('p', { class: 'fix-hint-bad' }, `🔒 개인정보(${c.privacy.join(', ')})는 쓰지 않아요. 지워 주세요.`));
+  else if (c.blocked.length) hint.replaceChildren(h('p', { class: 'fix-hint-bad' }, `🚫 「${c.blocked.join('」, 「')}」 말은 바꿔서 써 줘요.`));
+  else if (p.trim() && c.many) hint.replaceChildren(h('p', { class: 'fix-hint-warn' }, '✋ 고칠 것이 두 가지 이상인 것 같아요. 가장 먼저 고칠 것 하나만 남기고, 나머지는 다음에 고쳐요.'));
+  else hint.replaceChildren();
+  $('#fixPrompt').textContent = buildFixPrompt(plan, p, w, fixKeep);
+  renderFixTeacher();
+  renderFixLog();
+}
 $('#fixProblem').oninput = renderFix;
 $('#fixWant').oninput = renderFix;
+
+function copyFix() {
+  const p = $('#fixProblem').value.trim();
+  const w = $('#fixWant').value.trim();
+  const c = fixCheck(p, w);
+  if (c.empty) { toast(c.empty === 'problem' ? '① 지금 어떤 문제가 있는지 먼저 써 줘요' : '② 어떻게 되면 좋겠는지 써 줘요', 3500); $(c.empty === 'problem' ? '#fixProblem' : '#fixWant').focus(); return; }
+  if (c.privacy.length) { toast('🔒 개인정보는 쓰지 않아요. 지운 뒤에 복사할 수 있어요', 4500); return; }
+  if (c.blocked.length) { toast('🚫 고쳐 줘 내용에 알맞지 않은 말이나 이미 있는 게임 이름이 있어요. 바꿔서 써 줘요', 4500); return; }
+  const fixes = plan.app.fixes || (plan.app.fixes = []);
+  const last = fixes[fixes.length - 1];
+  if (!(last && last.problem === p && last.want === w && !last.result)) fixes.push({ problem: p, want: w, keep: [...fixKeep], at: new Date().toISOString(), result: '' });
+  plan.app.fixes = fixes.slice(-20);
+  touch(); renderFixLog();
+  safeCopy($('#fixPrompt').textContent, c.many ? '📋 복사했어요. 다음엔 한 가지씩 고쳐 봐요' : '📋 고쳐 줘 프롬프트를 복사했어요');
+}
+function markFix(result) {
+  const fixes = plan.app.fixes || [];
+  const last = fixes[fixes.length - 1];
+  if (!last) { toast('먼저 고쳐 줘 프롬프트를 복사해서 AI에게 부탁해 봐요'); return; }
+  last.result = result;
+  if (result === 'good') {
+    const note = `${last.problem} → ${last.want}`;
+    if (!plan.f.reviewFix.includes(note)) plan.f.reviewFix = `${plan.f.reviewFix.trim() ? `${plan.f.reviewFix.trim()}\n` : ''}• ${note}`.slice(0, 2000);
+    $('#fixProblem').value = ''; $('#fixWant').value = ''; fixKeep = [];
+    toast('🎉 잘했어요! 고친 점은 「완성 후 돌아보기」에 적어 뒀어요. 또 고칠 게 있으면 하나 더!', 4500);
+  } else {
+    toast('🔁 문제를 더 자세히 써 봐요. 예) 어느 화면에서, 무엇을 눌렀을 때, 어떻게 되는지', 5000);
+    $('#fixProblem').focus();
+  }
+  touch(); renderFix();
+}
+$('#fixGood').onclick = () => markFix('good');
+$('#fixAgain').onclick = () => markFix('again');
+function renderFixLog() {
+  const fixes = (plan.app.fixes || []).slice(-5).reverse();
+  const mark = { good: '✅', again: '🔁', '': '⏳' };
+  $('#fixLog').replaceChildren(...(fixes.length ? [h('b', {}, '📒 고친 기록'), h('ul', { class: 'fix-log' },
+    ...fixes.map((x) => h('li', {}, `${mark[x.result] || '⏳'} ${x.problem} → ${x.want}`)))] : []));
+}
+// 선생님이 「수정 요청」하며 남긴 말을 고쳐 줘 칸으로 가져오기
+function renderFixTeacher() {
+  const s = plan.submit || {};
+  const box = $('#fixFromTeacher');
+  if (s.status !== 'needs_fix' || !s.feedback) { box.replaceChildren(); return; }
+  box.replaceChildren(h('p', { class: 'small warn-box fix-rule' }, `💬 선생님 말씀: ${s.feedback} `,
+    h('button', { class: 'chip small', type: 'button', onclick: () => useTeacherFeedback() }, '🔧 이 말씀으로 고치기')));
+}
+function useTeacherFeedback() {
+  const fb = String((plan.submit || {}).feedback || '').trim();
+  if (!fb) return;
+  $('#fixProblem').value = fb.slice(0, 80);
+  $('#fixWant').value = '';
+  renderFix();
+  $('#fixWant').focus();
+  toast('② 어떻게 되면 좋겠는지 내 말로 써 줘요', 3500);
+}
 
 function setAppHtml(raw) {
   const html = extractHtml(raw);
@@ -767,6 +841,7 @@ function showStatus(s) {
   box.className = `status-box ${s.status || ''}`;
   box.replaceChildren(h('b', {}, label),
     s.feedback ? h('p', {}, `💬 선생님 말씀: ${s.feedback}`) : '',
+    s.status === 'needs_fix' ? h('button', { class: 'chip', type: 'button', onclick: () => { go('myapp'); setTimeout(() => { useTeacherFeedback(); $('#fixCard').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50); } }, '🔧 학생 앱에서 바로 고치기') : '',
     s.likes ? h('p', { class: 'small' }, `👍 좋아요 ${s.likes}개`) : '');
 }
 

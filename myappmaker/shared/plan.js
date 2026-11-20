@@ -118,7 +118,7 @@ export function emptyPlan(topicId = null) {
     boothImage: '',      // 내 부스 건물 그림 (data URL, 선택)
     difficulty: 'easy',
     f,
-    app: { html: '', url: '', images: {}, updatedAt: null },   // images: 그림 자리별 그림(data URL), 코드와 따로 보관
+    app: { html: '', url: '', images: {}, fixes: [], updatedAt: null },   // images: 그림 자리별 그림(data URL), 코드와 따로 보관
     submit: { at: null, status: null, feedback: '', booth: null },
   };
 }
@@ -137,6 +137,7 @@ export function normalizePlan(raw) {
   }
   out.f.imageStyle = IMAGE_STYLE;
   out.app.images = cleanImages(out.app.images);
+  out.app.fixes = cleanFixes(out.app.fixes);
   out.avatar = src.avatar && typeof src.avatar === 'object' ? cleanAvatar(src.avatar) : null;
   out.boothImage = typeof src.boothImage === 'string' && src.boothImage.length <= MAX_IMAGE_CHARS && /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(src.boothImage) ? src.boothImage : '';
   out.f.classInfo = '';                       // 학년·반은 받지 않음 (개인정보)
@@ -319,15 +320,74 @@ export function buildAllPromptsText(plan) {
   return `# 앱 제작 프롬프트\n\n${buildAppPrompt(plan)}\n\n# Gemini 이미지 생성 프롬프트 (선택)\n\n${imgs}\n`;
 }
 
-// 앱을 고칠 때 쓰는 "고쳐 줘" 프롬프트
-export function buildFixPrompt(plan, problem, want) {
+// ---------- 앱을 고칠 때 쓰는 "고쳐 줘" 프롬프트 (학생 앱 「4. 내 앱」) ----------
+// 아이용 문장 틀: "지금은 ○○인데, △△가 되면 좋겠어. □□는 그대로 둬." — 한 번에 한 가지만 고쳐요.
+export const FIX_MAX = 80;   // 칸마다 글자 수 (짧게 한 가지만)
+export const FIX_EXAMPLES = [
+  { emoji: '▶️', problem: '시작 버튼을 눌러도 게임이 시작되지 않아요', want: '시작 버튼을 누르면 바로 게임이 시작돼요' },
+  { emoji: '🐢', problem: '너무 빨라서 어려워요', want: '처음에는 천천히 움직이고 조금씩 빨라져요' },
+  { emoji: '💯', problem: '점수가 올라가지 않아요', want: '맞히면 점수가 1점씩 올라가요' },
+  { emoji: '🚧', problem: '주인공이 화면 밖으로 나가요', want: '주인공이 화면 안에서만 움직여요' },
+  { emoji: '🔁', problem: '게임이 끝나면 다시 할 수 없어요', want: '끝나면 다시 하기 버튼이 나와요' },
+  { emoji: '🔤', problem: '글자가 너무 작아서 안 보여요', want: '글자가 크고 또렷하게 보여요' },
+  { emoji: '👆', problem: '태블릿에서 눌러도 움직이지 않아요', want: '화면을 눌러도 움직일 수 있어요' },
+  { emoji: '🖼️', problem: '내가 넣은 그림이 게임에 안 보여요', want: '내가 올린 그림이 게임에 보여요' },
+];
+export const FIX_KEEP = ['게임 규칙', '주인공', '그림·색', '점수', '배경', '버튼 위치'];
+const MANY = /(그리고|그리구|또한|그 다음에|그다음에|,|，|\n)/;
+
+// 고쳐 줘 글 확인: 막을 말(알맞지 않은 말·이미 있는 게임 이름·개인정보)과 안내(여러 가지를 한꺼번에 고치려 함)
+export function fixCheck(problem, want) {
+  const text = `${problem || ''} ${want || ''}`;
+  const c = checkText(text);
+  const blocked = [...c.violence, ...c.blocked, ...c.existing.map((e) => e.label)];
+  const p = String(problem || '').trim();
+  const w = String(want || '').trim();
+  return {
+    blocked, privacy: c.privacy,
+    ok: !!p && !!w && blocked.length === 0 && c.privacy.length === 0,
+    empty: !p ? 'problem' : !w ? 'want' : '',
+    many: MANY.test(p) || /[.!?]\s*\S/.test(p),
+  };
+}
+
+// 아이가 쓴 그대로 보여 주는 한 문장 (미리보기)
+export function fixSentence(problem, want, keep = []) {
+  const p = String(problem || '').trim().replace(/[.!]+$/, '') || '○○';
+  const w = String(want || '').trim().replace(/[.!]+$/, '') || '△△';
+  const k = keepText(keep);
+  return `지금은 「${p}」인데, 「${w}」처럼 되면 좋겠어. ${k}는 그대로 둬.`;
+}
+function keepText(keep) {
+  const list = (Array.isArray(keep) ? keep : []).filter((x) => FIX_KEEP.includes(x));
+  return list.length ? `${list.join('·')}, 그리고 나머지` : '나머지';
+}
+
+export function buildFixPrompt(plan, problem, want, keep = []) {
   const name = plan.f.appName || '내 게임';
+  const kept = (Array.isArray(keep) ? keep : []).filter((x) => FIX_KEEP.includes(x));
   return join([
-    `방금 만든 「${name}」 게임을 고쳐 줘.`,
-    line('문제', problem),
+    `방금 만든 「${name}」 게임에서 딱 한 가지만 고쳐 줘.`,
+    line('지금 문제', problem),
     line('이렇게 되면 좋겠어', want),
-    `고친 HTML 코드 전체를 다시 코드 블록 하나로 보여 주고, 무엇을 바꿨는지 쉬운 말로 한 줄씩 알려 줘. 다른 기능은 그대로 둬.`,
+    `그대로 둘 것: ${kept.length ? `${kept.join(', ')}, ` : ''}그 밖의 화면·규칙·기능 모두`,
+    '지켜 줘:',
+    '- 위 문제 한 가지만 고치고, 새 기능이나 규칙·레벨을 더하지 마.',
+    '- <script> 맨 위의 const IMAGES = { … } 그림 자리는 이름과 값을 그대로 둬.',
+    '- 고친 HTML 코드 전체를 처음부터 끝까지 코드 블록 하나로 보여 줘 (중간을 줄이거나 "…"로 빼지 마).',
+    '- 코드 아래에 무엇을 바꿨는지 초등학생이 알아듣는 쉬운 말로 한두 줄 알려 줘.',
   ]);
+}
+
+// 고친 기록 (학생 앱에서만 쓰고 기획서와 함께 저장) — 최근 20개
+export function cleanFixes(list) {
+  if (!Array.isArray(list)) return [];
+  return list.filter((x) => x && typeof x === 'object' && typeof x.problem === 'string').slice(-20).map((x) => ({
+    problem: x.problem.slice(0, FIX_MAX), want: typeof x.want === 'string' ? x.want.slice(0, FIX_MAX) : '',
+    keep: Array.isArray(x.keep) ? x.keep.filter((k) => FIX_KEEP.includes(k)) : [],
+    at: typeof x.at === 'string' ? x.at.slice(0, 30) : '',
+    result: x.result === 'good' || x.result === 'again' ? x.result : '',
+  }));
 }
 
 // 학생 화면에 보여 줄 텍스트(인쇄·교사 미리보기 공용)

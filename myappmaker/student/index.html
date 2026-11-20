@@ -140,7 +140,7 @@
         <ol>
           <li>앱 제작 프롬프트를 붙여 넣어요.</li>
           <li>AI가 준 코드를 <b>통째로 복사</b>해서 「4. 내 앱」에 붙여 넣고 실행해 봐요.</li>
-          <li>이상한 곳이 있으면 「고쳐 줘 프롬프트」로 AI에게 다시 부탁해요.</li>
+          <li>이상한 곳이 있으면 「4. 내 앱 → 🔧 내 앱 고치기」에서 <b>한 가지씩</b> 고쳐 달라고 부탁해요.</li>
           <li>잘 되면 메타버스에 입점 신청!</li>
         </ol>
       </div>
@@ -189,12 +189,30 @@
         <h3>③ 테스트 체크리스트</h3>
         <div id="testChecks" class="chips"></div>
       </div>
-      <div class="card">
-        <h3>🔧 고쳐 줘 프롬프트 만들기</h3>
-        <label class="field"><span>무엇이 문제인가요?</span><input id="fixProblem" type="text" placeholder="예) 시작 버튼을 눌러도 게임이 안 움직여요"></label>
-        <label class="field"><span>어떻게 되면 좋겠어요?</span><input id="fixWant" type="text" placeholder="예) 버튼을 누르면 바로 과일이 떨어지면 좋겠어요"></label>
-        <pre id="fixPrompt" class="prompt small"></pre>
-        <button class="primary" data-copy="fix">📋 복사하기</button>
+      <div class="card fix-card" id="fixCard">
+        <h3>🔧 내 앱 고치기 <span class="muted small">(고쳐 줘 프롬프트)</span></h3>
+        <p class="small fix-rule">💡 <b>한 번에 한 가지만</b> 고쳐요. 고치고 → 실행해 보고 → 또 고쳐요. <b>진짜 이름·학교·전화번호</b>는 쓰지 않아요.</p>
+        <div id="fixFromTeacher"></div>
+        <p class="small muted">자주 고치는 것 (누르면 채워져요)</p>
+        <div id="fixExamples" class="chips"></div>
+        <label class="field"><span>① 지금은 어떤가요? <small class="muted">(문제 한 가지)</small></span><input id="fixProblem" type="text" maxlength="80" placeholder="예) 시작 버튼을 눌러도 게임이 안 움직여요"></label>
+        <label class="field"><span>② 어떻게 되면 좋겠어요?</span><input id="fixWant" type="text" maxlength="80" placeholder="예) 버튼을 누르면 바로 과일이 떨어지면 좋겠어요"></label>
+        <p class="small"><b>③ 그대로 둘 것</b> <span class="muted">(바뀌면 안 되는 것을 골라요)</span></p>
+        <div id="fixKeep" class="chips"></div>
+        <p id="fixSentence" class="fix-sentence"></p>
+        <div id="fixHint" class="small"></div>
+        <details>
+          <summary class="small">AI에게 보낼 프롬프트 전체 보기</summary>
+          <pre id="fixPrompt" class="prompt small"></pre>
+        </details>
+        <div class="row"><button class="primary" data-copy="fix">📋 고쳐 줘 프롬프트 복사</button></div>
+        <ol class="small fix-steps">
+          <li>복사한 프롬프트를 앱을 만든 AI 대화창에 붙여 넣어요.</li>
+          <li>AI가 준 <b>새 코드 전체</b>를 위 「AI가 준 코드 붙여 넣기」 칸에 붙여 넣고 <b>▶ 실행해 보기</b> (내 그림은 그대로 남아요).</li>
+          <li>잘 고쳐졌는지 직접 해 보고 아래에서 골라요.</li>
+        </ol>
+        <div class="row"><button id="fixGood" type="button" class="chip">✅ 고쳐졌어요</button><button id="fixAgain" type="button" class="chip">🔁 아직이에요 · 다시 고칠래요</button></div>
+        <div id="fixLog" class="small"></div>
       </div>
       <div class="row nav-buttons"><button class="ghost" data-go="prompts">◀ 프롬프트</button><span class="grow"></span><button class="primary" data-go="submit">5. 입점 신청 ▶</button></div>
     </section>

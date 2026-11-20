@@ -194,8 +194,28 @@ try {
   await st.reload();
   await st.waitForSelector('[data-pic="hero"].done img');
   for (const c of ['시작 버튼', '점수', '타이머']) await st.click(`#testChecks >> text=${c}`);
+  step('학생: 🔧 내 앱 고치기 — 예시 칩 · 그대로 둘 것 · 한 가지만 · 개인정보 막기 · 고친 기록');
+  await st.click('#fixExamples >> text=너무 빨라서 어려워요');
+  assert.equal(await st.inputValue('#fixWant'), '처음에는 천천히 움직이고 조금씩 빨라져요', '예시 칩이 두 칸을 채움');
+  await st.click('#fixKeep >> text=주인공');
+  assert.match(await st.textContent('#fixSentence'), /지금은 「너무 빨라서 어려워요」인데, 「처음에는 천천히 움직이고 조금씩 빨라져요」처럼 되면 좋겠어\. 주인공, 그리고 나머지는 그대로 둬\./);
+  assert.match(await st.textContent('#fixPrompt'), /그대로 둘 것: 주인공, 그 밖의/);
+  await st.fill('#fixProblem', '폭탄이 너무 많아요 그리고 점수가 안 올라요');
+  assert.match(await st.textContent('#fixHint'), /두 가지 이상/, '여러 가지를 한꺼번에 고치면 알려 줌');
+  await st.fill('#fixProblem', '010-1234-5678 로 알려 줘요');
+  assert.match(await st.textContent('#fixHint'), /개인정보/);
+  await st.click('[data-copy="fix"]');
+  assert.equal(await st.locator('#fixLog li').count(), 0, '개인정보가 있으면 복사·기록 안 함');
   await st.fill('#fixProblem', '폭탄이 너무 많아요');
   assert.ok((await st.textContent('#fixPrompt')).includes('폭탄이 너무 많아요'));
+  assert.equal((await st.textContent('#fixHint')).trim(), '');
+  await st.click('[data-copy="fix"]');
+  await st.waitForSelector('#fixLog li');
+  await st.click('#fixGood');
+  assert.match(await st.textContent('#fixLog'), /✅ 폭탄이 너무 많아요/);
+  assert.equal(await st.inputValue('#fixProblem'), '', '고쳐졌으면 칸을 비워 다음 한 가지를 준비');
+  await snap(st, 'myapp-fix');
+  await st.fill('#fixProblem', '폭탄이 너무 많아요');
   await snap(st, 'myapp');
 
   step('학생: 입점 신청 (저장소) — 내 캐릭터 함께 (부스 건물은 지도에 있어서 그림 칸 없음)');
