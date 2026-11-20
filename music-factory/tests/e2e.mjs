@@ -493,6 +493,34 @@ await pp.screenshot({ path: path.join(OUT, '8-phone.png') });
   // 가사 쓰기 (교육용 체크)
   check(await vp.locator('#lyricsPanel').isVisible(), '가사 쓰기 패널이 열림');
   await vp.click('#btnLyrics');
+  // 가사 도우미: 주제를 말하면 내 음악에 맞는 가사 제안 (인터넷 요청 없이)
+  const netCalls = [];
+  vp.on('request', (r) => { if (!r.url().startsWith(URL_)) netCalls.push(r.url()); });
+  check((await vp.textContent('#lyricsShape')).includes('한 줄에'), '가사 도우미: 내 음악 모양(줄 수·글자 수)이 보임');
+  await vp.click('#lyricsSuggest');
+  check((await vp.textContent('#lyricsIdeaMsg')).includes('주제'), '가사 도우미: 주제가 비면 주제를 물어봄');
+  await vp.fill('#lyricsTopic', '제 이름은 김하늘');
+  await vp.click('#lyricsSuggest');
+  check((await vp.textContent('#lyricsIdeaMsg')).includes('개인 정보') && await vp.locator('#lyricsIdeas .lh-idea').count() === 0, '가사 도우미: 개인 정보 주제는 막음');
+  await vp.fill('#lyricsTopic', '우리 강아지');
+  await vp.fill('#lyricsContent', '산책, 공놀이');
+  await vp.press('#lyricsContent', 'Enter');
+  const ideaInfo = await vp.evaluate(() => {
+    const shape = document.querySelector('#lyricsShape').textContent;
+    const syl = Number(shape.match(/한 줄에 (\d+)글자/)[1]);
+    const lines = Number(shape.match(/(\d+)줄/)[1]);
+    const cards = [...document.querySelectorAll('#lyricsIdeas .lh-idea')].map((b) => b.dataset.text);
+    const count = (t) => (t.match(/[\uac00-\ud7a3]/g) || []).length;
+    return { syl, lines, cards, fit: cards.every((t) => t.split('\n').length === lines && t.split('\n').every((l) => count(l) === syl)) };
+  });
+  check(ideaInfo.cards.length >= 2 && ideaInfo.fit && ideaInfo.cards[0].includes('강아지'), `가사 도우미: 음악에 맞는 제안 ${ideaInfo.cards.length}개 (${ideaInfo.lines}줄 × ${ideaInfo.syl}글자)`);
+  await vp.click('#lyricsMore');
+  const moreCards = await vp.evaluate(() => [...document.querySelectorAll('#lyricsIdeas .lh-idea')].map((b) => b.dataset.text));
+  check(moreCards.join('|') !== ideaInfo.cards.join('|'), '가사 도우미: 다른 가사 보기');
+  await vp.screenshot({ path: path.join(OUT, '9-lyric-ideas.png') });
+  await vp.click('#lyricsIdeas .lh-idea >> nth=0');
+  check(await vp.inputValue('#lyricsInput') === moreCards[0], '가사 도우미: 누르면 가사 칸에 들어감 (고칠 수 있어요)');
+  check(netCalls.length === 0, `가사 도우미: 인터넷 요청 없음${netCalls.length ? ` (${netCalls.join(', ')})` : ''}`);
   await vp.fill('#lyricsInput', '내 번호는 010-1234-5678');
   await vp.click('#lyricsOk');
   check(await vp.locator('#lyricsDialog[open]').count() === 1 && (await vp.textContent('#lyricsMsg')).includes('개인 정보'), '가사: 전화번호는 친절하게 막음');

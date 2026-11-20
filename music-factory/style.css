@@ -857,6 +857,31 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
 .lyrics-msg { margin: 8px 0 0; min-height: 1.4em; font-size: 0.95rem; }
 .lyrics-msg.bad { color: #c0392b; background: #fff0f0; border-radius: 12px; padding: 8px 10px; }
 .lyrics-dlg .dlg-btns { flex-wrap: wrap; }
+.lyrics-dlg:has(.lh-idea) { width: min(760px, calc(100vw - 32px)); }
+.lyrics-helper { margin: 0 0 12px; padding: 12px 14px; background: #f3f0ff; border: 3px dashed #c9b8ff; border-radius: 18px; }
+.lh-title { margin: 0 0 8px; font-weight: 700; }
+.lh-title span { display: block; font-weight: 400; font-size: 0.85rem; color: var(--ink-soft); }
+.lh-fields { display: flex; gap: 10px; flex-wrap: wrap; }
+.lh-field { flex: 1 1 180px; display: flex; flex-direction: column; gap: 4px; font-size: 0.95rem; color: var(--ink-soft); }
+.lh-field b { color: var(--pink-deep); font-size: 0.8rem; }
+.lh-field small { font-size: 0.8rem; }
+.lh-field input { font: inherit; font-size: 1.1rem; padding: 8px 12px; border-radius: 12px; border: 3px solid var(--line); color: var(--ink); min-width: 0; }
+.lh-field input:focus { outline: none; border-color: var(--pink); }
+.lh-shape { margin: 8px 0 0; font-size: 0.85rem; color: #5b4a8a; }
+.lh-btns { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.lh-btns > * { flex: 1 1 140px; }
+.lyrics-helper .lyrics-msg:empty { display: none; }
+.lh-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin-top: 8px; }
+.lh-list:empty { display: none; }
+.lh-idea {
+  font: inherit; text-align: left; cursor: pointer; padding: 10px 12px; border-radius: 14px; border: 3px solid #d9ccff;
+  background: #fff; color: var(--ink); display: flex; flex-direction: column; gap: 2px; min-height: 48px;
+}
+.lh-idea:hover, .lh-idea:focus-visible { border-color: var(--pink); outline: none; }
+.lh-idea .lh-no { font-size: 0.8rem; color: #7a64c4; font-weight: 700; }
+.lh-idea .lh-line { display: flex; justify-content: space-between; gap: 6px; font-size: 1rem; line-height: 1.4; }
+.lh-idea .lh-line i { font-style: normal; font-size: 0.75rem; color: var(--ink-soft); background: #f3f0ff; border-radius: 8px; padding: 0 6px; align-self: center; flex: none; }
+.lh-idea .lh-use { margin-top: 4px; font-size: 0.8rem; color: var(--pink-deep); }
 
 @media (max-height: 760px) {
   .m6 { min-height: 64px; }

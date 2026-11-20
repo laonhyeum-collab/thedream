@@ -10,6 +10,7 @@ import {
 import { STAGES, STAGE_THEME, getStage, isStageUnlocked, allStagesCleared } from './levels.js';
 import { COMBOS, getCombo, comboThemeId, pickCombo, comboChallenge, backingPreviewItems } from './combos.js';
 import { checkLyrics, LYRICS_MAX } from './lyrics.js';
+import { musicShape, suggestLyrics } from './lyric-ideas.js';
 import { AudioEngine, Player } from './audio.js';
 import { MISSIONS, getMission, checkMission } from './missions.js';
 import { SONGS, LEVELS, getSong, songItems, songBeats, compareToSong } from './songs.js';
@@ -748,7 +749,77 @@ $('#btnLyrics').addEventListener('click', () => {
   $('#lyricsInput').value = state.lyrics;
   lyricsFeedback('');
   updateLyricsCount();
+  resetLyricIdeas();
   $('#lyricsDialog').showModal();
+  $('#lyricsTopic').focus();
+});
+
+// ---------- 가사 도우미: 주제를 말하면 내 음악에 맞는 가사 제안 ----------
+// 이 기기 안에서 단어 꾸러미와 틀로 만들어요 (인터넷·AI 서비스를 쓰지 않아요). 주제·내용은 저장하지 않아요.
+const ideas = { seed: 1, key: '' };
+const currentShape = () => musicShape({ items: state.items, bpm: state.bpm, progression: progOf() });
+
+function shapeText(sh) {
+  return `🎵 내 음악: 빠르기 ${sh.bpm} · ${sh.moodEmoji} ${sh.moodName} 느낌 · ${sh.lines}줄 · 한 줄에 ${sh.syllables}글자`;
+}
+
+function ideaFeedback(text, cls = '') {
+  const m = $('#lyricsIdeaMsg');
+  m.textContent = text;
+  m.className = `lyrics-msg ${cls}`;
+}
+
+function resetLyricIdeas() {
+  $('#lyricsShape').textContent = shapeText(currentShape());
+  $('#lyricsIdeas').replaceChildren();
+  $('#lyricsMore').hidden = true;
+  ideaFeedback('');
+}
+
+function showLyricIdeas(more = false) {
+  const topic = $('#lyricsTopic').value;
+  const content = $('#lyricsContent').value;
+  const shape = currentShape();
+  const key = `${topic}|${content}|${shape.lines}|${shape.syllables}|${shape.mood}`;
+  ideas.seed = more && key === ideas.key ? ideas.seed + 1 : 1;
+  ideas.key = key;
+  const r = suggestLyrics({ topic, content, shape, seed: ideas.seed, count: 3, themeId: state.theme.id });
+  $('#lyricsShape').textContent = shapeText(shape);
+  const list = $('#lyricsIdeas');
+  list.replaceChildren();
+  if (!r.ok || !r.suggestions.length) {
+    $('#lyricsMore').hidden = true;
+    ideaFeedback(r.ok ? '🤔 이 주제로는 가사를 못 만들었어요. 다른 주제로 해 볼까요?' : r.message, 'bad');
+    return;
+  }
+  ideaFeedback(`「${r.topic}」 노래 가사예요. 마음에 드는 걸 누르면 아래 칸에 들어가요.`);
+  r.suggestions.forEach((sg, i) => {
+    const b = el('button', 'lh-idea');
+    b.type = 'button';
+    b.dataset.text = sg.text;
+    b.append(el('span', 'lh-no', sg.rhyme ? `제안 ${i + 1} · 끝소리 ${sg.rhyme}` : `제안 ${i + 1}`));
+    for (const line of sg.lines) {
+      const row = el('span', 'lh-line', line);
+      row.append(el('i', '', `${shape.syllables}글자`));
+      b.append(row);
+    }
+    b.append(el('span', 'lh-use', '👆 눌러서 가사 칸에 넣기'));
+    list.append(b);
+  });
+  $('#lyricsMore').hidden = false;
+}
+
+$('#lyricsSuggest').addEventListener('click', () => showLyricIdeas(false));
+$('#lyricsMore').addEventListener('click', () => showLyricIdeas(true));
+for (const id of ['#lyricsTopic', '#lyricsContent']) {
+  $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); showLyricIdeas(false); } });
+}
+$('#lyricsIdeas').addEventListener('click', (e) => {
+  const b = e.target.closest('.lh-idea');
+  if (!b) return;
+  $('#lyricsInput').value = b.dataset.text;
+  updateLyricsCount();
+  lyricsFeedback('✏️ 가사 칸에 넣었어요! 내 말로 바꿔도 좋아요. 다 되면 「✅ 체크하고 붙이기」를 눌러요.');
   $('#lyricsInput').focus();
 });
 $('#lyricsInput').addEventListener('input', () => { updateLyricsCount(); lyricsFeedback(''); });
