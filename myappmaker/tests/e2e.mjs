@@ -20,8 +20,12 @@ const browser = await chromium.launch();
 const errors = [];
 let shot = 0;
 
-async function newPage(viewport = { width: 1024, height: 768 }) {
+// 공용 설정(shared/config.js)에는 실제 우리 반 주소가 들어 있어요. 시험은 가짜 저장소(/gas)로만 하므로
+// 기본은 「빈 공용 설정」(처음 설치한 상태)으로 바꿔 열고, sharedConfig를 주면 그 값으로 열어요.
+const EMPTY_CONFIG = { endpoint: '', classCode: '' };
+async function newPage(viewport = { width: 1024, height: 768 }, sharedConfig = EMPTY_CONFIG) {
   const ctx = await browser.newContext({ viewport, acceptDownloads: true, permissions: ['clipboard-read', 'clipboard-write'] });
+  await ctx.route('**/shared/config.js', (r) => r.fulfill({ contentType: 'text/javascript', body: `window.MYAPP_CONFIG = ${JSON.stringify(sharedConfig)};` }));
   const page = await ctx.newPage();
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.(googleapis|gstatic)|ERR_|Failed to load resource/.test(m.text())) errors.push(`console: ${m.text()}`); });
@@ -468,6 +472,22 @@ try {
   await nw2.goto(`${base}/world/?${q}`);
   await nw2.waitForSelector('#lobby');
   assert.equal(await nw2.locator('#connectGate').count(), 0);
+
+  step('새 기기: 공용 설정(config.js)에 우리 반 주소·반 코드가 있으면 주소 없이 열어도 바로 로그인 화면 · 메타버스도 같음');
+  const shared = { endpoint: `http://127.0.0.1:${port}/gas`, classCode: 'TEST-CLASS' };
+  const nc = await newPage({ width: 1366, height: 768 }, shared);   // 다른 노트북
+  await nc.goto(`${base}/student/`);
+  await nc.waitForSelector('#login:not([hidden]) #loginBtn');
+  assert.equal(await nc.locator('#connectGate').count(), 0, '공용 설정이 있으면 연결 안내 없음');
+  await snap(nc, 'shared-config-login');
+  const ncw = await newPage(undefined, shared);
+  await ncw.goto(`${base}/world/`);
+  await ncw.waitForSelector('#lobby');
+  assert.equal(await ncw.locator('#connectGate').count(), 0);
+  const nct = await newPage({ width: 1280, height: 860 }, shared);
+  await nct.goto(`${base}/teacher/`);
+  await nct.waitForSelector('#gateLogin #adminLoginBtn');
+  assert.equal(await nct.isHidden('#gConnect'), true, '교사 앱도 연결 단계 없이 로그인');
 
   step('새 기기: 교사 앱 — 연결 설정에 학생 QR · 교사용 링크');
   const nt = await newPage({ width: 1280, height: 860 });
