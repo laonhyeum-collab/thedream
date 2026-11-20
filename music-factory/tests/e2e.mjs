@@ -73,7 +73,7 @@ async function attachMeter() {
 // ---------- 1. 메인 → 테마 → 창작 ----------
 await page.goto(URL_);
 await page.screenshot({ path: path.join(OUT, '1-home.png') });
-check(await page.locator('#home .menu-btn').count() === 5, '메인 메뉴 5개');
+check(await page.locator('#home .menu-btn').count() === 6, '메인 메뉴 6개 (단계별 도전 포함)');
 await page.click('text=음악 만들기');
 check(await page.locator('.theme-card').count() === 7, '테마 7개');
 check(await page.locator('.theme-card:not([disabled])').count() === 7, '테마 7개 모두 열림');
@@ -417,6 +417,110 @@ const after = await pp.evaluate(() => document.querySelector('.palette-grid').sc
 check(await pp.evaluate(() => window.__mpf.state.items.length) === 1, '폰: 옆으로 밀 때는 재료가 컵에 들어가지 않음');
 check(after > stripBefore + 50, `폰: 재료 띠를 옆으로 밀어 넘기기 (${stripBefore} → ${after})`);
 await pp.screenshot({ path: path.join(OUT, '8-phone.png') });
+
+// ---------- 9. 단계별 도전 → 랜덤 조합 → 가사 ----------
+{
+  const vctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+  const vp = await vctx.newPage();
+  vp.on('pageerror', (e) => errors.push(String(e)));
+  vp.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
+  await vp.goto(URL_);
+  await vp.click('#home .menu-btn.m6');
+  check(await vp.locator('#levelList .level-card').count() === 5, '단계별 도전: 단계 5개');
+  check(await vp.locator('#levelList .level-card:not([disabled])').count() === 1, '단계별 도전: 처음엔 1단계만 열림');
+  check(await vp.locator('#btnCombo').isDisabled(), '단계별 도전: 랜덤 조합은 잠김');
+  await vp.screenshot({ path: path.join(OUT, '9-levels.png') });
+  // 1단계: 얼음(드럼) 4층, 같은 크기
+  await vp.click('#levelList .level-card[data-level="1"]');
+  check(await vp.locator('#missionPanel').isVisible(), '1단계: 목표 패널이 보임');
+  check(await vp.locator('#lyricsPanel').isHidden(), '1단계: 가사 쓰기는 아직 잠김');
+  await vp.evaluate(() => { document.querySelector('#bpm').value = 160; document.querySelector('#bpm').dispatchEvent(new Event('input')); });
+  await vp.click('#palette .ing[data-ing="ice"]');
+  for (const r of [0, 1, 2, 3]) await vp.click(slot(r, 1));
+  check(await vp.locator('#missionPanel.ok').count() === 1, '1단계: 드럼 4층으로 조건 채움');
+  await vp.click('#btnPlay');
+  await vp.waitForSelector('#doneDialog[open]', { timeout: 15000 });
+  check((await vp.textContent('#doneTitle')).includes('1단계 통과'), '1단계: 끝까지 들으면 통과');
+  check(await vp.locator('#doneNext').isVisible(), '1단계: 다음 단계 버튼');
+  await vp.click('#doneNext');
+  check(await vp.evaluate(() => window.__mpf.state.mission?.level) === 2, '다음 단계(2단계)로 이동');
+  await vp.click('#btnBack');
+  check(await vp.locator('#levelList .level-card:not([disabled])').count() === 2, '1단계 통과 후 2단계가 열림');
+  // 5단계까지 통과한 기록으로 (저장된 진행 상황 복원)
+  await vp.evaluate(() => localStorage.setItem('musicPlayFactory.levels.v1', JSON.stringify([1, 2, 3, 4, 5])));
+  await vp.reload();
+  await vp.click('#home .menu-btn.m6');
+  check(!(await vp.locator('#btnCombo').isDisabled()), '5단계 통과 후 랜덤 조합이 열림');
+  await vp.click('#btnCombo');
+  const combo = await vp.evaluate(() => ({ id: window.__mpf.state.theme.id, backing: window.__mpf.state.theme.backing, n: document.querySelectorAll('#palette .ing').length }));
+  check(combo.id.startsWith('combo-') && Boolean(combo.backing) && combo.n >= 5, `랜덤 조합 무대 열림 (${combo.id}, 반주 ${combo.backing}, 악기 ${combo.n}개)`);
+  check(await vp.locator('#missionPanel [data-act="backing"]').isVisible(), '랜덤 조합: 반주 듣기 버튼');
+  await vp.evaluate(() => {
+    const a = window.__mpf.audio;
+    a.ensure();
+    const an = a.ctx.createAnalyser();
+    an.fftSize = 2048;
+    a.master.connect(an);
+    window.__level = () => {
+      const d = new Float32Array(an.fftSize);
+      an.getFloatTimeDomainData(d);
+      return Math.sqrt(d.reduce((x, v) => x + v * v, 0) / d.length);
+    };
+  });
+  await vp.click('#missionPanel [data-act="backing"]');
+  // 반주는 악기마다 치는 간격이 달라서 1.5초 동안 가장 큰 소리를 재요
+  const peak = () => vp.evaluate(async () => { let m = 0; for (let i = 0; i < 30; i++) { m = Math.max(m, window.__level()); await new Promise((r) => setTimeout(r, 50)); } return m; });
+  const backingLevel = await peak();
+  check(backingLevel > 0.01, `랜덤 조합: 반주 소리가 남 (${backingLevel.toFixed(3)})`);
+  await vp.click('#btnStop');
+  const ings = await vp.evaluate(() => [...document.querySelectorAll('#palette .ing')].map((b) => b.dataset.ing));
+  await vp.click(`#palette .ing[data-ing="${ings[0]}"]`);
+  await vp.click(slot(0, 0));
+  await vp.click(`#palette .ing[data-ing="${ings[1]}"]`);
+  await vp.click(slot(0, 1));
+  await vp.click(slot(1, 1));
+  await vp.click(`#palette .ing[data-ing="${ings[2]}"]`);
+  await vp.click(slot(2, 1));
+  check(await vp.locator('#missionPanel.ok').count() === 1, '랜덤 조합: 악기 3가지 · 3층 · 함께 연주로 조건 채움');
+  await vp.evaluate(() => { document.querySelector('#bpm').value = 160; document.querySelector('#bpm').dispatchEvent(new Event('input')); });
+  await vp.click('#btnPlay');
+  const comboLevel = await peak();
+  check(comboLevel > 0.01, `랜덤 조합: 반주 + 악기 연주 (${comboLevel.toFixed(3)})`);
+  await vp.waitForSelector('#doneDialog[open]', { timeout: 15000 });
+  check((await vp.textContent('#doneTitle')).includes('조합 완성'), '랜덤 조합: 끝까지 들으면 성공');
+  await vp.click('#doneClose');
+  await vp.screenshot({ path: path.join(OUT, '9-combo.png') });
+  // 가사 쓰기 (교육용 체크)
+  check(await vp.locator('#lyricsPanel').isVisible(), '가사 쓰기 패널이 열림');
+  await vp.click('#btnLyrics');
+  await vp.fill('#lyricsInput', '내 번호는 010-1234-5678');
+  await vp.click('#lyricsOk');
+  check(await vp.locator('#lyricsDialog[open]').count() === 1 && (await vp.textContent('#lyricsMsg')).includes('개인 정보'), '가사: 전화번호는 친절하게 막음');
+  await vp.fill('#lyricsInput', '바보 멍청이');
+  await vp.click('#lyricsOk');
+  check((await vp.textContent('#lyricsMsg')).includes('고운 말'), '가사: 놀리는 말은 막음');
+  await vp.fill('#lyricsInput', '반짝반짝 우리 노래\n다 함께 불러요');
+  await vp.click('#lyricsOk');
+  check(await vp.locator('#lyricsDialog[open]').count() === 0, '가사: 고운 가사는 통과');
+  check((await vp.textContent('#lyricsShow')).includes('반짝반짝 우리 노래'), '가사가 노래와 함께 보임');
+  await vp.click('#btnSave');
+  await vp.click('#saveOk');
+  await vp.click('#doneLibrary');
+  check((await vp.textContent('#workList')).includes('반짝반짝 우리 노래'), '보관함에 가사와 함께 저장');
+  await vp.screenshot({ path: path.join(OUT, '9-library-lyrics.png') });
+  await vctx.close();
+
+  // 폰에서 단계별 도전 화면
+  const p2 = await browser.newContext({ viewport: { width: 390, height: 664 }, hasTouch: true, isMobile: true });
+  const pq = await p2.newPage();
+  pq.on('pageerror', (e) => errors.push(String(e)));
+  await pq.goto(URL_);
+  await pq.tap('#home .menu-btn.m6');
+  const over = await pq.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  check(over <= 0, `폰: 단계별 도전 화면이 옆으로 넘치지 않음 (${over}px)`);
+  await pq.screenshot({ path: path.join(OUT, '9-phone-levels.png'), fullPage: true });
+  await p2.close();
+}
 
 check(errors.length === 0, `스크립트 오류 없음${errors.length ? `: ${errors.join(' | ')}` : ''}`);
 

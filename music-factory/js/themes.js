@@ -250,12 +250,23 @@ const space = {
 
 export const THEMES = [bingsu, pizza, burger, cake, icecream, animals, space].map((t) => ({ ready: true, ...t }));
 
+// 테마 목록에는 안 보이지만 열 수 있는 테마 (단계별 도전의 "랜덤 조합" 무대). combos.js 가 등록해요.
+const EXTRA_THEMES = [];
+export function registerThemes(list) {
+  for (const t of list) if (!getTheme(t.id)) EXTRA_THEMES.push({ ready: true, ...t });
+}
+
 export function getTheme(id) {
-  return THEMES.find((t) => t.id === id) || null;
+  return THEMES.find((t) => t.id === id) || EXTRA_THEMES.find((t) => t.id === id) || null;
 }
 
 export function ensembleOf(theme) {
   return ENSEMBLES[theme?.ensemble] || ENSEMBLES.band;
+}
+
+// 테마의 화음 흐름 (조합 무대는 따로 정해요)
+export function progressionOf(theme) {
+  return theme?.progression || ensembleOf(theme).progression;
 }
 
 export function ingredientOf(theme, ingId) {

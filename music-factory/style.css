@@ -806,3 +806,69 @@ body.dragging, body.dragging * { cursor: grabbing !important; }
   .menu { grid-template-columns: 1fr; }
   .menu-btn { min-height: 90px; flex-direction: row; justify-content: center; }
 }
+
+/* ---------- 단계별 도전 · 랜덤 조합 · 가사 ---------- */
+/* 노래 따라 만들기와 단계별 도전은 한 줄에 나란히 (메뉴가 화면 밖으로 길어지지 않게) */
+.menu .m5 { grid-column: auto; }
+.m6 { background: #ffe3cc; min-height: 76px; flex-direction: row; justify-content: center; gap: 12px; }
+.m6 .mi { font-size: 2.1rem; }
+.level-card.locked { opacity: 0.55; filter: grayscale(0.4); }
+.level-card .m-stars { font-size: 0.9rem; color: var(--ink-soft); }
+.unlock-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 16px; margin-top: 18px; }
+.unlock-card { display: flex; flex-direction: column; gap: 8px; border: 3px solid var(--violet); font-size: 1.15rem; }
+.unlock-card.locked { border-color: var(--line); }
+.unlock-card .wide-btn:disabled { opacity: 0.5; }
+.uc-text { margin: 0; font-size: 0.95rem; line-height: 1.5; color: var(--ink-soft); }
+.uc-state { margin: 0; font-size: 0.95rem; }
+.combo-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.combo-chip { background: #f4efff; border-radius: 999px; padding: 4px 10px; font-size: 0.85rem; }
+.combo-chip.done { background: var(--mint); }
+.combo-chip.done::after { content: " ✅"; }
+.combo-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.combo-btns .chip { min-height: 44px; font-size: 0.9rem; }
+
+/* 랜덤 조합 무대: 조명이 비치는 공연장 */
+.cup.theme-combo { aspect-ratio: 0.85; }
+.theme-combo .cup-glass { filter: none; }
+.theme-combo .cup-glass::before {
+  inset: 0; clip-path: none; border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(255, 240, 170, 0.75), transparent 55%),
+    linear-gradient(180deg, #fff3fb, #f0e6ff 60%, #e2d6ff);
+  box-shadow: inset 0 -14px 0 #c9b6f5;
+}
+.theme-combo .cup-glass::after { display: none; }
+
+.lyrics-panel { border: 3px solid #ffc78f; }
+.lyrics-show { margin: 0 0 8px; white-space: pre-line; font-size: 1.05rem; line-height: 1.5; overflow-wrap: anywhere; }
+.lyrics-show.empty { color: var(--ink-soft); font-size: 0.9rem; }
+.is-playing .lyrics-show:not(.empty) { color: var(--pink-deep); }
+.lyrics-panel .voice-btn { width: 100%; }
+.work-lyrics { margin: 2px 0 0; font-size: 0.9rem; white-space: pre-line; overflow-wrap: anywhere; color: #8a5a2b; }
+.lyrics-dlg { width: min(520px, calc(100vw - 32px)); }
+.lyrics-input {
+  width: 100%; margin-top: 8px; font: inherit; font-size: 1.15rem; line-height: 1.5; padding: 10px 12px;
+  border: 3px solid var(--line); border-radius: 14px; resize: vertical; min-height: 110px;
+}
+.lyrics-input:focus { outline: none; border-color: var(--pink); }
+.lyrics-count { margin: 4px 0 0; text-align: right; font-size: 0.85rem; color: var(--ink-soft); }
+.lyrics-count.over { color: var(--danger); }
+.lyrics-rules { margin: 8px 0 0; padding: 10px 14px; list-style: none; background: #fff8ec; border-radius: 14px; font-size: 0.9rem; line-height: 1.6; }
+.lyrics-msg { margin: 8px 0 0; min-height: 1.4em; font-size: 0.95rem; }
+.lyrics-msg.bad { color: #c0392b; background: #fff0f0; border-radius: 12px; padding: 8px 10px; }
+.lyrics-dlg .dlg-btns { flex-wrap: wrap; }
+
+@media (max-height: 760px) {
+  .m6 { min-height: 64px; }
+}
+
+@media (max-width: 820px), (max-aspect-ratio: 4/5) {
+  .lyrics-panel:not([hidden]) { order: -1; flex: 1 0 100%; display: flex; align-items: center; gap: 6px; padding: 4px 8px; }
+  .lyrics-panel .panel-label { display: none; }
+  .lyrics-show { flex: 1; min-width: 0; margin: 0; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lyrics-panel .voice-btn { width: auto; flex: none; min-height: 40px; margin: 0; }
+  .lyrics-panel .voice-btn .lbl { display: none; }
+  .combo-btns { margin-top: 2px; }
+  .combo-btns .chip { min-height: 36px; font-size: 0.75rem; padding: 2px 8px; }
+  .lyrics-dlg .dlg-btns > * { flex: 1 0 40%; }
+}

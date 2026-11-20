@@ -154,7 +154,8 @@ export class Player {
     return { beat: elapsed - pass * total, pass, elapsed, done: false };
   }
 
-  play(items, { bpm, loop, onEnd, progression = 'pop' } = {}) {
+  // backing = 반주 소리 (랜덤 조합 도전). 줄마다 그 줄의 화음을 그 줄 길이만큼 조금 작게 깔아 줘요.
+  play(items, { bpm, loop, onEnd, progression = 'pop', backing = null } = {}) {
     this.stop();
     const schedule = buildSchedule(items);
     if (!schedule.groups.length) return false;
@@ -168,6 +169,14 @@ export class Player {
     this.progression = progression; // 악단마다 다른 화음 흐름
     this.onEnd = onEnd || null;
     this.bus = this.engine.createBus();
+    this.backing = backing && VOICES[backing] ? backing : null;
+    if (this.backing) {
+      const g = this.bus.s.gain(0.6); // 반주는 쌓은 악기보다 작게
+      g.connect(this.bus.out);
+      this.backingBus = { s: this.bus.s, out: g };
+    } else {
+      this.backingBus = null;
+    }
     this.startTime = ctx.currentTime + LOOKAHEAD;
     this.scheduledPasses = 0;
     this.schedulePass(0);
@@ -184,6 +193,7 @@ export class Player {
       const t = passStart + g.start * beat;
       // m.voice 가 있으면 그 소리로 (따라 만들기의 정답 노래), 없으면 재료에 정해진 소리로
       for (const m of g.items) this.engine.playVoice(this.bus, m.voice || this.voiceOf(m.ing), t, m.beats, beat, chord);
+      if (this.backingBus) this.engine.playVoice(this.backingBus, this.backing, t, g.dur, beat, chord);
     }
     this.scheduledPasses = pass + 1;
   }
@@ -227,6 +237,7 @@ export class Player {
     this.timer = null;
     if (this.bus) this.bus.close();
     this.bus = null;
+    this.backingBus = null;
     this.schedule = null;
     this.onEnd = null;
     const wasPaused = this.state === 'paused';

@@ -1,6 +1,9 @@
 // 작품 저장 (브라우저 로컬 저장소). 나중에 계정 저장으로 바꿀 때 이 파일만 고치면 됩니다.
 import { clampBpm, clampLevel } from './engine.js';
 import { getTheme, normalizeVoices } from './themes.js';
+import { normalizeCleared } from './levels.js';
+import { safeLyrics } from './lyrics.js';
+import './combos.js'; // 랜덤 조합 무대도 저장·복원할 수 있게 등록
 
 const WORKS_KEY = 'musicPlayFactory.works.v1';
 const DRAFT_KEY = 'musicPlayFactory.draft.v1';
@@ -57,6 +60,7 @@ export function normalizeWork(raw) {
     loop: Boolean(raw.loop),
     items: normalizeItems(raw.items, theme),
     voices: normalizeVoices(raw.voices, theme), // 학생이 고른 재료별 악기
+    lyrics: safeLyrics(raw.lyrics), // 교육용 체크를 통과한 가사만 (이 기기 안에만 저장)
     createdAt: Number(raw.createdAt) || Date.now(),
     updatedAt: Number(raw.updatedAt) || Date.now(),
   };
@@ -135,5 +139,34 @@ export function markMissionDone(id, store = defaultStore()) {
   const done = loadMissionDone(store);
   done.add(id);
   writeJSON(store, MISSION_KEY, [...done]);
+  return done;
+}
+
+// 단계별 도전 기록: 통과한 단계 번호 [1, 2, …]
+const LEVEL_KEY = 'musicPlayFactory.levels.v1';
+
+export function loadLevelCleared(store = defaultStore()) {
+  return normalizeCleared(readJSON(store, LEVEL_KEY, []));
+}
+
+export function markLevelCleared(level, store = defaultStore()) {
+  const raw = readJSON(store, LEVEL_KEY, []);
+  const next = normalizeCleared([...(Array.isArray(raw) ? raw : []), Number(level)]);
+  writeJSON(store, LEVEL_KEY, [...next]);
+  return next;
+}
+
+// 랜덤 조합 도전 성공 기록: 조합 id 모음
+const COMBO_KEY = 'musicPlayFactory.combos.v1';
+
+export function loadComboDone(store = defaultStore()) {
+  const v = readJSON(store, COMBO_KEY, []);
+  return new Set(Array.isArray(v) ? v.filter((x) => typeof x === 'string') : []);
+}
+
+export function markComboDone(id, store = defaultStore()) {
+  const done = loadComboDone(store);
+  done.add(String(id));
+  writeJSON(store, COMBO_KEY, [...done]);
   return done;
 }
