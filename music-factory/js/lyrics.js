@@ -97,6 +97,16 @@ function hasPersonalInfo(text) {
   return false;
 }
 
+// 고운 말 · 개인 정보 · 링크만 검사해요 (길이는 보지 않아요). 문제가 없으면 null
+// 가사 도우미(lyric-ideas.js)도 아이가 쓴 주제·내용을 이 검사로 먼저 확인해요.
+export function safetyIssue(raw) {
+  const text = tidyLyrics(raw);
+  if (hasBadWord(text)) return 'badWord';
+  if (hasPersonalInfo(text)) return 'personal';
+  if (hasLink(text)) return 'link';
+  return null;
+}
+
 // 가사 검사: { ok, text(정리된 가사), reason, message }
 export function checkLyrics(raw) {
   const text = tidyLyrics(raw);
@@ -104,9 +114,8 @@ export function checkLyrics(raw) {
   if (!text) return fail('empty');
   if ([...text.replace(/\n/g, '')].length > LYRICS_MAX) return fail('tooLong');
   if (text.split('\n').length > LYRICS_MAX_LINES) return fail('tooManyLines');
-  if (hasBadWord(text)) return fail('badWord');
-  if (hasPersonalInfo(text)) return fail('personal');
-  if (hasLink(text)) return fail('link');
+  const issue = safetyIssue(text);
+  if (issue) return fail(issue);
   return { ok: true, text, reason: 'ok', message: MESSAGES.ok };
 }
 

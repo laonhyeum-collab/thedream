@@ -179,7 +179,7 @@
     </div>
     <div class="panel unlock-card">
       <strong>✍️ 가사 쓰기 (교육용 체크)</strong>
-      <p class="uc-text">내 노래에 짧은 가사를 붙여요. 고운 말인지, 개인 정보(이름·전화번호·주소·학교)가 없는지 확인해요. 가사는 이 기기 안에만 저장되고 어디에도 보내지 않아요.</p>
+      <p class="uc-text">내 노래에 짧은 가사를 붙여요. 💡 주제를 쓰면 내 음악에 맞는 가사도 제안해 줘요. 고운 말인지, 개인 정보(이름·전화번호·주소·학교)가 없는지 확인해요. 가사는 이 기기 안에만 저장되고 어디에도 보내지 않아요.</p>
       <p class="uc-state" id="lyricsState"></p>
     </div>
   </div>
@@ -258,6 +258,24 @@
 
 <dialog id="lyricsDialog" class="dlg lyrics-dlg">
   <h3>✍️ 내 노래 가사 쓰기</h3>
+  <section class="lyrics-helper" id="lyricsHelper" aria-label="가사 도우미">
+    <p class="lh-title">💡 가사 도우미 <span>주제를 말하면 내 음악에 맞는 가사를 골라 줘요</span></p>
+    <div class="lh-fields">
+      <label class="lh-field" for="lyricsTopic"><span class="lh-lab">주제 <b>꼭 써요</b></span>
+        <input id="lyricsTopic" type="text" maxlength="20" autocomplete="off" spellcheck="false" placeholder="예) 우리 강아지">
+      </label>
+      <label class="lh-field" for="lyricsContent"><span class="lh-lab">내용 <small>넣고 싶은 말 (없어도 돼요)</small></span>
+        <input id="lyricsContent" type="text" maxlength="30" autocomplete="off" spellcheck="false" placeholder="예) 산책, 공놀이">
+      </label>
+    </div>
+    <p class="lh-shape" id="lyricsShape"></p>
+    <div class="lh-btns">
+      <button type="button" class="wide-btn" id="lyricsSuggest">✨ 가사 만들어 줘</button>
+      <button type="button" class="wide-btn ghost" id="lyricsMore" hidden>🔄 다른 가사 보기</button>
+    </div>
+    <p class="lyrics-msg" id="lyricsIdeaMsg" role="status"></p>
+    <div class="lh-list" id="lyricsIdeas" aria-live="polite"></div>
+  </section>
   <label class="field" for="lyricsInput">짧고 즐거운 가사를 써 봐요 (4줄까지)</label>
   <textarea id="lyricsInput" class="lyrics-input" rows="4" maxlength="120" autocomplete="off" spellcheck="false"
             placeholder="예) 시원한 빙수 한 그릇&#10;친구랑 나눠 먹자"></textarea>
