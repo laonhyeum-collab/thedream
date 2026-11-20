@@ -256,6 +256,7 @@ try {
   await tc.click('#cfgSave');
   await tc.waitForFunction(() => document.querySelector('#cfgResult').textContent.includes('연결 성공'));
   assert.ok((await tc.textContent('#teacherLinkCode')).includes('class=TEST-CLASS'), '다른 기기용 교사 주소');
+  await tc.waitForSelector('#qrBox:not([hidden]) #studentQr svg');   // 로그인한 교사 화면에 학생 QR이 보임
   await snap(tc, 'teacher-admin');
   step('교사: 학생 계정 — 아이디별 작업 저장·입점 상태, 계정 더 만들기');
   await tc.click('[data-tab="accounts"]');
@@ -436,10 +437,59 @@ try {
   await demo.frameLocator('#roomFrame').locator('#go').click();
   assert.equal(await demo.frameLocator('#roomFrame').locator('.card').count(), 16);
 
+  // ───── 4-1. 처음 여는 기기(새 브라우저·시크릿 창) ─────
+  step('새 기기: 연결 정보 없는 학생 앱 → 「우리 반에 연결하기」 → 선생님 주소 붙여 넣기 → 로그인 화면');
+  const nd = await newPage();
+  await nd.goto(`${base}/student/`);
+  await nd.waitForSelector('#connectGate');
+  assert.match(await nd.textContent('#connectGate'), /우리 반에 연결하기/);
+  await snap(nd, 'newdevice-connect');
+  await nd.fill('#connectLink', 'DREAM');
+  await nd.click('#connectGo');
+  assert.match(await nd.textContent('#connectMsg'), /주소 전체/);
+  await nd.fill('#connectLink', `${base}/student/?${q}`);
+  await Promise.all([nd.waitForURL(/api=/), nd.click('#connectGo')]);
+  await nd.waitForSelector('#login:not([hidden]) #loginBtn');
+  assert.equal(await nd.locator('#connectGate').count(), 0, '연결 뒤엔 안내 없음');
+  await nd.goto(`${base}/student/`);   // 주소 없이 다시 열어도 이 기기엔 연결이 남음
+  await nd.waitForSelector('#login:not([hidden]) #loginBtn');
+  await snap(nd, 'newdevice-login');
+
+  step('새 기기: 선생님 주소(QR)로 바로 열면 안내 없이 로그인 화면 · 메타버스도 같음');
+  const nd2 = await newPage({ width: 820, height: 1180 });   // 태블릿
+  await nd2.goto(`${base}/student/?${q}`);
+  await nd2.waitForSelector('#login:not([hidden]) #loginBtn');
+  assert.equal(await nd2.locator('#connectGate').count(), 0);
+  const nw = await newPage();
+  await nw.goto(`${base}/world/`);
+  await nw.waitForSelector('#connectGate');
+  assert.match(await nw.textContent('#connectOffline'), /체험 모드/);
+  const nw2 = await newPage();
+  await nw2.goto(`${base}/world/?${q}`);
+  await nw2.waitForSelector('#lobby');
+  assert.equal(await nw2.locator('#connectGate').count(), 0);
+
+  step('새 기기: 교사 앱 — 연결 설정에 학생 QR · 교사용 링크');
+  const nt = await newPage({ width: 1280, height: 860 });
+  await nt.goto(`${base}/teacher/?${q}`);
+  // 새 기기 교사 앱은 로그인 전이라 탭이 가려져 있어요 → 연결 설정 화면 내용만 확인
+  await nt.waitForSelector('#qrBox:not([hidden]) #studentQr svg', { state: 'attached' });
+  assert.equal(await nt.isHidden('#qrNone'), true);
+  assert.match(await nt.getAttribute('#studentQr', 'data-url'), /student\/\?api=.*class=TEST-CLASS/);
+  assert.match(await nt.textContent('#teacherLinkCode'), /teacher\/\?api=/);
+  await nt.evaluate(() => document.querySelector('#qrBig').click());
+  await nt.waitForSelector('#qrModal .qr-big svg');
+  await snap(nt, 'teacher-qr');
+  await nt.click('#qrModal button:has-text("닫기")');
+  assert.equal(await nt.locator('#qrModal').count(), 0);
+
   // ───── 5. 파일 방식 (저장소 없이) ─────
   step('파일 방식: 학생 제출 파일 → 교사 넣기 → 메타버스 파일 → 월드');
   const fs2 = await newPage({ width: 390, height: 844 });   // 휴대폰 크기
   await fs2.goto(`${base}/student/`);
+  await fs2.waitForSelector('#connectGate');   // 연결 정보 없는 기기: 「우리 반에 연결하기」 먼저
+  await fs2.click('#connectOffline');
+  assert.equal(await fs2.locator('#connectGate').count(), 0, '저장소 없이 하기 → 안내 닫힘');
   await fillPlan(fs2, '별', '별이의 과일 잡기');
   await fs2.goto(`${base}/student/#myapp`);
   await fs2.fill('#appCode', fruit);
@@ -489,6 +539,8 @@ try {
 
   const wf = await newPage();
   await wf.goto(`${base}/world/`);
+  await wf.waitForSelector('#connectGate');
+  await wf.click('#connectOffline');
   await wf.click('#lobby details summary');
   await wf.setInputFiles('#worldFile', worldFile);
   await wf.waitForFunction(() => document.querySelector('#sourceInfo').textContent.includes('메타버스 파일'));

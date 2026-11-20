@@ -336,7 +336,39 @@ function shareLinks() {
   $('#worldLinkCode').textContent = `메타버스: ${mk('../world/')}`;
   $('#worldLinkCode').dataset.url = mk('../world/');
   $('#openWorld').href = mk('../world/');
+  renderQr(cfg.endpoint ? mk('../student/') : '');
 }
+// 학생 앱 주소 QR (연결 정보가 들어 있는 주소만)
+function qrSvg(text) {
+  if (!text || typeof window.qrcode !== 'function') return '';
+  const qr = window.qrcode(0, 'M');
+  qr.addData(text);
+  qr.make();
+  return qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+}
+function renderQr(url) {
+  const svg = qrSvg(url);
+  $('#qrBox').hidden = !svg;
+  $('#qrNone').hidden = !!svg;
+  $('#studentQr').innerHTML = svg;
+  $('#studentQr').dataset.url = url;
+}
+$('#qrBig').onclick = () => {
+  const url = $('#studentQr').dataset.url;
+  const svg = qrSvg(url);
+  if (!svg) return;
+  const big = h('div', { class: 'qr-big' });
+  big.innerHTML = svg;   // 우리가 만든 QR 그림(SVG)만 넣어요
+  const m = h('div', { class: 'modal', id: 'qrModal', role: 'dialog', 'aria-modal': 'true', 'aria-label': '학생 앱 QR 코드 크게 보기', onclick: (e) => { if (e.target === m) m.remove(); } },
+    h('div', { class: 'sheet', style: 'text-align:center' },
+      h('h2', {}, '📱 카메라로 찍어서 우리 반 학생 앱 열기'),
+      big,
+      h('p', { class: 'muted small', style: 'overflow-wrap:anywhere' }, url),
+      h('div', { class: 'row', style: 'justify-content:center' },
+        h('button', { class: 'ghost', onclick: () => window.print() }, '🖨️ 인쇄'),
+        h('button', { class: 'primary', onclick: () => m.remove() }, '닫기'))));
+  document.body.appendChild(m);
+};
 function renderSettings() {
   $('#cfgEndpoint').value = cfg.endpoint;
   $('#cfgClass').value = cfg.classCode;
