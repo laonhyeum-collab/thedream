@@ -2,11 +2,12 @@ import { Game, CHANT, DIFFICULTY } from './game.js';
 import { MotionTracker, W, H, toLuma } from './motion.js';
 import { drawScene, PLAYER_LOOK } from './scene.js';
 import { sfx, voice } from './sound.js';
+import { decideMode, PROBLEM_TEXT, ManualGame, TEAM_LOOK, MANUAL_GOAL } from './fallback.js';
 
 const $ = (id) => document.getElementById(id);
 
 // ---------- 설정 (이 기기에만 기억) ----------
-const settings = { players: '1', difficulty: 'normal', voice: 'on' };
+const settings = { players: '1', difficulty: 'normal', voice: 'on', teams: '2' };
 try { Object.assign(settings, JSON.parse(localStorage.getItem('mugunghwa.settings') || '{}')); } catch {}
 function saveSettings() {
   try { localStorage.setItem('mugunghwa.settings', JSON.stringify(settings)); } catch {}
@@ -46,10 +47,18 @@ let tracker = new MotionTracker(1);
 let luma = new Uint8Array(W * H);
 let lastVideoTime = -1;
 let lastProcess = 0;
+let lastMode = 'camera'; // 마지막으로 한 놀이: 'camera' | 'buttons'
+
+/** 카메라를 켜 보기 전에 이 기기에서 쓸 수 있는지 */
+function cameraEnv() {
+  return { secure: !!window.isSecureContext, hasGetUserMedia: !!navigator.mediaDevices?.getUserMedia };
+}
 
 async function startCamera() {
-  if (!window.isSecureContext) throw Object.assign(new Error('insecure'), { name: 'InsecureError' });
-  if (!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error('nocam'), { name: 'NotFoundError' });
+  const pre = decideMode(cameraEnv());
+  if (pre.mode !== 'camera') {
+    throw Object.assign(new Error(pre.reason), { name: pre.reason === 'insecure' ? 'InsecureError' : 'NotFoundError' });
+  }
   stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
     audio: false,
@@ -317,44 +326,194 @@ function frame(now) {
       });
     }
   }
+  if (screen === 'manual' && manual) {
+    for (const ev of manual.update(dt)) handleManualEvent(ev);
+    if (manual.phase === 'chant') renderManualBanner();
+  }
   if (screen === 'setup' || screen === 'play') drawOverlay();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
 
-// ---------- 버튼 ----------
-$('startBtn').addEventListener('click', async () => {
+// ---------- 버튼 놀이 (카메라 없이) ----------
+let manual = null;
+const teamsBox = $('teams');
+const chantBtn = $('chantBtn');
+
+function newManualGame() {
+  manual = new ManualGame({ teams: Number(settings.teams) || 2 });
+  teamsBox.replaceChildren(...manual.teams.map((_, i) => {
+    const look = TEAM_LOOK[i];
+    const card = document.createElement('div');
+    card.className = 'team';
+    card.style.setProperty('--team', look.color);
+    card.innerHTML = `
+      <div class="team-head"><span class="team-emoji" aria-hidden="true">${look.emoji}</span><b>${look.name}</b></div>
+      <div class="track" role="img"><div class="fill"></div><span class="goal" aria-hidden="true">🏁</span></div>
+      <div class="team-info"><span class="team-steps"></span><span class="team-caught"></span></div>
+      <button type="button" class="team-btn" data-team="${i}"></button>`;
+    return card;
+  }));
+  renderManual();
+}
+
+function renderManualBanner() {
+  const b = $('manualBanner');
+  if (manual.phase === 'chant') {
+    b.className = 'banner';
+    let k = 0;
+    const done = manual.chantProgress;
+    b.replaceChildren(...CHANT.map((ch) => {
+      const span = document.createElement('span');
+      span.textContent = ch;
+      if (ch !== ' ') { span.className = k < done ? 'on' : 'off'; k++; }
+      return span;
+    }));
+  } else if (manual.phase === 'freeze') {
+    b.className = 'banner freeze';
+    b.textContent = '얼음! 꼼짝 마!';
+  } else {
+    b.className = 'banner count';
+    b.textContent = manual.phase === 'end' ? '도착! 🎉' : '준비~';
+  }
+}
+
+function renderManual() {
+  if (!manual) return;
+  const ph = manual.phase;
+  $('manual').dataset.phase = ph;
+  renderManualBanner();
+  $('manualTagger').textContent = {
+    ready: '🧑‍🏫 선생님이 술래 버튼을 눌러요!',
+    chant: '🙈 술래가 뒤돌았어요. 살금살금 앞으로!',
+    freeze: '👀 술래가 봐요! 움직인 팀을 눌러요.',
+    end: '🎉 술래에게 도착했어요!',
+  }[ph];
+  chantBtn.disabled = ph === 'chant' || ph === 'end';
+  chantBtn.textContent = ph === 'chant' ? '🌺 부르는 중…' : '🌺 무궁화 꽃이 피었습니다';
+  $('teamChoice').hidden = manual.round > 0;
+  teamsBox.querySelectorAll('.team').forEach((card, i) => {
+    const t = manual.teams[i];
+    const look = TEAM_LOOK[i];
+    card.querySelector('.fill').style.width = `${(t.steps / MANUAL_GOAL) * 100}%`;
+    card.querySelector('.track').setAttribute('aria-label', `${look.name} ${t.steps}걸음 / ${MANUAL_GOAL}걸음`);
+    card.querySelector('.team-steps').textContent = `👣 ${t.steps} / ${MANUAL_GOAL}`;
+    card.querySelector('.team-caught').textContent = `😮 ${t.caught}번`;
+    card.classList.toggle('winner', manual.winner === i);
+    card.classList.toggle('caught', ph === 'freeze' && t.caughtThisFreeze);
+    const btn = card.querySelector('.team-btn');
+    if (ph === 'chant') {
+      btn.className = 'team-btn go'; btn.disabled = false; btn.textContent = '👣 앞으로';
+    } else if (ph === 'freeze') {
+      btn.className = 'team-btn moved'; btn.disabled = t.caughtThisFreeze;
+      btn.textContent = t.caughtThisFreeze ? '↩ 뒤로 갔어요' : '😮 움직였어요';
+    } else {
+      btn.className = 'team-btn wait'; btn.disabled = true;
+      btn.textContent = ph === 'end' ? (manual.winner === i ? '🏆 이겼어요!' : '수고했어요') : '기다려요';
+    }
+  });
+}
+
+function handleManualEvent(ev) {
+  if (!ev) return;
+  if (ev.type === 'phase' && ev.phase === 'chant') { sfx.go(); voice.chant(ev.length); }
+  else if (ev.type === 'phase' && ev.phase === 'freeze') { sfx.freeze(); voice.say('얼음!', { rate: 1.2, pitch: 1.3 }); }
+  else if (ev.type === 'step') sfx.step();
+  else if (ev.type === 'caught') { sfx.caught(); voice.say(`${TEAM_LOOK[ev.team].name}, 움직였다!`, { rate: 1.2 }); }
+  else if (ev.type === 'win') {
+    sfx.win();
+    voice.say(`${TEAM_LOOK[ev.team].name} 도착!`);
+    setTimeout(() => { if (screen === 'manual' && manual?.phase === 'end') showManualResult(); }, 2200);
+  }
+  renderManual();
+}
+
+function showManualResult() {
+  const w = manual.winner;
+  $('resultEmoji').textContent = TEAM_LOOK[w].emoji;
+  $('resultTitle').textContent = `${TEAM_LOOK[w].name} 이겼어요!`;
+  const caught = manual.teams.map((t, i) => `${TEAM_LOOK[i].name} ${t.caught}번`).join(', ');
+  $('resultText').textContent = `${manual.round}번 만에 술래에게 도착! (걸린 횟수: ${caught})`;
+  show('result');
+}
+
+function startManual() {
+  stopCamera();
   sfx.unlock();
   voice.enabled = settings.voice === 'on';
   voice.unlock();
+  lastMode = 'buttons';
+  newManualGame();
+  show('manual');
+}
+
+function stopManual() {
+  voice.stop();
+  manual = null;
+}
+
+chantBtn.addEventListener('click', () => { sfx.unlock(); handleManualEvent(manual?.startChant()); });
+teamsBox.addEventListener('click', (e) => {
+  const b = e.target.closest('.team-btn');
+  if (!b || !manual || b.disabled) return;
+  const i = Number(b.dataset.team);
+  handleManualEvent(manual.phase === 'chant' ? manual.step(i) : manual.markMoved(i));
+});
+$('teamChoice').addEventListener('click', (e) => {
+  if (e.target.closest('button') && manual?.phase === 'ready') newManualGame();
+});
+$('manualQuitBtn').addEventListener('click', () => { stopManual(); show('home'); });
+
+// ---------- 버튼 ----------
+function showProblem(reason) {
+  stopCamera();
+  $('errorText').textContent = PROBLEM_TEXT[reason] || PROBLEM_TEXT.unknown;
+  show('error');
+}
+
+// 놀이 시작 → 먼저 카메라 안내 화면
+$('startBtn').addEventListener('click', () => {
+  sfx.unlock();
+  voice.enabled = settings.voice === 'on';
+  voice.unlock();
+  show('guide');
+});
+
+// 안내를 읽고 큰 버튼을 누르면 그때 카메라 허락을 물어봄
+$('camStartBtn').addEventListener('click', async () => {
+  sfx.unlock();
+  voice.enabled = settings.voice === 'on';
+  lastMode = 'camera';
   tracker = new MotionTracker(Number(settings.players));
   const two = settings.players === '2';
   $('setupTitle').textContent = two ? '1P는 왼쪽, 2P는 오른쪽에 서요' : '카메라 앞에 서 보세요';
   $('setupHint').textContent = two
     ? '가운데 하얀 줄을 넘지 않게! 팔을 위아래로 흔들면 👋 숫자가 올라가요.'
     : '팔까지 다 보이게 조금 떨어져 서요. 팔을 위아래로 흔들면 👋 숫자가 올라가요.';
+  const pre = decideMode(cameraEnv());
+  if (pre.mode !== 'camera') { showProblem(pre.reason); return; }
   try {
     moveCamTo($('setupCam'));
     show('setup');
     await startCamera();
   } catch (err) {
-    stopCamera();
-    const msg = {
-      NotAllowedError: '카메라 사용을 허락해야 술래가 볼 수 있어요. 주소창 옆 카메라 아이콘이나 기기 설정에서 허락해 주세요.',
-      NotFoundError: '이 기기에서 카메라를 찾지 못했어요. 카메라가 있는 노트북이나 태블릿에서 해 주세요.',
-      NotReadableError: '다른 앱이 카메라를 쓰고 있어요. 그 앱을 닫고 다시 해 주세요.',
-      InsecureError: '안전한 주소(https)에서 열어야 카메라를 쓸 수 있어요.',
-    }[err.name] || '카메라를 켜는 중에 문제가 생겼어요. 다시 해 볼까요?';
-    $('errorText').textContent = msg;
-    show('error');
+    showProblem(decideMode({ ...cameraEnv(), error: err }).reason);
   }
 });
 
+$('guideBackBtn').addEventListener('click', () => show('home'));
+$('guideManualBtn').addEventListener('click', startManual);
+$('errorManualBtn').addEventListener('click', startManual);
+$('errorRetryBtn').addEventListener('click', () => $('camStartBtn').click());
 $('readyBtn').addEventListener('click', () => { sfx.unlock(); beginPlay(); });
 $('backBtn').addEventListener('click', () => { stopCamera(); show('home'); });
 $('quitBtn').addEventListener('click', () => { stopPlay(); stopCamera(); show('home'); });
-$('againBtn').addEventListener('click', () => { if (stream) beginPlay(); else $('startBtn').click(); });
-$('homeBtn').addEventListener('click', () => { stopPlay(); stopCamera(); show('home'); });
+$('againBtn').addEventListener('click', () => {
+  if (lastMode === 'buttons') startManual();
+  else if (stream) beginPlay();
+  else $('camStartBtn').click();
+});
+$('homeBtn').addEventListener('click', () => { stopPlay(); stopManual(); stopCamera(); show('home'); });
 $('errorBtn').addEventListener('click', () => show('home'));
 
 // 다른 앱으로 갔다 오면 술래 목소리 멈춤
@@ -382,4 +541,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // 시험용으로 상태를 들여다볼 수 있게 (영상은 들어 있지 않음)
-window.__mugunghwa = { get game() { return game; }, get tracker() { return tracker; }, get screen() { return screen; } };
+window.__mugunghwa = {
+  get game() { return game; }, get tracker() { return tracker; }, get screen() { return screen; },
+  get manual() { return manual; }, get mode() { return lastMode; },
+};

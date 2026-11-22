@@ -50,6 +50,25 @@
     </div>
   </section>
 
+  <!-- 카메라 안내 (놀이 전에 꼭 보여 줌) -->
+  <section id="guide" class="screen" hidden>
+    <div class="card guide-card">
+      <div class="result-emoji" aria-hidden="true">📷</div>
+      <h2>카메라가 술래가 돼요</h2>
+      <ul class="guide-list">
+        <li><span aria-hidden="true">👀</span><span>카메라는 여러분이 <b>움직이는지만</b> 봐요.</span></li>
+        <li class="guide-key"><span aria-hidden="true">🔒</span><span><b>카메라 영상은 저장·전송되지 않아요.</b></span></li>
+        <li><span aria-hidden="true">💻</span><span>이 컴퓨터 안에서만 살펴보고 바로 잊어요. 인터넷으로 보내지 않아요.</span></li>
+        <li><span aria-hidden="true">🙋</span><span>버튼을 누르면 "카메라를 써도 될까요?" 하고 물어봐요. <b>허용</b>을 눌러 주세요.</span></li>
+      </ul>
+      <button id="camStartBtn" class="big">📷 카메라 켜고 시작!</button>
+      <div class="row">
+        <button id="guideBackBtn" class="ghost">← 처음으로</button>
+        <button id="guideManualBtn" class="ghost">🖐️ 카메라 없이 버튼으로 놀기</button>
+      </div>
+    </div>
+  </section>
+
   <!-- 자리 잡기 -->
   <section id="setup" class="screen" hidden>
     <h2 id="setupTitle">카메라 앞에 서 보세요</h2>
@@ -90,13 +109,36 @@
     </div>
   </section>
 
-  <!-- 카메라 문제 -->
+  <!-- 카메라 문제 → 버튼 놀이 권하기 -->
   <section id="error" class="screen" hidden>
     <div class="card">
-      <div class="result-emoji">📷</div>
+      <div class="result-emoji" aria-hidden="true">📷</div>
       <h2>카메라를 켤 수 없어요</h2>
       <p id="errorText" class="lead"></p>
-      <button id="errorBtn" class="big">처음으로</button>
+      <p class="lead">괜찮아요! <b>버튼으로</b> 다 같이 놀 수 있어요.<br>선생님이 술래 버튼을 눌러 주세요.</p>
+      <button id="errorManualBtn" class="big">🖐️ 버튼으로 놀기</button>
+      <div class="row">
+        <button id="errorBtn" class="ghost">← 처음으로</button>
+        <button id="errorRetryBtn" class="ghost">📷 카메라 다시 해 보기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 버튼 놀이 (카메라 없이) -->
+  <section id="manual" class="screen" hidden>
+    <div class="manual-wrap">
+      <div id="manualBanner" class="banner count" aria-live="polite">준비~</div>
+      <p id="manualTagger" class="tagger" aria-live="polite"></p>
+      <button id="chantBtn" class="chant-btn">🌺 무궁화 꽃이 피었습니다</button>
+      <fieldset id="teamChoice" class="choice" data-setting="teams">
+        <legend>몇 팀이 할까요?</legend>
+        <button type="button" data-value="2">2팀</button>
+        <button type="button" data-value="3">3팀</button>
+        <button type="button" data-value="4">4팀</button>
+      </fieldset>
+      <div id="teams" class="teams"></div>
+      <p class="manual-help">부를 때 → <b>👣 앞으로</b> · 얼음일 때 움직이면 → <b>😮 움직였어요</b> (3걸음 뒤로)</p>
+      <button id="manualQuitBtn" class="ghost">그만하기</button>
     </div>
   </section>
 

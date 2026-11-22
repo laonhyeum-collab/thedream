@@ -142,6 +142,7 @@ const bothVideo = makeVideo(path.join(OUT, 'both-move.y4m'), { leftMoves: true, 
   await choose(page, 'difficulty', 'hawk');
   await choose(page, 'voice', 'off');
   await page.click('#startBtn');
+  await page.click('#camStartBtn');
   await page.waitForFunction(() => window.__mugunghwa.screen === 'setup');
   await sleep(1500);
   let s = await state(page);
@@ -206,6 +207,7 @@ const bothVideo = makeVideo(path.join(OUT, 'both-move.y4m'), { leftMoves: true, 
   await choose(page, 'difficulty', 'easy');
   await choose(page, 'voice', 'on');
   await page.click('#startBtn');
+  await page.click('#camStartBtn');
   await page.waitForFunction(() => window.__mugunghwa.screen === 'setup');
   await sleep(1000);
   await page.screenshot({ path: path.join(OUT, '06-setup-solo.png') });
@@ -227,6 +229,7 @@ const bothVideo = makeVideo(path.join(OUT, 'both-move.y4m'), { leftMoves: true, 
   await choose(page, 'players', '1');
   await choose(page, 'difficulty', 'normal');
   await page.click('#startBtn');
+  await page.click('#camStartBtn');
   await page.waitForFunction(() => window.__mugunghwa.screen === 'setup');
   await sleep(800);
   await page.click('#readyBtn');
@@ -270,16 +273,45 @@ const bothVideo = makeVideo(path.join(OUT, 'both-move.y4m'), { leftMoves: true, 
   await browser.close();
 }
 
-// ---- 5) 카메라를 허락하지 않으면 ----
+// ---- 5) 카메라를 허락하지 않으면 → 버튼 놀이 ----
 {
-  console.log('\n[5] 카메라 허락 안 함');
-  const { browser, page } = await open(null, { grant: false });
+  console.log('\n[5] 카메라 허락 안 함 → 버튼 놀이');
+  const { browser, page, problems } = await open(null, { grant: false });
   await page.click('#startBtn');
+  check('놀이 시작 → 먼저 카메라 안내 화면', await page.evaluate(() => window.__mugunghwa.screen) === 'guide');
+  const guide = await page.textContent('#guide');
+  check('안내: 카메라 영상은 저장·전송되지 않아요', guide.includes('저장·전송되지 않아요'));
+  await page.click('#camStartBtn');
   await page.waitForFunction(() => window.__mugunghwa.screen === 'error', null, { timeout: 10000 }).catch(() => {});
   const scr = await page.evaluate(() => window.__mugunghwa.screen);
   const msg = await page.textContent('#errorText');
   check('친절한 안내 화면이 나옴', scr === 'error' && msg.includes('허락'), msg);
   await page.screenshot({ path: path.join(OUT, '07-camera-denied.png') });
+  await page.click('#errorManualBtn');
+  const m = () => page.evaluate(() => {
+    const g = window.__mugunghwa.manual;
+    return { screen: window.__mugunghwa.screen, phase: g?.phase, teams: g?.teams.map((t) => ({ steps: t.steps, caught: t.caught })), winner: g?.winner };
+  });
+  let st = await m();
+  check('버튼 놀이 화면으로 감', st.screen === 'manual' && st.phase === 'ready' && st.teams.length === 2, JSON.stringify(st));
+  await page.click('#chantBtn');
+  for (let i = 0; i < 4; i++) await page.click('.team-btn[data-team="0"]');
+  await page.click('.team-btn[data-team="1"]');
+  st = await m();
+  check('부를 때 👣 앞으로 누르면 한 걸음씩', st.phase === 'chant' && st.teams[0].steps === 4 && st.teams[1].steps === 1, JSON.stringify(st.teams));
+  await page.waitForFunction(() => window.__mugunghwa.manual.phase === 'freeze', null, { timeout: 8000 });
+  await page.click('.team-btn[data-team="0"]');
+  st = await m();
+  check('얼음 때 😮 움직였어요 → 3걸음 뒤로', st.teams[0].steps === 1 && st.teams[0].caught === 1, JSON.stringify(st.teams));
+  await page.click('#chantBtn');
+  await page.evaluate(() => { window.__mugunghwa.manual.teams[1].steps = 9; });
+  await page.click('.team-btn[data-team="1"]');
+  await page.waitForFunction(() => window.__mugunghwa.screen === 'result', null, { timeout: 6000 }).catch(() => {});
+  const title = await page.textContent('#resultTitle');
+  check('끝까지 간 팀이 이김 → 결과 화면', title.includes('곰팀'), title);
+  await page.click('#againBtn');
+  check('한 번 더 → 다시 버튼 놀이', await page.evaluate(() => window.__mugunghwa.screen) === 'manual');
+  check('오류 없음', problems.length === 0, problems.join(' | '));
   await browser.close();
 }
 
@@ -297,6 +329,7 @@ const bothVideo = makeVideo(path.join(OUT, 'both-move.y4m'), { leftMoves: true, 
   await page.click('.choice[data-setting="players"] button[data-value="2"]');
   await page.click('.choice[data-setting="voice"] button[data-value="off"]');
   await page.click('#startBtn');
+  await page.click('#camStartBtn');
   await page.waitForFunction(() => window.__mugunghwa.screen === 'setup');
   await page.click('#readyBtn');
   await page.waitForFunction(() => window.__mugunghwa.game?.phase === 'chant', null, { timeout: 15000 });
