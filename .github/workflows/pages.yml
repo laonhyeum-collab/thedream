@@ -43,6 +43,10 @@ jobs:
         working-directory: music-factory
         run: npm test
 
+      - name: 눈송이 짝 맞추기 테스트
+        working-directory: games/snow-match
+        run: npm test
+
       - name: 배포할 파일 모으기
         run: |
           mkdir -p _site
@@ -56,6 +60,7 @@ jobs:
           cp -r myappmaker/index.html myappmaker/student myappmaker/teacher myappmaker/world myappmaker/shared _site/myappmaker/
           mkdir -p _site/myappmaker/docs && cp myappmaker/docs/*.docx _site/myappmaker/docs/
           mkdir -p _site/daeun/comfort-food && cp daeun/comfort-food/index.html daeun/comfort-food/qr.png daeun/comfort-food/qr-card.png _site/daeun/comfort-food/
+          mkdir -p _site/games/snow-match && cp -r games/snow-match/index.html games/snow-match/style.css games/snow-match/js games/snow-match/data _site/games/snow-match/
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v5
