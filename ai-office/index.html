@@ -254,6 +254,37 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
 .mtg .act{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;padding:4px 0}
 .mtg .more-r{display:flex;gap:6px;margin-top:10px}
 .mtg .more-r input{flex:1;min-width:0}
+.libbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 8px}
+.libbar input{flex:1;min-width:180px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel2)}
+.seg button{border:0;background:none;padding:6px 14px;font:inherit;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.libcats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.libcats button{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 11px;font:inherit;font-size:12.5px;cursor:pointer;color:var(--ink)}
+.libcats button[aria-pressed="true"]{background:var(--soft);border-color:var(--accent);color:var(--accent);font-weight:700}
+.projgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.proj{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.proj.open{grid-column:1/-1}
+.proj .ph{display:flex;align-items:center;gap:8px;cursor:pointer}
+.proj .pi{font-size:22px;line-height:1}
+.proj .pn{font-weight:800;font-size:15px}
+.proj .pk{font-size:11px;font-weight:700;color:var(--muted)}
+.proj .pc{display:flex;gap:5px;flex-wrap:wrap}
+.proj .pc span{font-size:11.5px;padding:1px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line)}
+.proj .pa{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.proj .pa a{font-size:13px;font-weight:700}
+.proj .psec{margin-top:6px}
+.proj .psec h4{margin:8px 0 2px;font-size:13px;color:var(--muted)}
+.drow{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;padding:7px 0;border-top:1px dashed var(--line)}
+.drow .dt{min-width:0;flex:1}
+.drow .dt b{font-weight:600;font-size:13.5px;overflow-wrap:anywhere;cursor:pointer}
+.drow .dt b:hover{text-decoration:underline}
+.drow .dm{font-size:11.5px;color:var(--muted)}
+.drow .da{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pjchip{border:0;background:var(--soft);color:var(--accent);font:inherit;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;cursor:pointer}
+#docRel{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+#docRel h4{margin:0 0 4px;font-size:13px}
+#docRel .rl{display:flex;flex-wrap:wrap;gap:6px}
 .prep{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .prep span{font-size:11.5px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
 .prep .ok{color:var(--ok);border-color:var(--ok)}.prep .wip{color:var(--warn);border-color:var(--warn)}.prep .no{color:var(--bad);border-color:var(--bad)}
@@ -435,8 +466,17 @@ form.order input[type=checkbox]{flex:none}
 
   <section class="panel" data-pane="docs" hidden>
     <h2>자료실</h2>
-    <p class="note" style="margin-top:-4px">AI 직원이 만든 수업 기획안, 강의 자료, 브리핑이 모여요. 구글 드라이브 링크가 있으면 함께 보여줘요.</p>
-    <div class="list" id="docList"></div>
+    <p class="note" style="margin-top:-4px">앱·수업·채널 같은 <b>프로젝트</b>마다 앱 주소, QR, 설명서, 교안, 영상, 회의록을 한 화면에 모았어요. 종류별로도 볼 수 있어요.</p>
+    <div class="libbar">
+      <div class="seg" role="tablist" aria-label="보기 방식">
+        <button type="button" data-libview="project" aria-selected="true">프로젝트별</button>
+        <button type="button" data-libview="cat" aria-selected="false">종류별</button>
+        <button type="button" data-libview="recent" aria-selected="false">최신순</button>
+      </div>
+      <input id="libQ" type="search" placeholder="자료 검색 (예: 레고, QR, 엔트리 3)" aria-label="자료 검색">
+    </div>
+    <div class="libcats" id="libCats"></div>
+    <div id="docList"></div>
 
   </section>
 
@@ -506,6 +546,7 @@ form.order input[type=checkbox]{flex:none}
     <div class="sheet-h"><h2 id="docTitle"></h2><button class="btn ghost" id="docClose">닫기</button></div>
     <div class="acts" id="docFiles"></div>
     <div class="doc-view" id="docBody"></div>
+    <div id="docRel"></div>
   </div>
 </div>
 
@@ -839,10 +880,10 @@ function render(){
     + (closed.length ? `<button class="more" type="button" data-toggle="closedTasks">${showClosed.closedTasks?"완료·반려 숨기기":`완료·반려된 업무 ${closed.length}건 보기`}</button>${showClosed.closedTasks?`<div class="list" style="opacity:.75">${closed.map(t=>taskCard(t,false)).join("")}</div>`:""}` : "");
   const sc = schedule.filter(s=>s.date>=today).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
   $("#schedList").innerHTML = sc.length ? sc.map(s=>`<div class="d"><div class="dd ${s.date===today?"today":""}">${esc(s.date.slice(5).replace("-","/"))}${s.time?`<br>${esc(s.time)}`:""}</div><div>${deptChip(s.dept)} ${esc(s.title)}${s.note?`<div class="note">${esc(s.note)}</div>`:""}</div></div>`).join("") : `<div class="empty">아직 잡힌 일정이 없어요. 전략부서가 첫 출근 때 2주치 운영 일정을 짜요.</div>`;
-  $("#docList").innerHTML = docs.length ? docs.map(d=>`<div class="item"><div class="h">${deptChip(d.dept)}<span class="note">${esc(d.team||"")} · ${esc(fmtDay(d.createdAt))}</span></div><div class="title">${esc(d.title)}</div><div class="acts"><button class="btn ghost" data-doc="${esc(d._id)}">자료 보기</button>${safeUrl(d.driveUrl)?`<a href="${esc(d.driveUrl)}" target="_blank" rel="noopener">구글 드라이브</a>`:""}</div>${fileLinks(d)?`<div class="acts">${fileLinks(d)}</div>`:""}</div>`).join("") : `<div class="empty">아직 만든 자료가 없어요. 승인한 수업은 기획안, 강의 자료, 활동지로 이곳에 저장돼요.</div>`;
+  renderLibrary();
   $("#appList").innerHTML = apps.length ? apps.map(a=>{
     const st=(a.status||"운영 중"); const cls=st.replace(/\s/g,"");
-    const links=[safeUrl(a.liveUrl)?`<a href="${esc(a.liveUrl)}" target="_blank" rel="noopener">웹에서 열기</a>`:"", safeUrl(a.artifactUrl)?`<a href="${esc(a.artifactUrl)}" target="_blank" rel="noopener">Claude에서 열기</a>`:"", safeUrl(a.repoUrl)?`<a href="${esc(a.repoUrl)}" target="_blank" rel="noopener">코드</a>`:""].filter(Boolean).join("");
+    const links=[safeUrl(a.liveUrl)?`<a href="${esc(a.liveUrl)}" target="_blank" rel="noopener">웹에서 열기</a>`:"", safeUrl(a.artifactUrl)?`<a href="${esc(a.artifactUrl)}" target="_blank" rel="noopener">Claude에서 열기</a>`:"", safeUrl(a.repoUrl)?`<a href="${esc(a.repoUrl)}" target="_blank" rel="noopener">코드</a>`:"", (()=>{ const p=(typeof libProjects==="function"?libProjects():[]).find(x=>x.appId===a._id); if(!p) return ""; const n=docs.filter(d=>docMeta(d).proj===p.id).length; return `<button class="pjchip" type="button" data-proj="${esc(p.id)}">📂 관련 자료 ${n}개 (교안·설명서·QR)</button>`; })()].filter(Boolean).join("");
     return `<div class="app"><div class="h" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="nm">${esc(a.name)}</span><span class="st st-${esc(cls)}">${esc(st)}</span></div>
       <div class="meta">${esc(a.summary||"")}</div>
       <div class="meta">${esc(a.kind||"")}${a.audience?" · "+esc(a.audience):""}${a.lastCheck?" · 점검 "+esc(fmtDay(a.lastCheck)):""}</div>
@@ -857,7 +898,7 @@ function render(){
 function openDoc(id){
   const d = docs.find(x=>x._id===id); if(!d) return;
   docLinkedOpen=id;
-  $("#docTitle").textContent=d.title; $("#docBody").innerHTML=esc(d.body||"(내용 없음)").replace(/^(■[^\n]*)$/gm,"<b>$1</b>"); $("#docFiles").innerHTML=fileLinks(d); $("#docView").hidden=false; document.body.style.overflow="hidden"; $("#docBody").scrollTop=0;
+  $("#docTitle").textContent=d.title; $("#docBody").innerHTML=esc(d.body||"(내용 없음)").replace(/^(■[^\n]*)$/gm,"<b>$1</b>"); $("#docFiles").innerHTML=fileLinks(d); $("#docRel").innerHTML=relatedHtml(d); $("#docView").hidden=false; document.body.style.overflow="hidden"; $("#docBody").scrollTop=0;
 }
 const closeDoc=()=>{ $("#docView").hidden=true; docLinkedOpen=null; document.body.style.overflow=""; };
 $("#docClose").addEventListener("click",closeDoc);
@@ -1280,6 +1321,60 @@ document.addEventListener("click", e=>{
   const b=e.target.closest("[data-mtmore]");
   if(b){ const m=meetings.find(x=>x._id===b.dataset.mtmore); const v=(document.getElementById("mtc-"+b.dataset.mtmore)?.value||"").trim(); if(!m) return; if(!v){ $("#meetMsg").textContent="더할 의견을 적어 주세요."; document.getElementById("meetH").scrollIntoView({behavior:"smooth"}); return; } document.getElementById("meetH").scrollIntoView({behavior:"smooth"}); runMeeting(m, v); }
 });
+
+// ---------- Library (자료실: 프로젝트·종류) ----------
+let library={}; let libView="project", libCat="", libOpen="", libQ="";
+try{ libView=localStorage.getItem("office-libview")||"project"; }catch(_){}
+const LIB_CATS=[["lesson","📘","교안·수업자료"],["app","🧩","앱·게임 문서"],["media","🎬","영상·채널"],["brand","🎨","브랜드·디자인"],["report","📊","보고·브리핑"],["meeting","🗣","회의록"],["rule","📋","규칙·양식"],["etc","📁","기타"]];
+const catName=c=>(LIB_CATS.find(x=>x[0]===c)||LIB_CATS[LIB_CATS.length-1]);
+function libProjects(){ const p=Array.isArray(library.projects)?library.projects:[]; return [...p, {id:"etc", name:"분류 전 자료", icon:"📁", kind:"기타"}]; }
+const GUESS_P=[[/픽셀|pixel/i,"pixel-magic-lab"],[/MY APP MAKER|메타버스|매타버스|myapp/i,"myappmaker"],[/뮤직|music/i,"music-factory"],[/무궁화/,"mugunghwa"],[/레고/,"lego-science"],[/엔트리/,"entry"],[/프롬프트코딩|프롬프트 코딩|ai-prompt/i,"prompt-coding"],[/주간 게임|게임 개발 기획|교육용 게임/,"weekly-games"],[/수익화|이룸|마케팅/,"revenue"],[/유튜브|채널|쇼츠|목소리/,"youtube"],[/로고|브랜드|이름|상표|캐릭터/,"brand"],[/브리핑|업무 분장|협조 규칙|양식|운영안/,"office"]];
+const GUESS_C=[[/회의록/,"meeting"],[/브리핑|보고서|제안서|점검|수익화/,"report"],[/양식|규칙|분장/,"rule"],[/교안|수업|활동지|지도안|차시/,"lesson"],[/쇼츠|유튜브|채널|영상|목소리/,"media"],[/로고|브랜드|디자인|이름/,"brand"],[/앱|게임|업데이트|QR|설정|안내서|수정/,"app"]];
+function docMeta(d){ const a=(library.assign||{})[d._id]||[]; const t=(d.title||"")+" "+(d.team||"");
+  const cat=d.cat||a[0]||(GUESS_C.find(([r])=>r.test(t))||[0,"etc"])[1];
+  let proj=d.project||a[1]||(GUESS_P.find(([r])=>r.test(t))||[0,""])[1];
+  if(!libProjects().some(p=>p.id===proj)) proj="etc";
+  return {cat, proj}; }
+function docRow(d, showProj){ const m=docMeta(d); const p=libProjects().find(x=>x.id===m.proj); const c=catName(m.cat);
+  return `<div class="drow"><div class="dt"><b data-doc="${esc(d._id)}">${esc(d.title)}</b><div class="dm">${c[1]} ${esc(c[2])} · ${esc(fmtDay(d.createdAt))}${d.team?" · "+esc(d.team):""} ${showProj&&p&&p.id!=="etc"?`<button class="pjchip" type="button" data-proj="${esc(p.id)}">${esc(p.icon||"")} ${esc(p.name)}</button>`:""}</div></div>
+    <div class="da"><button class="btn ghost" data-doc="${esc(d._id)}">보기</button>${safeUrl(d.driveUrl)?`<a href="${esc(d.driveUrl)}" target="_blank" rel="noopener">드라이브</a>`:""}</div></div>`; }
+function libFilter(list){ const q=libQ.trim().toLowerCase(); if(!q) return list; const ws=q.split(/\s+/); return list.filter(d=>{ const h=((d.title||"")+" "+(d.team||"")+" "+(d.body||"").slice(0,3000)).toLowerCase(); return ws.every(w=>h.includes(w)); }); }
+function projQR(list){ const out=[]; list.forEach(d=>(d.files||[]).forEach(f=>{ if(/QR/i.test(f.name||"")&&safeUrl(f.url)) out.push(f); })); return out; }
+function renderLibrary(){
+  if(!$("#docList")) return;
+  document.querySelectorAll("[data-libview]").forEach(b=>b.setAttribute("aria-selected", b.dataset.libview===libView));
+  const all=libFilter(docs);
+  $("#libCats").innerHTML = libView==="cat" ? [["","🗂","전체"],...LIB_CATS].map(([id,ic,nm])=>{ const n=all.filter(d=>!id||docMeta(d).cat===id).length; return (n||!id)?`<button type="button" data-libcat="${id}" aria-pressed="${libCat===id}">${ic} ${esc(nm)} ${n}</button>`:""; }).join("") : "";
+  if(!docs.length){ $("#docList").innerHTML=`<div class="empty">아직 만든 자료가 없어요.</div>`; return; }
+  if(libView==="recent"){ $("#docList").innerHTML = all.length? `<div class="item">${all.map(d=>docRow(d,true)).join("")}</div>` : `<div class="empty">찾는 자료가 없어요.</div>`; return; }
+  if(libView==="cat"){ const list=all.filter(d=>!libCat||docMeta(d).cat===libCat);
+    const groups=LIB_CATS.map(([id,ic,nm])=>[id,ic,nm,list.filter(d=>docMeta(d).cat===id)]).filter(g=>g[3].length);
+    $("#docList").innerHTML = groups.length? groups.map(([id,ic,nm,ds])=>`<div class="item"><div class="title">${ic} ${esc(nm)} <span class="note">${ds.length}</span></div>${ds.map(d=>docRow(d,true)).join("")}</div>`).join("") : `<div class="empty">찾는 자료가 없어요.</div>`; return; }
+  // project view
+  const byP={}; all.forEach(d=>{ const m=docMeta(d); (byP[m.proj]=byP[m.proj]||[]).push(d); });
+  const ps=libProjects().filter(p=>(byP[p.id]||[]).length || (!libQ && p.appId));
+  $("#docList").innerHTML = ps.length ? `<div class="projgrid">${ps.map(p=>{
+    const ds=byP[p.id]||[]; const open=libOpen===p.id || (libQ && ps.length<=2);
+    const app=p.appId? apps.find(a=>a._id===p.appId) : null; const qr=projQR(ds);
+    const counts=LIB_CATS.map(([id,ic,nm])=>[ic,nm,ds.filter(d=>docMeta(d).cat===id).length]).filter(x=>x[2]);
+    const acts=[app&&safeUrl(app.liveUrl)?`<a href="${esc(app.liveUrl)}" target="_blank" rel="noopener">▶ 앱 열기</a>`:"", app&&safeUrl(app.artifactUrl)?`<a href="${esc(app.artifactUrl)}" target="_blank" rel="noopener">▶ 열기</a>`:"", ...(p.links||[]).filter(l=>safeUrl(l.url)).map(l=>`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.name)}</a>`), qr.length?qr.map(f=>`<button class="btn ghost dl" data-dl="${esc(f.url)}" data-name="${esc(f.name)}">⬇ ${esc(f.name)}</button>`).join(""):""].join(" ");
+    const secs = open ? LIB_CATS.map(([id,ic,nm])=>{ const x=ds.filter(d=>docMeta(d).cat===id); return x.length?`<div class="psec"><h4>${ic} ${esc(nm)}</h4>${x.map(d=>docRow(d,false)).join("")}</div>`:""; }).join("") : "";
+    return `<div class="proj ${open?"open":""}" id="proj-${esc(p.id)}"><div class="ph" data-projtoggle="${esc(p.id)}"><span class="pi">${esc(p.icon||"📁")}</span><div style="min-width:0;flex:1"><div class="pn">${esc(p.name)}</div><div class="pk">${esc(p.kind||"")}${p.desc?" · "+esc(p.desc):""}</div></div><span class="note">${open?"접기 ▲":`자료 ${ds.length} ▼`}</span></div>
+      ${counts.length?`<div class="pc">${counts.map(([ic,nm,n])=>`<span>${ic} ${esc(nm)} ${n}</span>`).join("")}</div>`:""}
+      ${acts.trim()?`<div class="pa">${acts}</div>`:""}${secs}</div>`; }).join("")}</div>` : `<div class="empty">찾는 자료가 없어요.</div>`;
+}
+function relatedHtml(d){ const m=docMeta(d); const p=libProjects().find(x=>x.id===m.proj); if(!p||p.id==="etc") return "";
+  const sib=docs.filter(x=>x._id!==d._id && docMeta(x).proj===p.id).slice(0,12);
+  const app=p.appId? apps.find(a=>a._id===p.appId) : null;
+  return `<h4>${esc(p.icon||"")} ${esc(p.name)} 관련 자료</h4><div class="rl">${app&&safeUrl(app.liveUrl)?`<a href="${esc(app.liveUrl)}" target="_blank" rel="noopener">▶ 앱 열기</a>`:""}${sib.map(x=>`<button class="btn ghost" type="button" data-doc="${esc(x._id)}">${catName(docMeta(x).cat)[1]} ${esc(cut(x.title,40))}</button>`).join("")}<button class="pjchip" type="button" data-proj="${esc(p.id)}">한 화면에서 모두 보기 →</button></div>`; }
+function openProject(id){ libView="project"; libOpen=id; libQ=""; $("#libQ").value=""; if(!$("#docView").hidden) closeDoc(); document.querySelector('#tabs button[data-tab="docs"]')?.click(); renderLibrary(); setTimeout(()=>document.getElementById("proj-"+id)?.scrollIntoView({behavior:"smooth",block:"start"}),50); }
+document.addEventListener("click", e=>{
+  const v=e.target.closest("[data-libview]"); if(v){ libView=v.dataset.libview; try{ localStorage.setItem("office-libview",libView); }catch(_){} renderLibrary(); return; }
+  const c=e.target.closest("[data-libcat]"); if(c){ libCat=c.dataset.libcat; renderLibrary(); return; }
+  const t=e.target.closest("[data-projtoggle]"); if(t){ libOpen = libOpen===t.dataset.projtoggle? "" : t.dataset.projtoggle; renderLibrary(); return; }
+  const p=e.target.closest("[data-proj]"); if(p){ openProject(p.dataset.proj); return; }
+});
+$("#libQ").addEventListener("input", e=>{ libQ=e.target.value; renderLibrary(); });
 // ---------- Attachments ----------
 let assetsNS; const assetsReady = (async()=>{ try{ assetsNS = await window.claude?.use?.("assets"); }catch(_){ assetsNS=null; } return assetsNS; })();
 const attPending = {order:[], urg:[], cls:[]};
@@ -1395,8 +1490,9 @@ $("#urgForm").addEventListener("submit", async e=>{
   db.collection("tasks").orderBy("createdAt","desc").limit(200).onSnapshot(s=>{ tasks=rows(s); render(); }, err);
   db.collection("feed").orderBy("at","desc").limit(150).onSnapshot(s=>{ feed=rows(s); render(); }, err);
   db.collection("schedule").orderBy("date","asc").limit(200).onSnapshot(s=>{ schedule=rows(s); render(); renderCal(); }, err);
-  db.collection("docs").orderBy("createdAt","desc").limit(100).onSnapshot(s=>{ docs=rows(s); render(); }, err);
+  db.collection("docs").orderBy("createdAt","desc").limit(400).onSnapshot(s=>{ docs=rows(s); render(); }, err);
   db.collection("apps").orderBy("order","asc").limit(100).onSnapshot(s=>{ apps=rows(s); render(); }, err);
+  db.doc("config/library").onSnapshot(s=>{ library = s.exists? s.data() : {}; renderLibrary(); }, ()=>{});
   db.collection("notices").orderBy("createdAt","desc").limit(20).onSnapshot(s=>{ notices=rows(s); render(); }, err);
   db.collection("qna").orderBy("at","desc").limit(30).onSnapshot(s=>{ qna=rows(s); renderAsk(); }, err);
   db.doc("config/company").onSnapshot(s=>{ const d=s.exists?s.data():{}; company={이름:d.name, 영문:d.nameEn, 로고:d.logo, 유튜브핸들:d.youtubeHandle, 캐릭터:d.characters}; }, ()=>{});
