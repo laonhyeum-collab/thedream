@@ -1,0 +1,10 @@
+{
+  "name": "snow-match",
+  "private": true,
+  "type": "module",
+  "description": "겨울 낱말·그림과 코딩 개념 카드를 짝 맞추는 메모리 게임",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test tests/*.test.js"
+  }
+}
