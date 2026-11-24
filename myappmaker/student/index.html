@@ -86,10 +86,24 @@
           <button id="askBtn" class="primary big">✨ 주제 추천받기</button>
           <button id="surpriseBtn" class="ghost">🎲 아이디어가 없어요</button>
         </div>
-        <p class="muted small safe-note">🔒 이미 있는 게임을 그대로 따라 한 것, 무섭거나 다치게 하는 것, 배움이 없는 주제는 추천하지 않아요. 모든 추천에는 <b>📚 배움 요소</b>가 들어 있어요.</p>
+        <p class="muted small safe-note">🔒 이미 있는 게임을 그대로 따라 한 것, 무섭거나(귀신·괴물·좀비) 다치게 하는 것, 놀리는 말·정치·인터넷 예절에 어긋나는 것, 배움이 없는 주제는 추천하지 않아요. 모든 추천에는 <b>📚 배움 요소</b>가 들어 있어요.</p>
       </div>
       <div id="notices" class="notices" aria-live="polite"></div>
       <div id="recGrid" class="topic-grid"></div>
+      <details id="customBox" class="card custom-box">
+        <summary id="customOpen">✏️ 추천에 없는 주제를 직접 쓸래요</summary>
+        <p class="muted small">내가 생각한 주제로 만들 수 있어요. 대신 <b>이미 있는 게임·우리 반 친구 앱과 같은 것</b>, <b>다치게 하거나 무서운 것(귀신·괴물·좀비 등)</b>, <b>놀리거나 미워하는 말</b>, <b>정치·이념</b>, <b>해킹·몰래 찍기·악플</b>처럼 인터넷 예절에 어긋나는 것은 쓸 수 없어요.</p>
+        <label for="cTitle">주제 이름 <span class="muted small">(예: 길 잃은 강아지 집 찾기)</span></label>
+        <input id="cTitle" type="text" autocomplete="off">
+        <label for="cSummary">어떤 게임인가요? 한 줄로 <span class="muted small">(예: 별을 모아 강아지를 집에 데려다줘요)</span></label>
+        <input id="cSummary" type="text" autocomplete="off">
+        <label for="cBase">어떤 방식으로 놀아요?</label>
+        <select id="cBase"></select>
+        <label for="cLearn">📚 게임을 하며 배우는 것</label>
+        <input id="cLearn" type="text" autocomplete="off" placeholder="예) 방향 읽기, 덧셈, 분리배출 방법">
+        <div id="customNotes" class="notices" aria-live="polite"></div>
+        <button id="customBtn" type="button" class="primary big">✅ 확인하고 기획 시작하기</button>
+      </details>
     </section>
 
     <!-- 2. 기획서 -->
