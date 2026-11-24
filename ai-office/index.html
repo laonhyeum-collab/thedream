@@ -289,7 +289,8 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
 .prep span{font-size:11.5px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
 .prep .ok{color:var(--ok);border-color:var(--ok)}.prep .wip{color:var(--warn);border-color:var(--warn)}.prep .no{color:var(--bad);border-color:var(--bad)}
 .alert{border:1px solid var(--hi);background:var(--hi-soft);border-radius:12px;padding:10px 12px;font-size:13.5px}
-form.order label.ck{display:inline-flex;gap:5px;align-items:center;font-size:13px}
+form.order label.ck{display:inline-flex;gap:5px;align-items:center;font-size:13px;flex:0 0 auto;white-space:nowrap}
+form.order label.ck input{flex:0 0 auto;width:auto;min-width:0;margin:0}
 form.order input[type=checkbox]{flex:none}
 @media (prefers-reduced-motion:reduce){.bub{transition:none}}
 
@@ -615,7 +616,7 @@ function kstDateOf(iso){ const d=new Date(iso); return isNaN(d)?"":kstParts(d).d
 const deptChip = k => `<span class="chip d-${DEPTS[k]?k:"ceo"}">${esc(DEPTS[k]?.name||"대표실")}</span>`;
 const STATUS = {hold:"⏸ 보류",proposed:"결재 대기",approved:"승인됨 · 제작 대기",doing:"제작 중",final:"총괄 검수 중",confirm:"대표 컨펌 대기",revise:"수정 요청",done:"완료",rejected:"반려",handoff:"부서 전달"};
 const stChip = s => `<span class="st st-${esc(s)}">${esc(STATUS[s]||s)}</span>`;
-const stChipT = t => (t.status==="approved" && t.calledAt && Date.now()-new Date(t.calledAt)<6*3600e3) ? `<span class="st st-doing" title="담당 팀을 불렀고 작업 중이에요. 끝나면 컨펌 대기로 올라와요">🔔 담당 팀 작업 시작</span>` : stChipT(t);
+const stChipT = t => (t.status==="approved" && t.calledAt && Date.now()-new Date(t.calledAt)<6*3600e3) ? `<span class="st st-doing" title="담당 팀을 불렀고 작업 중이에요. 끝나면 컨펌 대기로 올라와요">🔔 담당 팀 작업 시작</span>` : stChip(t.status);
 const safeUrl = u => /^(https:\/\/|\/_blob\/)/.test(u||"") ? u : "";
 const MEDIA_OFFICE = "https://claude.ai/artifact/8bxSJL6icMaJpRTJYe644q";
 const fileLinks = d => (Array.isArray(d.files)? d.files : []).filter(f=>safeUrl(f.url)).map(f=>`<button class="btn ghost dl" data-dl="${esc(f.url)}" data-name="${esc(f.name||"파일")}">⬇ ${esc(f.name||"파일")}</button>`).join(" ");
