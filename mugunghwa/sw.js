@@ -1,6 +1,6 @@
 // 오프라인에서도 놀 수 있도록 앱 파일을 기기에 담아 둡니다.
 // 카메라 영상은 여기를 지나가지 않습니다 (네트워크로 보내는 코드가 없음).
-const VERSION = 'mugunghwa-v5';
+const VERSION = 'mugunghwa-v6';
 const FILES = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const FILES = [
   './js/motion.js',
   './js/scene.js',
   './js/sound.js',
+  './js/fallback.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
