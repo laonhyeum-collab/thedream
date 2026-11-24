@@ -13,5 +13,15 @@
   <body>
     <div id="root"></div>
     <noscript>이 앱을 사용하려면 자바스크립트를 켜 주세요.</noscript>
+    <script>
+      // 사이트가 저장소 파일을 그대로 보여 주는 방식으로 배포된 경우(빌드 전 원본 index.html)에는
+      // 앱이 그려지지 않으므로, 함께 올라가 있는 빌드본(dist/)으로 옮겨요. 정상 배포에서는 아무 일도 하지 않아요.
+      setTimeout(function () {
+        var root = document.getElementById('root');
+        if (root && !root.hasChildNodes() && !/\/dist\/?$/.test(location.pathname.replace(/index\.html$/, ''))) {
+          location.replace('./dist/' + location.search + location.hash);
+        }
+      }, 2500);
+    </script>
   </body>
 </html>
