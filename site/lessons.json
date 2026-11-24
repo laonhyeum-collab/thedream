@@ -1,0 +1,26 @@
+{
+  "about": "수업 바로가기 카드 목록. 수업이 늘면 lessons 배열에 카드 하나를 추가해요. 학생 정보는 넣지 않아요. apps의 id는 site/qr/<id>-qr.png 이름과 같아야 해요.",
+  "apps": {
+    "pixel-magic-lab": { "name": "픽셀 마법사 연구소", "path": "pixel-magic-lab/" },
+    "myappmaker": { "name": "MY APP MAKER", "path": "myappmaker/" },
+    "mugunghwa": { "name": "무궁화 꽃이 피었습니다", "path": "mugunghwa/" },
+    "music-factory": { "name": "뮤직 플레이 팩토리", "path": "music-factory/" },
+    "snow-match": { "name": "눈송이 짝 맞추기", "path": "games/snow-match/" },
+    "robot-maze": { "name": "블록 로봇 교실 미로", "path": "games/robot-maze/" }
+  },
+  "lessons": [
+    { "id": "entry", "name": "엔트리 코딩 수업", "who": "초등 3~6학년", "apps": ["robot-maze", "snow-match"],
+      "links": [{ "name": "엔트리 만들기 화면", "url": "https://playentry.org/ws" }],
+      "tip": "도입 3~5분은 로봇 미로(순차), 마무리는 눈송이 짝 맞추기(개념 복습)" },
+    { "id": "pixel-winter", "name": "픽셀 마법사 겨울 수업 · 버그 탐정", "who": "초등 2~4학년", "apps": ["pixel-magic-lab"],
+      "tip": "학생은 QR로 바로 들어가요. 로그인 없이 동작해요" },
+    { "id": "myappmaker", "name": "메타버스 앱 만들기 (MY APP MAKER)", "who": "초등 4~6학년", "apps": ["myappmaker"],
+      "tip": "학생·선생님·앱 월드 주소는 앱 첫 화면에서 골라요" },
+    { "id": "ai-prompt", "name": "AI 프롬프트 코딩", "who": "초등 3~6학년", "apps": ["music-factory"],
+      "tip": "생성형 AI는 강사 화면으로만 써요. 남는 시간에 뮤직 플레이 팩토리로 '순서대로 쌓기' 놀이" },
+    { "id": "body-play", "name": "몸놀이 · AI 카메라 체험", "who": "초등 1~4학년", "apps": ["mugunghwa"],
+      "tip": "카메라 영상은 저장·전송되지 않아요. 카메라가 없으면 버튼 놀이 모드" },
+    { "id": "winter-games", "name": "쉬는 시간 겨울 게임", "who": "초등 1~4학년", "apps": ["snow-match", "robot-maze"],
+      "tip": "3~5분 짧은 게임이라 수업 끝 마무리로 좋아요" }
+  ]
+}

@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>수업 바로가기 · 교실 놀이터</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: #fff8ec; color: #5b4038;
+        font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; }
+      main { width: min(1200px, 100% - 32px); margin: 0 auto; padding: 24px 0 48px; }
+      .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+      h1 { font-size: 28px; margin: 8px 0 4px; }
+      .lead { color: #8a6f64; font-size: 15px; margin: 0 0 8px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-top: 16px; align-items: start; }
+      .lesson { border-radius: 20px; background: #fffdf7; border: 2px solid #eadfcb; box-shadow: 0 4px 0 #eadfcb; padding: 16px; }
+      .lesson h2 { font-size: 21px; margin: 0; }
+      .who { font-size: 14px; color: #8a6f64; margin: 2px 0 10px; }
+      .tip { font-size: 14px; background: #f4eefe; border-radius: 12px; padding: 8px 10px; margin: 0 0 12px; }
+      .app { display: flex; gap: 12px; align-items: center; border-top: 1.5px dashed #eadfcb; padding: 10px 0; }
+      .app img { width: 132px; height: 132px; flex: none; image-rendering: pixelated; border: 1.5px solid #eadfcb; border-radius: 12px; background: #fff; }
+      .app .name { font-size: 18px; font-weight: 700; margin: 0 0 8px; }
+      .btn { display: inline-block; font: inherit; font-size: 15px; font-weight: 600; padding: 9px 14px; border-radius: 12px;
+        border: 1.5px solid #7a5bd0; background: #7a5bd0; color: #fff; text-decoration: none; }
+      .btn.sub { background: #f4eefe; color: #5b3fa8; border-color: #d9c9f2; }
+      .btn:hover { filter: brightness(0.95); }
+      .big { position: fixed; inset: 0; background: rgba(40, 28, 24, .85); display: none; align-items: center; justify-content: center; flex-direction: column; gap: 12px; z-index: 10; }
+      .big.open { display: flex; }
+      .big img { width: min(80vw, 80vh); height: min(80vw, 80vh); image-rendering: pixelated; background: #fff; border-radius: 16px; }
+      .big p { color: #fff; font-size: 24px; margin: 0; }
+      @media (max-width: 420px) { .app img { width: 104px; height: 104px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="top">
+        <div>
+          <h1>수업 바로가기</h1>
+          <p class="lead">오늘 수업 카드를 찾아 QR을 크게 띄우거나 새 창으로 열어요</p>
+        </div>
+        <a class="btn sub" href="./">← 교실 놀이터</a>
+      </div>
+      <div class="grid" id="lessons"><p id="loading">불러오는 중…</p></div>
+    </main>
+    <div class="big" id="big" role="dialog" aria-modal="true" aria-label="큰 QR">
+      <img id="bigImg" alt="" />
+      <p id="bigName"></p>
+      <button class="btn sub" type="button" id="bigClose">닫기</button>
+    </div>
+    <script>
+      function el(tag, attrs, children) {
+        const n = document.createElement(tag);
+        for (const [k, v] of Object.entries(attrs || {})) {
+          if (k === 'text') n.textContent = v; else n.setAttribute(k, v);
+        }
+        (children || []).forEach((c) => c && n.appendChild(c));
+        return n;
+      }
+      const big = document.getElementById('big');
+      function openBig(src, name) {
+        document.getElementById('bigImg').src = src;
+        document.getElementById('bigImg').alt = name + ' QR코드';
+        document.getElementById('bigName').textContent = name;
+        big.classList.add('open');
+        document.getElementById('bigClose').focus();
+      }
+      function closeBig() { big.classList.remove('open'); }
+      document.getElementById('bigClose').addEventListener('click', closeBig);
+      big.addEventListener('click', (e) => { if (e.target === big) closeBig(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBig(); });
+
+      function appRow(id, app) {
+        const qr = 'qr/' + id + '-qr.png';
+        const qrBtn = el('button', { class: 'btn sub', type: 'button', text: 'QR 크게' });
+        qrBtn.addEventListener('click', () => openBig(qr, app.name));
+        return el('div', { class: 'app', 'data-app': id }, [
+          el('img', { src: qr, alt: app.name + ' QR코드', loading: 'lazy' }),
+          el('div', {}, [
+            el('p', { class: 'name', text: app.name }),
+            el('a', { class: 'btn', href: './' + app.path, target: '_blank', rel: 'noopener', text: '새 창 열기' }),
+            document.createTextNode(' '),
+            qrBtn,
+          ]),
+        ]);
+      }
+      function linkRow(link) {
+        return el('div', { class: 'app' }, [
+          el('div', {}, [
+            el('p', { class: 'name', text: link.name }),
+            el('a', { class: 'btn', href: link.url, target: '_blank', rel: 'noopener', text: '새 창 열기' }),
+          ]),
+        ]);
+      }
+      function render(data) {
+        const box = document.getElementById('lessons');
+        box.textContent = '';
+        data.lessons.forEach((ls) => {
+          const rows = (ls.apps || []).filter((id) => data.apps[id]).map((id) => appRow(id, data.apps[id]));
+          (ls.links || []).forEach((l) => rows.push(linkRow(l)));
+          box.appendChild(el('article', { class: 'lesson', 'data-lesson': ls.id }, [
+            el('h2', { text: ls.name }),
+            el('p', { class: 'who', text: ls.who || '' }),
+            ls.tip ? el('p', { class: 'tip', text: ls.tip }) : null,
+          ].concat(rows)));
+        });
+      }
+      fetch('lessons.json', { cache: 'no-store' })
+        .then((r) => r.json())
+        .then(render)
+        .catch(() => { document.getElementById('loading').textContent = '수업 목록을 불러오지 못했어요. 새로고침해 주세요.'; });
+    </script>
+  </body>
+</html>
