@@ -1,0 +1,9 @@
+{
+  "name": "math-drill",
+  "private": true,
+  "description": "초·중등 연산 문제은행: 학년·학기·단원·난이도·문제 수를 고르면 문제지와 정답지를 만들어요",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test tests/*.test.js"
+  }
+}
