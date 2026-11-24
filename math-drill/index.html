@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="초등 1학년~중학교 3학년 연산 문제지와 정답지를 만들어 인쇄하거나 PDF로 저장하는 문제은행 (2022 개정 교육과정)" />
+    <meta name="theme-color" content="#24345c" />
+    <title>연산 문제은행 | Block &amp; Bit</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='84' height='84' rx='18' fill='%2324345c'/%3E%3Cpath d='M30 50h40M50 30v40' stroke='%23ffb627' stroke-width='12' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="top no-print">
+      <div class="brand"><span class="logo" aria-hidden="true">B&amp;B</span> <span>Block &amp; Bit</span></div>
+      <h1>연산 문제은행</h1>
+      <p class="lead">학년 · 학기 · 단원 · 난이도 · 문제 수를 고르면 문제지와 정답지를 함께 만들어요. (2022 개정 교육과정 기준)</p>
+    </header>
+
+    <main>
+      <section class="panel no-print" aria-labelledby="set-h">
+        <h2 id="set-h" class="sr-only">문제지 설정</h2>
+        <div class="row" role="group" aria-label="학교">
+          <span class="lab">학교</span>
+          <div class="seg" id="school">
+            <label><input type="radio" name="school" value="초" checked /> 초등학교</label>
+            <label><input type="radio" name="school" value="중" /> 중학교</label>
+          </div>
+        </div>
+        <div class="grid2">
+          <label class="field">학년 <select id="grade"></select></label>
+          <label class="field">학기 <select id="sem"><option value="1">1학기</option><option value="2">2학기</option></select></label>
+        </div>
+        <label class="field">단원 <select id="unit"></select></label>
+        <p class="topic" id="topic"></p>
+        <div class="row" role="group" aria-label="난이도">
+          <span class="lab">난이도</span>
+          <div class="seg" id="level">
+            <label><input type="radio" name="level" value="1" checked /> 쉬움</label>
+            <label><input type="radio" name="level" value="2" /> 보통</label>
+            <label><input type="radio" name="level" value="3" /> 어려움</label>
+          </div>
+        </div>
+        <div class="grid2">
+          <label class="field">문제 수
+            <select id="count"><option>10</option><option>15</option><option selected>20</option><option>30</option></select>
+          </label>
+          <label class="field">풀이 공간
+            <select id="space"><option value="s">좁게</option><option value="m" selected>보통</option><option value="l">넓게</option></select>
+          </label>
+        </div>
+        <div class="seedrow">
+          <label class="field">문제 번호 <input id="seed" type="text" inputmode="numeric" maxlength="8" autocomplete="off" /></label>
+          <p class="hint">같은 단원·난이도에서 같은 번호를 넣으면 똑같은 문제지가 다시 나와요.</p>
+        </div>
+        <div class="btns">
+          <button type="button" class="btn main" id="make">문제 만들기</button>
+          <button type="button" class="btn" id="remake">이 번호로 다시 만들기</button>
+        </div>
+
+        <hr />
+        <div class="row" role="group" aria-label="인쇄할 쪽">
+          <span class="lab">인쇄</span>
+          <div class="seg" id="printwhat">
+            <label><input type="radio" name="pw" value="all" checked /> 문제지 + 정답지</label>
+            <label><input type="radio" name="pw" value="problems" /> 문제지만</label>
+            <label><input type="radio" name="pw" value="answers" /> 정답지만</label>
+          </div>
+        </div>
+        <div class="btns">
+          <button type="button" class="btn main" id="print">인쇄하기</button>
+          <button type="button" class="btn" id="pdf">PDF로 저장</button>
+        </div>
+        <p class="hint" id="pdfhelp">PDF 파일로 받으려면: 인쇄 창의 <b>대상(프린터)</b>에서 <b>PDF로 저장</b>을 고른 뒤 <b>저장</b>을 눌러요. 종이는 A4, 배율은 기본(100%)이 좋아요.</p>
+        <p class="hint small">이름·날짜는 이 화면에서만 쓰이고 어디에도 저장하지 않아요. 인터넷 연결 없이도 동작해요.</p>
+      </section>
+
+      <div class="papers" id="papers" aria-live="polite"></div>
+    </main>
+
+    <div class="toast no-print" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./js/core.js"></script>
+    <script src="./js/units.js"></script>
+    <script src="./js/generators.js"></script>
+    <script src="./js/app.js"></script>
+  </body>
+</html>
