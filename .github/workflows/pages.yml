@@ -51,6 +51,7 @@ jobs:
         run: |
           mkdir -p _site
           cp site/index.html _site/index.html
+          cp -r site/thumbs site/qr _site/
           cp -r pixel-magic-lab/dist _site/pixel-magic-lab
           cp -r mugunghwa _site/mugunghwa
           rm -rf _site/mugunghwa/tests _site/mugunghwa/tools _site/mugunghwa/package.json

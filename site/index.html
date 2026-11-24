@@ -5,33 +5,139 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>thedream 교실 놀이터</title>
     <style>
-      body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #fff8ec; color: #5b4038;
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: #fff8ec; color: #5b4038;
         font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif; }
-      main { width: min(560px, 100% - 32px); }
-      h1 { font-size: 26px; text-align: center; }
-      .dl { margin: -4px 4px 0; font-size: 15px; color: #8a6f64; }
-      a.mini { display: inline; margin: 0; padding: 0; border: 0; box-shadow: none; background: none; color: #7a5bd0; text-decoration: underline; }
-      h2 { font-size: 18px; margin: 28px 0 0; padding-left: 10px; border-left: 5px solid #b9a3e8; }
-      a { display: block; margin: 14px 0; padding: 18px 20px; border-radius: 20px; background: #fffdf7; border: 2px solid #eadfcb;
-        box-shadow: 0 4px 0 #eadfcb; text-decoration: none; color: inherit; }
-      a:hover { border-color: #b9a3e8; }
-      b { font-size: 20px; display: block; }
-      span { font-size: 15px; color: #8a6f64; }
+      main { width: min(1100px, 100% - 32px); margin: 0 auto; padding: 28px 0 48px; }
+      h1 { font-size: 28px; text-align: center; margin: 8px 0 4px; }
+      .lead { text-align: center; color: #8a6f64; font-size: 15px; margin: 0 0 8px; }
+      h2 { font-size: 18px; margin: 32px 0 0; padding-left: 10px; border-left: 5px solid #b9a3e8; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 16px; align-items: start; }
+      .card { display: flex; flex-direction: column; border-radius: 20px; background: #fffdf7; border: 2px solid #eadfcb;
+        box-shadow: 0 4px 0 #eadfcb; overflow: hidden; }
+      .card:hover { border-color: #b9a3e8; }
+      .thumb { display: block; aspect-ratio: 16 / 10; background: #f3ead9; border-bottom: 2px solid #eadfcb; }
+      .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+      .title { font-size: 20px; font-weight: 700; color: inherit; text-decoration: none; }
+      .title:hover { color: #7a5bd0; }
+      .desc { font-size: 14px; color: #8a6f64; margin: 0; flex: 1; }
+      .url { display: flex; gap: 6px; align-items: center; }
+      .url input { flex: 1; min-width: 0; font: inherit; font-size: 13px; padding: 8px 10px; border-radius: 10px;
+        border: 1.5px solid #eadfcb; background: #fff; color: #5b4038; }
+      .btns { display: flex; flex-wrap: wrap; gap: 6px; }
+      .btn { font: inherit; font-size: 14px; font-weight: 600; padding: 8px 12px; border-radius: 12px; cursor: pointer;
+        border: 1.5px solid #d9c9f2; background: #f4eefe; color: #5b3fa8; text-decoration: none; white-space: nowrap; }
+      .btn:hover { background: #e9defd; }
+      .btn.main { background: #7a5bd0; border-color: #7a5bd0; color: #fff; }
+      .btn.main:hover { background: #6948c4; }
+      .qrbox { display: none; text-align: center; padding: 8px 0 0; }
+      .qrbox.open { display: block; }
+      .qrbox img { width: 160px; height: 160px; image-rendering: pixelated; border: 1.5px solid #eadfcb; border-radius: 12px; background: #fff; }
+      .qrbox p { margin: 4px 0 0; font-size: 13px; color: #8a6f64; }
+      .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #5b4038; color: #fff;
+        padding: 10px 18px; border-radius: 999px; font-size: 15px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+      .toast.show { opacity: 1; }
     </style>
   </head>
   <body>
     <main>
       <h1>교실 놀이터</h1>
-      <a href="./pixel-magic-lab/"><b>픽셀 마법사 연구소</b><span>명령 블록으로 픽셀 그림과 애니메이션을 만드는 코딩 교육 앱</span></a>
-      <p class="dl">QR코드 내려받기: <a class="mini" href="./pixel-magic-lab/qr/pixel-magic-lab-qr-card.png" download="pixel-magic-lab-QR-card.png">인쇄용 카드</a> · <a class="mini" href="./pixel-magic-lab/qr/pixel-magic-lab-qr.png" download="pixel-magic-lab-QR.png">QR만</a></p>
-      <a href="./myappmaker/"><b>MY APP MAKER</b><span>내가 기획한 게임 앱을 AI와 만들어 메타버스 앱 월드에 열기 (학생 · 선생님 · 앱 월드)</span></a>
-      <a href="./mugunghwa/"><b>무궁화 꽃이 피었습니다</b><span>카메라가 술래가 되는 몸놀이</span></a>
-      <a href="./music-factory/"><b>뮤직 플레이 팩토리</b><span>재료를 쌓으면 음악이 돼요 · 테마마다 밴드 · 오케스트라 · 재즈 · 국악 등 7가지 악단</span></a>
-      <p class="dl">QR코드 내려받기: <a class="mini" href="./music-factory/qr/music-factory-qr-card.png" download="music-play-factory-QR-card.png">인쇄용 카드</a> · <a class="mini" href="./music-factory/qr/music-factory-qr.png" download="music-play-factory-QR.png">QR만</a></p>
-      <a href="./games/snow-match/"><b>눈송이 짝 맞추기</b><span>겨울 낱말·그림과 코딩 개념(순차·반복) 카드 짝 찾기 · 3~5분 수업 게임</span></a>
+      <p class="lead">앱마다 주소 복사 · QR코드 내려받기를 할 수 있어요</p>
+      <div class="grid" id="apps"></div>
       <h2>daeun</h2>
-      <a href="./daeun/comfort-food/"><b>대륙별 Comfort Food</b><span>세계 지도에서 대륙과 나라를 골라 보는 컴포트 푸드 발표 앱 (자료 입력·수정 가능)</span></a>
-      <p class="dl">QR코드 내려받기: <a class="mini" href="./daeun/comfort-food/qr-card.png" download="comfort-food-QR-card.png">발표용 카드</a> · <a class="mini" href="./daeun/comfort-food/qr.png" download="comfort-food-QR.png">QR만</a></p>
+      <div class="grid" id="daeun"></div>
     </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script>
+      // 앱 목록: 새 앱을 올릴 때 여기에 한 줄 추가하고 site/thumbs, site/qr 에 그림을 넣어요.
+      const APPS = [
+        { id: 'pixel-magic-lab', path: 'pixel-magic-lab/', name: '픽셀 마법사 연구소', desc: '명령 블록으로 픽셀 그림과 애니메이션을 만드는 코딩 교육 앱',
+          card: 'pixel-magic-lab/qr/pixel-magic-lab-qr-card.png' },
+        { id: 'myappmaker', path: 'myappmaker/', name: 'MY APP MAKER', desc: '내가 기획한 게임 앱을 AI와 만들어 메타버스 앱 월드에 열기 (학생 · 선생님 · 앱 월드)' },
+        { id: 'mugunghwa', path: 'mugunghwa/', name: '무궁화 꽃이 피었습니다', desc: '카메라가 술래가 되는 몸놀이' },
+        { id: 'music-factory', path: 'music-factory/', name: '뮤직 플레이 팩토리', desc: '재료를 쌓으면 음악이 돼요 · 테마마다 밴드 · 오케스트라 · 재즈 · 국악 등 7가지 악단',
+          card: 'music-factory/qr/music-factory-qr-card.png' },
+        { id: 'snow-match', path: 'games/snow-match/', name: '눈송이 짝 맞추기', desc: '겨울 낱말·그림과 코딩 개념(순차·반복) 카드 짝 찾기 · 3~5분 수업 게임' },
+        { id: 'comfort-food', path: 'daeun/comfort-food/', name: '대륙별 Comfort Food', desc: '세계 지도에서 대륙과 나라를 골라 보는 컴포트 푸드 발표 앱 (자료 입력·수정 가능)',
+          card: 'daeun/comfort-food/qr-card.png', group: 'daeun' },
+      ];
+
+      const toastEl = document.getElementById('toast');
+      let toastTimer;
+      function toast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove('show'), 1800);
+      }
+
+      async function copyText(text, input) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (e) {
+          // 오래된 브라우저·http 환경 대비
+          input.select();
+          try { return document.execCommand('copy'); } catch (e2) { return false; }
+        }
+      }
+
+      function el(tag, attrs, children) {
+        const n = document.createElement(tag);
+        for (const [k, v] of Object.entries(attrs || {})) {
+          if (k === 'text') n.textContent = v; else n.setAttribute(k, v);
+        }
+        (children || []).forEach((c) => n.appendChild(c));
+        return n;
+      }
+
+      function renderCard(app) {
+        const url = new URL(app.path, location.href).href;
+        const qrFile = 'qr/' + app.id + '-qr.png';
+
+        const input = el('input', { type: 'text', readonly: '', value: url, 'aria-label': app.name + ' 주소' });
+        input.addEventListener('focus', () => input.select());
+        const copyBtn = el('button', { class: 'btn', type: 'button', text: '링크 복사' });
+        copyBtn.addEventListener('click', async () => {
+          toast((await copyText(url, input)) ? '주소를 복사했어요' : '복사가 안 돼요. 주소를 길게 눌러 복사해 주세요');
+        });
+
+        const qrBox = el('div', { class: 'qrbox' }, [
+          el('img', { src: qrFile, alt: app.name + ' QR코드', loading: 'lazy' }),
+          el('p', { text: '휴대폰 카메라로 찍으면 바로 열려요' }),
+        ]);
+        const showBtn = el('button', { class: 'btn', type: 'button', text: 'QR 보기', 'aria-expanded': 'false' });
+        showBtn.addEventListener('click', () => {
+          const open = qrBox.classList.toggle('open');
+          showBtn.textContent = open ? 'QR 닫기' : 'QR 보기';
+          showBtn.setAttribute('aria-expanded', String(open));
+        });
+
+        const btns = [
+          el('a', { class: 'btn main', href: './' + app.path, text: '열기' }),
+          showBtn,
+          el('a', { class: 'btn', href: qrFile, download: app.id + '-QR.png', text: 'QR 받기' }),
+        ];
+        if (app.card) btns.push(el('a', { class: 'btn', href: './' + app.card, download: app.id + '-QR-card.png', text: '인쇄용 카드' }));
+
+        return el('article', { class: 'card' }, [
+          el('a', { class: 'thumb', href: './' + app.path, 'aria-label': app.name + ' 열기' }, [
+            el('img', { src: 'thumbs/' + app.id + '.jpg', alt: app.name + ' 화면', loading: 'lazy', width: '640', height: '400' }),
+          ]),
+          el('div', { class: 'body' }, [
+            el('a', { class: 'title', href: './' + app.path, text: app.name }),
+            el('p', { class: 'desc', text: app.desc }),
+            el('div', { class: 'url' }, [input, copyBtn]),
+            el('div', { class: 'btns' }, btns),
+            qrBox,
+          ]),
+        ]);
+      }
+
+      APPS.forEach((app) => {
+        document.getElementById(app.group === 'daeun' ? 'daeun' : 'apps').appendChild(renderCard(app));
+      });
+    </script>
   </body>
 </html>
