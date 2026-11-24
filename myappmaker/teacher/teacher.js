@@ -143,7 +143,7 @@ async function openDetail(id) {
       h('div', { class: 'grow' }, h('h2', { id: 'dtTitle' }, x.appName || '(앱 이름 없음)'), h('p', { class: 'muted' }, `${x.developer} ${x.classInfo || ''} · ${t ? `${t.name} (${categoryById(t.cat).name})` : ''} · ${fmtTime(x.submittedAt)}`)),
       h('button', { class: 'ghost', onclick: closeDetail, 'aria-label': '닫기' }, '✕')),
     miss.length ? h('p', { class: 'pill warn' }, `비어 있는 ★ 항목: ${miss.map((m) => m.title).join(', ')}`) : '',
-    plan && planSafety(plan).length ? h('p', { class: 'pill bad' }, `🚫 확인 필요: ${planSafety(plan).map((it) => `${it.n}번 「${it.words.join('」「')}」`).join(', ')}`) : '',
+    plan && planSafety(plan).length ? h('p', { class: 'pill bad' }, `🚫 확인 필요: ${planSafety(plan).map((it) => `${it.n ? `${it.n}번` : '직접 쓴 주제'} 「${it.words.join('」「')}」`).join(', ')}`) : '',
     t && t.learn ? h('p', { class: 'pill ok' }, `📚 교과 연계: ${(plan && plan.f.learnGoal) || `${t.curr} · ${t.learn}`}`) : '',
     h('div', { class: 'detail-grid' },
       h('div', {}, h('h3', {}, '🕹️ 앱 실행'), frame,

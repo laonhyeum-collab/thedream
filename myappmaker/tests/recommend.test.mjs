@@ -1,7 +1,7 @@
 // 주제 추천: 관심사에 맞게 추천하고, 이미 있는 게임·폭력·부적절한 내용·배움 없는 주제는 내보내지 않는지
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { recommend, surprise, checkText, ALL_RECS, THEMES, ideaFromRec } from '../shared/recommend.js';
+import { recommend, surprise, checkText, ALL_RECS, THEMES, ideaFromRec, checkCustomTopic, customRec } from '../shared/recommend.js';
 import { topicById } from '../shared/topics.js';
 import { emptyPlan, normalizePlan, topicView, planSafety, planWarnings, buildAppPrompt, planRows, DIFFICULTY, SECTIONS, MAX_PICK } from '../shared/plan.js';
 import { TOPICS } from '../shared/topics.js';
@@ -20,7 +20,7 @@ test('모든 추천: 배움 요소가 있고, 기본 게임 방식이 있고, �
     if (/^실과/.test(r.curr)) assert.match(r.curr, /5~6학년$/, `${r.title}: 실과는 5~6학년`);
     assert.ok(topicById(r.base), `${r.title}: 기본 방식 ${r.base}`);
     const c = checkText(`${r.title} ${r.summary} ${r.learn}`);
-    assert.deepEqual([c.violence, c.blocked, c.existing.length], [[], [], 0], `${r.title}`);
+    assert.deepEqual([c.violence, c.blocked, c.horror, c.hate, c.politics, c.ethics, c.existing.length], [[], [], [], [], [], [], 0], `${r.title}`);
   }
   for (const t of THEMES) assert.equal(t.recs.length, 3, t.label);
   assert.equal(new Set(ALL_RECS.map((r) => r.id)).size, ALL_RECS.length, '추천 id 겹치지 않음');
@@ -192,4 +192,60 @@ test('그림 프롬프트는 모두 앱 월드 지도와 같은 컨셉 (쿼터�
   assert.ok(booth.includes(BUILDING_LOOK) && booth.includes(PIXEL_STYLE), '학생 부스 = 앱 월드 건물 모습');
   for (const a of worldPrompts({})) assert.ok(a.prompt.includes(PIXEL_STYLE), `${a.key}: 월드 그림도 같은 그림체`);
   assert.match(PIXEL_STYLE, /쿼터뷰/); assert.match(PIXEL_STYLE, /흙 절벽/);
+});
+
+// ---------- 나만의 주제 직접 쓰기 (대표 지시 2026-11-24) ----------
+const kindsOf = (t, names = []) => checkCustomTopic({ base: 'maze-escape', summary: '별을 모아 집에 데려다줘요', learn: '방향 읽기', ...t }, names).problems.map((p) => p.kind);
+
+test('직접 쓴 주제: 알맞은 주제는 통과하고 기획서에 그대로 들어감', () => {
+  const input = { title: '길 잃은 강아지 집 찾기', summary: '별을 모아 강아지를 집에 데려다줘요', learn: '방향 읽기', base: 'maze-escape' };
+  assert.deepEqual(checkCustomTopic(input, ['과일 받기 왕']).problems, []);
+  const rec = customRec(input);
+  const plan = emptyPlan(rec.base);
+  plan.idea = ideaFromRec(rec);
+  const back = normalizePlan(JSON.parse(JSON.stringify(plan)));
+  assert.equal(topicView(back).name, '길 잃은 강아지 집 찾기');
+  assert.equal(topicView(back).learn, '방향 읽기');
+  assert.deepEqual(planSafety(back), []);
+  assert.match(buildAppPrompt(back), /길 잃은 강아지 집 찾기/);
+});
+
+test('직접 쓴 주제: 중복·폭력·무서운 것·혐오·정치·이념·인터넷 윤리·개인정보를 걸러 냄', () => {
+  assert.deepEqual(kindsOf({ title: '마인크래프트 집짓기' }), ['existing']);
+  assert.deepEqual(kindsOf({ title: '과일 받기 왕' }, ['과일 받기 왕국']), ['dup'], '우리 반 앱과 거의 같은 이름');
+  assert.deepEqual(kindsOf({ title: '과일 받기왕' }, ['과일 받기 왕']), ['dup'], '띄어쓰기만 다른 이름');
+  assert.deepEqual(kindsOf({ title: '총 쏘기 대회' }), ['violence']);
+  for (const w of ['귀신의 집', '괴물 탈출', '좀비 학교', '유령 저택', '해골 섬', '공포 미로']) assert.deepEqual(kindsOf({ title: w }), ['horror'], w);
+  for (const w of ['바보 놀리기 게임', '왕따 게임', '욕설 대회']) assert.ok(kindsOf({ title: w }).includes('hate'), w);
+  for (const w of ['대통령 뽑기', '좌파 우파 게임', '북한 탈출', '정당 만들기']) assert.ok(kindsOf({ title: w }).includes('politics'), w);
+  for (const w of ['친구 계정 해킹', '몰래카메라 찍기', '악플 달기']) assert.ok(kindsOf({ title: w }).includes('ethics'), w);
+  assert.ok(kindsOf({ title: '카지노 왕' }).includes('blocked'));
+  assert.ok(kindsOf({ title: '강아지', summary: '010-1234-5678로 연락해요' }).includes('privacy'));
+  assert.ok(kindsOf({ title: '강아지 찾기', learn: '' }).includes('empty'), '배울 내용 꼭 쓰기');
+  assert.ok(kindsOf({ title: '강아지 찾기', base: 'nope' }).includes('empty'), '노는 방식 꼭 고르기');
+});
+
+test('평범한 말은 걸러 내지 않음 (새끼 고양이, 불이 꺼져요, 스팸 김밥, 낚시)', () => {
+  for (const w of ['새끼 고양이 돌보기', '불이 꺼져요', '스팸 김밥 가게', '물고기 낚시', '선거 없는 반장 뽑기 대신 청소 당번', '보수 공사 다리']) {
+    const c = checkText(w);
+    assert.deepEqual([...c.hate, ...c.politics, ...c.ethics, ...c.horror], [], w);
+  }
+});
+
+test('귀신·괴물·좀비를 말하면 무섭지 않은 상상 친구로 바꿔 추천', () => {
+  const r = recommend('좀비랑 귀신 나오는 게임');
+  assert.ok(r.notices.some((n) => n.kind === 'violence'));
+  assert.ok(r.recs.length > 0);
+  for (const rec of r.recs) assert.deepEqual(checkText(`${rec.title} ${rec.summary}`).horror, [], rec.title);
+  assert.equal(recommend('대통령 게임').recs.length, 0);
+  assert.equal(recommend('해킹 게임').recs.length, 0);
+});
+
+test('기획서에 무서운 말·정치 말이 있으면 확인 필요, 직접 쓴 주제도 확인', () => {
+  const plan = emptyPlan('maze-escape');
+  plan.f.intro = '좀비를 피해 도망가요';
+  assert.ok(planSafety(plan).some((i) => i.words.includes('좀비')));
+  const p2 = emptyPlan('maze-escape');
+  p2.idea = { ...ideaFromRec(customRec({ title: '귀신 미로', summary: '미로를 빠져나가요', learn: '방향', base: 'maze-escape' })) };
+  assert.deepEqual(planSafety(normalizePlan(p2)).map((i) => i.n), [0]);
 });

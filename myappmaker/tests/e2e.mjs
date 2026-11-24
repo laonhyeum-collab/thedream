@@ -371,6 +371,27 @@ try {
   await st.waitForSelector('#home:not([hidden])');
   assert.match(await st.textContent('#resumeInfo'), /다람이의 과일 바구니/, '01로 다시 들어오면 01의 작업');
 
+  step('학생: 추천에 없는 주제 직접 쓰기 — 무서운 것·우리 반 앱과 같은 이름은 걸러 냄');
+  await st.goto(`${base}/student/#topics`);
+  await st.waitForSelector('#topics:not([hidden])');
+  await st.click('#customOpen');
+  await st.fill('#cTitle', '좀비 학교 탈출');
+  await st.fill('#cSummary', '좀비를 피해 학교를 빠져나가요');
+  await st.selectOption('#cBase', 'maze-escape');
+  await st.fill('#cLearn', '방향 읽기');
+  await st.click('#customBtn');
+  await st.waitForSelector('#customNotes .notice-item.blocked');
+  assert.match(await st.textContent('#customNotes'), /무섭거나 징그러운/);
+  await st.fill('#cTitle', '다람이의 과일 바구니');
+  await st.fill('#cSummary', '떨어지는 과일을 받아요');
+  await st.click('#customBtn');
+  await st.waitForFunction(() => /이미 비슷한 이름의 앱/.test(document.querySelector('#customNotes').textContent));
+  await st.fill('#cTitle', '대통령 뽑기');
+  await st.click('#customBtn');
+  await st.waitForFunction(() => /정치·이념/.test(document.querySelector('#customNotes').textContent));
+  assert.equal(await st.isVisible('#topics'), true, '걸러진 주제는 기획으로 넘어가지 않음');
+  await snap(st, 'custom-topic-blocked');
+
   // ───── 3. 메타버스 (저장소) ─────
   step('메타버스: 학교 이름 → 내 캐릭터 → 입장 → 탐험 → 부스 → 좋아요 → 미션·공지·친구·선생님 앱');
   const wd = await newPage();
@@ -530,6 +551,19 @@ try {
   await fs2.waitForSelector('#connectGate');   // 연결 정보 없는 기기: 「우리 반에 연결하기」 먼저
   await fs2.click('#connectOffline');
   assert.equal(await fs2.locator('#connectGate').count(), 0, '저장소 없이 하기 → 안내 닫힘');
+  // 직접 쓴 알맞은 주제 → 기획서에 그대로
+  await fs2.goto(`${base}/student/#topics`);
+  await fs2.click('#customOpen');
+  await fs2.fill('#cTitle', '길 잃은 강아지 집 찾기');
+  await fs2.fill('#cSummary', '별을 모아 강아지를 집에 데려다줘요');
+  await fs2.selectOption('#cBase', 'maze-escape');
+  await fs2.fill('#cLearn', '방향 읽기');
+  await fs2.click('#customBtn');
+  await fs2.waitForSelector('#plan:not([hidden])');
+  assert.match(await fs2.textContent('#planTopic'), /길 잃은 강아지 집 찾기/);
+  assert.match(await fs2.inputValue('[data-key="learnGoal"]'), /방향 읽기/);
+  await snap(fs2, 'custom-topic-plan');
+  await fs2.goto(`${base}/student/#home`);
   await fillPlan(fs2, '별', '별이의 과일 잡기');
   await fs2.goto(`${base}/student/#myapp`);
   await fs2.fill('#appCode', fruit);

@@ -1,7 +1,7 @@
 // 학생 앱 기획서: 데이터 구조 · 입력 항목(15개) · 프롬프트 만들기
 // 앱 화면, 인쇄용 기획서, 활동지가 모두 이 정의 하나를 같은 순서·같은 말로 씁니다.
 import { topicById, categoryById } from './topics.js';
-import { checkText, looksLikeRealName } from './recommend.js';
+import { checkText, badWords, looksLikeRealName } from './recommend.js';
 import { cleanImages, MAX_IMAGE_CHARS } from './images.js';
 import { PIXEL_STYLE, CHIBI_LOOK, BADGE_LOOK, REF_HINT, WORLD_MOTIFS, MAP_PRESETS, worldSpot } from './worldart.js';
 import { cleanAvatar } from './avatar.js';
@@ -173,12 +173,18 @@ export function topicView(plan) {
 // 기획서 글에 초등학생에게 알맞지 않은 말, 이미 있는 게임 이름이 있는지 확인
 export function planSafety(plan) {
   const issues = [];
+  // 직접 쓴 주제(나만의 주제)도 같은 규칙으로 확인 — n: 0 은 「1. 주제」 화면
+  if (plan.idea && plan.idea.themeId === 'custom') {
+    const c = checkText(`${plan.idea.title} ${plan.idea.summary} ${plan.idea.learn}`);
+    const words = [...badWords(c), ...c.privacy.map((x) => `개인정보: ${x}`)];
+    if (words.length) issues.push({ n: 0, label: '주제', words });
+  }
   for (const i of ALL_INPUTS) {
     const v = plan.f[i.key];
     const text = Array.isArray(v) ? v.join(' ') : v;
     if (!filled(text)) continue;
     const c = checkText(text);
-    const words = [...c.violence, ...c.blocked, ...c.existing.map((e) => e.label), ...c.privacy.map((x) => `개인정보: ${x}`)];
+    const words = [...badWords(c), ...c.privacy.map((x) => `개인정보: ${x}`)];
     if (words.length) issues.push({ n: i.section.n, label: i.short || i.label, words });
   }
   return issues;
@@ -340,7 +346,7 @@ const MANY = /(그리고|그리구|또한|그 다음에|그다음에|,|，|\n)/;
 export function fixCheck(problem, want) {
   const text = `${problem || ''} ${want || ''}`;
   const c = checkText(text);
-  const blocked = [...c.violence, ...c.blocked, ...c.existing.map((e) => e.label)];
+  const blocked = badWords(c);
   const p = String(problem || '').trim();
   const w = String(want || '').trim();
   return {

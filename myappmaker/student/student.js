@@ -1,6 +1,7 @@
 // [학생 앱] 주제 → 기획서 → 프롬프트 → 내 앱 → 입점
 import { topicById, categoryById } from '../shared/topics.js';
-import { recommend, surprise, ideaFromRec, EXAMPLE_CHIPS } from '../shared/recommend.js';
+import { recommend, surprise, ideaFromRec, EXAMPLE_CHIPS, checkCustomTopic, customRec, CUSTOM_LIMITS } from '../shared/recommend.js';
+import { TOPICS } from '../shared/topics.js';
 import {
   SECTIONS, PARTS, DIFFICULTY, topicView, planSafety, planWarnings, emptyPlan, normalizePlan, missingRequired, progress,
   buildAppPrompt, buildImagePrompts, imageSlots, buildAllPromptsText, buildFixPrompt, planRows,
@@ -262,6 +263,51 @@ function renderRecs() {
   }));
 }
 
+// ---------- 1-2. 나만의 주제 직접 쓰기 (추천에 없는 주제) ----------
+// 이미 있는 게임·우리 반 앱과 겹치는 것, 폭력·무서운 것(귀신·괴물·좀비)·혐오·정치·이념·인터넷 윤리에 어긋나는 것은 걸러요.
+$('#cBase').replaceChildren(h('option', { value: '' }, '— 노는 방식을 골라요 —'),
+  ...TOPICS.map((t) => h('option', { value: t.id }, `${t.emoji} ${t.name} — ${t.summary}`)));
+$('#cTitle').maxLength = CUSTOM_LIMITS.title;
+$('#cSummary').maxLength = CUSTOM_LIMITS.summary;
+$('#cLearn').maxLength = CUSTOM_LIMITS.learn;
+$('#cBase').onchange = () => {
+  const t = topicById($('#cBase').value);
+  $('#cLearn').placeholder = t ? `예) ${t.learn}` : '예) 방향 읽기, 덧셈, 분리배출 방법';
+};
+function openCustom(idea) {
+  const box = $('#customBox');
+  box.open = true;
+  if (idea && idea.themeId === 'custom') {
+    $('#cTitle').value = idea.title; $('#cSummary').value = idea.summary; $('#cLearn').value = idea.learn;
+    $('#cBase').value = plan.topicId || '';
+  }
+}
+$('#customBox').addEventListener('toggle', () => { if ($('#customBox').open) $('#cTitle').focus({ preventScroll: true }); });
+
+let appNamesCache = null;
+async function classAppNames() {
+  if (!api.enabled) return [];
+  if (appNamesCache) return appNamesCache;
+  try {
+    const w = await api.world();
+    appNamesCache = [...(w.items || []).map((x) => x.appName), ...(w.teacherApp ? [w.teacherApp.title] : [])].filter(Boolean);
+  } catch { return []; }   // 저장소에 닿지 않으면 이미 있는 게임 이름만 확인
+  return appNamesCache;
+}
+
+$('#customBtn').onclick = async () => {
+  const input = { title: $('#cTitle').value, summary: $('#cSummary').value, learn: $('#cLearn').value, base: $('#cBase').value };
+  const btn = $('#customBtn');
+  btn.disabled = true;
+  const names = await classAppNames();
+  btn.disabled = false;
+  const r = checkCustomTopic(input, names);
+  $('#customNotes').replaceChildren(...r.problems.map((p) => h('div', { class: `notice-item ${p.kind === 'empty' ? 'empty' : 'blocked'}`, role: 'status' }, p.text)));
+  if (!r.ok) { toast('🔎 확인할 것이 있어요. 아래 안내를 보고 고쳐 주세요', 3500); return; }
+  lastQuery = input.title;
+  chooseIdea(customRec(input));
+};
+
 // 말로 하기 (브라우저가 지원할 때만)
 const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (Speech) {
@@ -477,8 +523,8 @@ function renderPrompts() {
   sbox.replaceChildren(
     issues.length ? h('b', {}, '🚫 개인정보, 초등학생 게임에 알맞지 않은 말, 이미 있는 게임·캐릭터 이름이 있어요. 고친 뒤에 프롬프트를 복사할 수 있어요.') : '',
     ...warns.map((w) => h('p', {}, `🔒 ${w.n}번 ${w.label}: ${w.text} `, h('button', { class: 'chip small', type: 'button', onclick: () => { part = 1; go('plan'); } }, '고치러 가기'))),
-    h('ul', {}, ...issues.map((it) => h('li', {}, `${it.n}번 ${it.label}: 「${it.words.join('」, 「')}」 `,
-      h('button', { class: 'chip small', type: 'button', onclick: () => { part = SECTIONS.find((x) => x.n === it.n).part; go('plan'); } }, '고치러 가기')))));
+    h('ul', {}, ...issues.map((it) => h('li', {}, `${where(it)}: 「${it.words.join('」, 「')}」 `,
+      h('button', { class: 'chip small', type: 'button', onclick: () => goFix(it) }, '고치러 가기')))));
   $('#appPrompt').textContent = buildAppPrompt(plan);
   renderRefTips();
   $('#imagePrompts').replaceChildren(...imagePrompts().map((p) => h('div', { class: 'img-prompt' },
@@ -493,10 +539,17 @@ document.addEventListener('click', (e) => {
 });
 $('#copyAll').onclick = () => safeCopy(buildAllPromptsText(plan), '📋 프롬프트 전체를 복사했어요');
 
+// 문제 위치 글 (n: 0 은 직접 쓴 주제)
+const where = (it) => (it.n ? `${it.n}번 ${it.label}` : '1. 주제(직접 쓴 주제)');
+function goFix(it) {
+  if (!it.n) { openCustom(plan.idea); go('topics'); return; }
+  part = SECTIONS.find((x) => x.n === it.n).part; go('plan');
+}
+
 // 기획서에 알맞지 않은 말이 있으면 복사하지 않음
 function safeCopy(text, done) {
   const issues = planSafety(plan);
-  if (issues.length) { toast(`🚫 ${issues[0].n}번 ${issues[0].label}에 바꿔야 할 말(「${issues[0].words[0]}」)이 있어요`, 4500); go('prompts'); return; }
+  if (issues.length) { toast(`🚫 ${where(issues[0])}에 바꿔야 할 말(「${issues[0].words[0]}」)이 있어요`, 4500); go('prompts'); return; }
   copyText(text, done);
 }
 
@@ -801,7 +854,7 @@ function submissionPayload() {
 function canSubmit() {
   if (!plan.f.developer.trim() || !plan.f.appName.trim()) { toast('기획서 1번에 개발자 별명과 앱 이름을 써요', 4000); return false; }
   const issues = planSafety(plan);
-  if (issues.length) { toast(`🚫 ${issues[0].n}번 ${issues[0].label}에 바꿔야 할 말(「${issues[0].words[0]}」)이 있어요. 고친 뒤에 보내요`, 5000); go('prompts'); return false; }
+  if (issues.length) { toast(`🚫 ${where(issues[0])}에 바꿔야 할 말(「${issues[0].words[0]}」)이 있어요. 고친 뒤에 보내요`, 5000); go('prompts'); return false; }
   if (!plan.app.html && !plan.app.url) { toast('4. 내 앱에 코드를 먼저 넣어요', 4000); return false; }
   if (plan.app.html && appliedHtml().length > MAX_APP_BYTES) { toast(`앱이 너무 커요 (${Math.round(MAX_APP_BYTES / 1000)}KB까지). 그림을 하나 빼 볼까요?`, 5000); return false; }
   const bad = submitChecks().filter((c) => !c.ok);

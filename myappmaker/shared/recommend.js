@@ -30,7 +30,19 @@ const VIOLENCE = ['죽이', '죽여', '죽인', '죽게', '살인', '살해', '�
 const BLOCKED = ['19금', '성인용', '야한', '섹시', '도박', '카지노', '베팅', '배팅', '슬롯머신', '포커', '마약', '담배', '술마시', '음주', '현질',
   '과금', '가챠', '확률뽑기', '욕설', '욕하기', '혐오', '왕따', '따돌리'];
 // 싸움 느낌 — 추천은 하되 "싸우지 않는 방식"으로
-const SOFT = ['싸움', '싸우', '전투', '공격', '무찌르', '물리치', '대결', '배틀', '결투', '좀비'];
+const SOFT = ['싸움', '싸우', '전투', '공격', '무찌르', '물리치', '대결', '배틀', '결투'];
+// 무섭거나 징그러운 것(귀신·괴물·좀비 등) — 학생 게임 주제로 쓰지 않음 (대표 지시 2026-11-24)
+const HORROR = ['귀신', '유령', '괴물', '좀비', '요괴', '악마', '사탄', '마귀', '저주', '해골', '시체', '강시', '뱀파이어', '흡혈귀', '미라',
+  '처녀귀신', '저승사자', '괴담', '공포', '호러', '무서운', '소름', '엽기', '끔찍', '징그러', '크리처', '데몬'];
+// 혐오·욕설·차별·놀림 — 쓰지 않음
+const HATE = ['혐오', '차별', '비하', '욕설', '욕하기', '시발', '씨발', 'ㅅㅂ', 'ㅆㅂ', '병신', 'ㅂㅅ', '개새', '개새끼', '존나', '졸라', '지랄', '닥쳐',
+  '미친놈', '미친년', '찐따', '멍청이', '바보놀리', '놀리기', '왕따', '따돌리', '따돌림', '급식충', '틀딱', '맘충', '한남', '한녀', '장애인놀리', '못생긴사람', '뚱뚱한사람'];
+// 정치·이념 — 학생 게임 주제로 쓰지 않음
+const POLITICS = ['정치', '정당', '대통령', '국회의원', '여당', '야당', '좌파', '우파', '좌빨', '빨갱이', '수꼴', '일베', '공산주의', '독재', '탄핵',
+  '시위', '선동', '북한', '김정은', '김일성', '민주당', '국민의힘', '윤석열', '이재명', '문재인', '박근혜', '트럼프', '푸틴', '히틀러', '나치', '이념', '사이비', '이단'];
+// 인터넷 윤리에 어긋나는 것 — 쓰지 않음
+const NETETHICS = ['해킹', '해커', '비밀번호훔', '비번훔', '계정훔', '개인정보훔', '몰래카메라', '몰카', '도촬', '악플', '악성댓글', '사이버폭력',
+  '보이스피싱', '스미싱', '사기치', '사기꾼', '훔치기', '훔치는', '도둑질', '불법다운', '불법복제', '무단복제', '사칭', '바이러스퍼뜨', '디도스', '신상털'];
 
 // 개인정보 — 학생 앱 어디에도 쓰지 않음
 const PRIVACY = [
@@ -69,12 +81,12 @@ const EXISTING = [
   { names: ['겨울왕국', '엘사', '디즈니'], label: '겨울왕국', like: '눈과 얼음의 왕국', q: '공주 눈 겨울' },
   { names: ['아기상어', '핑크퐁'], label: '아기상어', like: '바다 친구들', q: '바다' },
   { names: ['뽀로로'], label: '뽀로로', like: '귀여운 동물 친구들', q: '펭귄 동물' },
-  { names: ['신비아파트'], label: '신비아파트', like: '도깨비와 유령 이야기', q: '도깨비 몬스터' },
+  { names: ['신비아파트'], label: '신비아파트', like: '신기한 이야기', q: '옛이야기 상상친구' },
   { names: ['티니핑', '캐치티니핑'], label: '티니핑', like: '마법 요정', q: '마법 요정' },
   { names: ['짱구'], label: '짱구', like: '학교와 친구 이야기', q: '학교 친구' },
   { names: ['도라에몽'], label: '도라에몽', like: '신기한 발명품', q: '로봇 과학 발명' },
   { names: ['소닉', 'sonic'], label: '소닉', like: '아주 빠르게 달리는 재미', q: '달리기' },
-  { names: ['커비', 'kirby'], label: '커비', like: '말랑한 캐릭터', q: '몬스터 친구' },
+  { names: ['커비', 'kirby'], label: '커비', like: '말랑한 캐릭터', q: '상상친구 슬라임' },
   { names: ['헬로키티', '산리오', '카카오프렌즈'], label: '캐릭터 상품', like: '귀여운 캐릭터 꾸미기', q: '패션 꾸미기' },
   { names: ['레고', 'lego'], label: '레고', like: '블록 쌓기', q: '블록 건축' },
 ];
@@ -203,10 +215,10 @@ export const THEMES = [
     ['theme-park', '🏙️', '우리 동네 도시 계획', '학교·병원·공원을 알맞은 곳에 배치해요', '공공시설과 지도', '사회 3~4학년'],
     ['escape-room', '🌉', '튼튼한 다리 만들기', '재료를 골라 무게를 버티는 다리를 만들어요', '구조와 균형', '과학 3~4학년'],
   ]),
-  TH('monster', '몬스터', '👾', ['몬스터', '괴물', '요괴', '유령', '귀신', '도깨비', '슬라임', '좀비'], '말랑말랑 꼬마 몬스터', '무섭지 않은 버섯 숲', [
-    ['monster-lab', '👾', '몬스터 친구 만들기', '몸의 부분을 조합해 나만의 몬스터 친구를 만들어요', '특징에 따라 분류하기', '과학 3~4학년'],
-    ['pet-care', '👻', '꼬마 유령 마음 돌보기', '꼬마 유령의 기분을 알아채고 위로해 줘요', '다른 사람의 마음 알아주기', '도덕 3~4학년'],
-    ['escape-room', '👹', '도깨비 수수께끼', '도깨비가 낸 수수께끼를 풀어 길을 열어요', '전래 동화와 수수께끼', '국어 1~2학년'],
+  TH('monster', '상상 친구', '🫧', ['상상친구', '상상', '슬라임', '말랑이', '도깨비', '몬스터'], '말랑말랑 꼬마 슬라임', '알록달록 버섯 숲', [
+    ['monster-lab', '🫧', '상상 친구 만들기', '몸의 부분을 조합해 나만의 상상 친구를 만들어요', '특징에 따라 분류하기', '과학 3~4학년'],
+    ['pet-care', '☁️', '꼬마 구름 마음 돌보기', '꼬마 구름의 기분을 알아채고 위로해 줘요', '다른 사람의 마음 알아주기', '도덕 3~4학년'],
+    ['escape-room', '📜', '옛이야기 수수께끼', '옛이야기 속 수수께끼를 풀어 길을 열어요', '전래 동화와 수수께끼', '국어 1~2학년'],
   ]),
   TH('adventure', '모험', '🗺️', ['보물', '해적', '모험', '탐험', '정글', '동굴', '지도', '캠핑', '숲'], '모자 쓴 꼬마 탐험가', '야자수 섬', [
     ['treasure-island', '🧭', '보물 지도 방향 찾기', '동서남북 힌트를 따라 보물을 찾아요', '방향과 지도 읽기', '사회 3~4학년'],
@@ -252,7 +264,13 @@ export function checkText(raw) {
   const existing = EXISTING.filter((e) => e.names.some((n) => found(sp, n)));
   const raw0 = String(raw || '');
   const privacy = PRIVACY.filter((x) => x.re.test(raw0)).map((x) => x.label);
-  return { violence: has(sp, VIOLENCE), blocked: has(sp, BLOCKED), soft: has(sp, SOFT), existing, privacy };
+  return { violence: has(sp, VIOLENCE), blocked: has(sp, BLOCKED), soft: has(sp, SOFT), horror: has(sp, HORROR), hate: has(sp, HATE),
+    politics: has(sp, POLITICS), ethics: has(sp, NETETHICS), existing, privacy };
+}
+
+// 막아야 할 말 모두 (기획서·고쳐 줘·나만의 주제 검사에 씀)
+export function badWords(c) {
+  return [...new Set([...c.violence, ...c.blocked, ...c.horror, ...c.hate, ...c.politics, ...c.ethics, ...c.existing.map((e) => e.label)])];
 }
 
 // 개발자 칸이 "성+이름" 진짜 이름처럼 보이면 알려 주기 (막지는 않음 — 별명일 수도 있어서)
@@ -279,9 +297,18 @@ export function recommend(raw, { limit = 6 } = {}) {
   if (chk.privacy.length) {
     notices.push({ kind: 'privacy', text: `🔒 ${chk.privacy.join('·')} 같은 개인정보는 쓰지 않아요. 좋아하는 것만 이야기해 주세요.` });
   }
-  if (chk.blocked.length) {
-    notices.push({ kind: 'blocked', text: '학교에서 만들 수 없는 내용이 들어 있어요. 친구들과 함께 즐길 수 있는 다른 주제를 이야기해 볼까요?' });
+  if (chk.blocked.length || chk.hate.length || chk.politics.length || chk.ethics.length) {
+    const why = chk.hate.length ? '친구를 놀리거나 미워하는 말은 게임에 쓸 수 없어요.'
+      : chk.politics.length ? '정치·이념에 관한 내용은 우리 반 게임 주제로 쓰지 않아요.'
+        : chk.ethics.length ? '해킹·몰래 찍기·악플처럼 인터넷 예절에 어긋나는 내용은 만들 수 없어요.'
+          : '학교에서 만들 수 없는 내용이 들어 있어요.';
+    notices.push({ kind: 'blocked', text: `${why} 친구들과 함께 즐길 수 있는 다른 주제를 이야기해 볼까요?` });
     return { notices, recs: [], themes: [] };
+  }
+  if (chk.horror.length) {
+    notices.push({ kind: 'violence', text: '귀신·괴물·좀비처럼 무섭거나 징그러운 내용은 초등학생 게임으로 만들 수 없어요. 대신 귀엽고 신기한 상상 친구 게임을 추천할게요.' });
+    for (const w of chk.horror) text = cut(text, w);
+    text += ' 상상친구 ';
   }
   for (const e of chk.existing) {
     notices.push({ kind: 'existing', text: `「${e.label}」은(는) 이미 있는 게임·캐릭터라서 그대로 만들 수 없어요. 좋아하는 점(${e.like})을 살려 나만의 게임으로 바꿔 봤어요!` });
@@ -330,4 +357,62 @@ export const EXAMPLE_CHIPS = ['🦖 공룡', '🚀 우주', '🍰 요리', '⚽ 
 // 기획서에 저장할 주제 아이디어 (추천에서 고른 것)
 export function ideaFromRec(r, query = '') {
   return { query: String(query).slice(0, 200), id: r.id, themeId: r.themeId, title: r.title, emoji: r.emoji, summary: r.summary, learn: r.learn, curr: r.curr, hero: r.hero, place: r.place };
+}
+
+// ---------- 나만의 주제 직접 쓰기 (대표 지시 2026-11-24) ----------
+// 추천 목록에 없는 주제도 쓸 수 있어요. 대신 아래를 모두 통과해야 기획을 시작할 수 있어요.
+//  - 이미 있는 게임·캐릭터 이름, 우리 반 앱 월드에 이미 있는 앱 이름과 같거나 거의 같은 것
+//  - 폭력, 귀신·괴물·좀비 같은 무서운 것, 혐오·욕설·차별, 정치·이념, 인터넷 윤리에 어긋나는 것, 도박·성인 내용
+//  - 개인정보
+//  - 배울 내용(배움 요소)이 빠진 것
+export const CUSTOM_LIMITS = { title: 20, summary: 60, learn: 40 };
+const KIND_TEXT = {
+  existing: (w) => `이미 있는 게임·캐릭터(${w.join(', ')})예요. 좋아하는 점만 살려 나만의 이름과 이야기로 바꿔 주세요.`,
+  dup: (w) => `우리 반 앱 월드에 이미 비슷한 이름의 앱(${w.join(', ')})이 있어요. 나만의 이름으로 바꿔 볼까요?`,
+  violence: (w) => `다치게 하는 말(${w.join(', ')})이 있어요. 구하고·지키고·피하는 이야기로 바꿔 주세요.`,
+  horror: (w) => `무섭거나 징그러운 말(${w.join(', ')})이 있어요. 귀엽고 신기한 친구로 바꿔 주세요.`,
+  hate: (w) => `친구를 놀리거나 미워하는 말(${w.join(', ')})은 쓸 수 없어요.`,
+  politics: (w) => `정치·이념에 관한 말(${w.join(', ')})은 우리 반 게임 주제로 쓰지 않아요.`,
+  ethics: (w) => `인터넷 예절에 어긋나는 말(${w.join(', ')})이 있어요. 해킹·몰래 찍기·악플은 게임으로 만들 수 없어요.`,
+  blocked: (w) => `학교에서 만들 수 없는 내용(${w.join(', ')})이 있어요.`,
+  privacy: (w) => `개인정보(${w.join(', ')})는 쓰지 않아요.`,
+};
+
+function sameName(a, b) {
+  const x = norm(a); const y = norm(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  const [s, l] = x.length <= y.length ? [x, y] : [y, x];
+  return s.length >= 3 && l.includes(s);
+}
+
+// input: { title, summary, learn, base }, appNames: 우리 반 앱 월드에 있는 앱 이름들
+export function checkCustomTopic(input, appNames = []) {
+  const v = { title: String(input.title || '').trim(), summary: String(input.summary || '').trim(), learn: String(input.learn || '').trim(), base: input.base };
+  const problems = [];
+  if (v.title.length < 2) problems.push({ kind: 'empty', field: 'title', text: '주제 이름을 두 글자 이상 써 주세요.' });
+  if (v.summary.length < 5) problems.push({ kind: 'empty', field: 'summary', text: '어떤 게임인지 한 줄로 소개해 주세요. (예: 별을 모아 길 잃은 강아지를 집에 데려다줘요)' });
+  if (v.learn.length < 2) problems.push({ kind: 'empty', field: 'learn', text: '게임을 하면서 무엇을 배우는지 써 주세요. 배울 내용이 있어야 우리 반 앱이 될 수 있어요.' });
+  if (!topicById(v.base)) problems.push({ kind: 'empty', field: 'base', text: '어떤 방식으로 노는 게임인지 골라 주세요.' });
+  const c = checkText(`${v.title} ${v.summary} ${v.learn}`);
+  const add = (kind, words) => { if (words.length) problems.push({ kind, text: KIND_TEXT[kind]([...new Set(words)]) }); };
+  add('existing', c.existing.map((e) => e.label));
+  add('dup', appNames.filter((n) => sameName(n, v.title)));
+  add('violence', c.violence);
+  add('horror', c.horror);
+  add('hate', c.hate);
+  add('politics', c.politics);
+  add('ethics', c.ethics);
+  add('blocked', c.blocked);
+  add('privacy', c.privacy);
+  return { ok: problems.length === 0, problems };
+}
+
+// 직접 쓴 주제 → 추천 카드와 같은 모양 (기획서·프롬프트가 그대로 씀)
+export function customRec(input) {
+  const b = topicById(input.base);
+  const title = String(input.title || '').trim().slice(0, CUSTOM_LIMITS.title);
+  return { id: `custom:${input.base}:${norm(title)}`, themeId: 'custom', themeEmoji: '✏️', base: b.id, emoji: '✏️', title,
+    summary: String(input.summary || '').trim().slice(0, CUSTOM_LIMITS.summary), learn: String(input.learn || '').trim().slice(0, CUSTOM_LIMITS.learn),
+    curr: b.curr, hero: b.hint.character, place: b.hint.place };
 }
