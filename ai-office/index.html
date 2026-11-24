@@ -861,6 +861,7 @@ function taskCard(t, withActs){
     <div class="title">${t.plan&&t.plan.type?`<span class="ptype">${esc(t.plan.type)}</span> `:""}${esc(t.title)}</div>${t.plan?planTable(t.plan):(t.detail?`<div class="det">${esc(t.detail)}</div>`:"")}${attList(t.attachments)}
     ${(acts||link||docBtn)?`<div class="acts">${acts}${docBtn}${link}</div>`:""}</div>`;
 }
+function safeRun(fn){ try{ fn(); }catch(err){ console.error(err); const el=$("#dbStatus"); if(el) el.textContent="화면 일부를 그리지 못했어요("+(fn.name||"")+"). 나머지는 정상이에요. 대화창에 알려 주세요."; } }
 function render(){
   const pending = tasks.filter(t=>t.status==="proposed");
   const confirms = tasks.filter(t=>t.status==="confirm");
@@ -870,7 +871,7 @@ function render(){
   const today=kstParts().date; const in7=new Date(Date.now()+7*864e5); const end=kstParts(in7).date;
   $("#kS").textContent=schedule.filter(s=>s.date>=today && s.date<=end).length;
   const n=$("#nApprove"); n.hidden=!(pending.length+confirms.length); n.textContent=pending.length+confirms.length;
-  renderTodo(); renderClasses();
+  safeRun(renderTodo); safeRun(renderClasses);
   $("#brief").innerHTML = office.briefing ? esc(office.briefing) : `<span class="note">매일 아침 비서실 도담이 하루 업무를 마치면 여기에 브리핑을 남겨요.</span>`;
   $("#miniFeed").innerHTML = feedRows(feed.slice(0,6));
   $("#feedList").innerHTML = feedRows(feed);
@@ -885,7 +886,7 @@ function render(){
     + (closed.length ? `<button class="more" type="button" data-toggle="closedTasks">${showClosed.closedTasks?"완료·반려 숨기기":`완료·반려된 업무 ${closed.length}건 보기`}</button>${showClosed.closedTasks?`<div class="list" style="opacity:.75">${closed.map(t=>taskCard(t,false)).join("")}</div>`:""}` : "");
   const sc = schedule.filter(s=>s.date>=today).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
   $("#schedList").innerHTML = sc.length ? sc.map(s=>`<div class="d"><div class="dd ${s.date===today?"today":""}">${esc(s.date.slice(5).replace("-","/"))}${s.time?`<br>${esc(s.time)}`:""}</div><div>${deptChip(s.dept)} ${esc(s.title)}${s.note?`<div class="note">${esc(s.note)}</div>`:""}</div></div>`).join("") : `<div class="empty">아직 잡힌 일정이 없어요. 전략부서가 첫 출근 때 2주치 운영 일정을 짜요.</div>`;
-  renderLibrary();
+  safeRun(renderLibrary);
   $("#appList").innerHTML = apps.length ? apps.map(a=>{
     const st=(a.status||"운영 중"); const cls=st.replace(/\s/g,"");
     const links=[safeUrl(a.liveUrl)?`<a href="${esc(a.liveUrl)}" target="_blank" rel="noopener">웹에서 열기</a>`:"", safeUrl(a.artifactUrl)?`<a href="${esc(a.artifactUrl)}" target="_blank" rel="noopener">Claude에서 열기</a>`:"", safeUrl(a.repoUrl)?`<a href="${esc(a.repoUrl)}" target="_blank" rel="noopener">코드</a>`:"", (()=>{ const p=(typeof libProjects==="function"?libProjects():[]).find(x=>x.appId===a._id); if(!p) return ""; const n=docs.filter(d=>docMeta(d).proj===p.id).length; return `<button class="pjchip" type="button" data-proj="${esc(p.id)}">📂 관련 자료 ${n}개 (교안·설명서·QR)</button>`; })()].filter(Boolean).join("");
