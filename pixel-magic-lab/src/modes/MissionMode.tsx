@@ -29,6 +29,8 @@ interface Props {
   onComplete: (m: Mission, blocks: number, bonus: boolean) => boolean;
   unlockAll: boolean;
   teacherTools: boolean;
+  /** 오늘 수업 모드: 선생님이 고른 미션만 보이고 모두 열려 있어요 */
+  lessonList?: Mission[] | null;
 }
 
 export function isUnlocked(i: number, progress: Progress, unlockAll: boolean) {
@@ -39,9 +41,12 @@ function initialProgram(m: Mission): Block[] {
   return loadMissionCode(m.id) ?? (m.initialCode ? m.initialCode() : []);
 }
 
-export function MissionMode({ active, missionId, setMissionId, progress, onComplete, unlockAll, teacherTools }: Props) {
-  const mission = MISSIONS.find((m) => m.id === missionId) ?? MISSIONS[0];
-  const mIndex = MISSIONS.indexOf(mission);
+export function MissionMode({ active, missionId, setMissionId, progress, onComplete, unlockAll, teacherTools, lessonList }: Props) {
+  const list = lessonList && lessonList.length ? lessonList : MISSIONS;
+  const inLesson = list !== MISSIONS;
+  const mission = list.find((m) => m.id === missionId) ?? list[0];
+  const mIndex = list.indexOf(mission);
+  const nextOpen = (n: Mission | undefined) => !!n && (inLesson || isUnlocked(MISSIONS.indexOf(n), progress, unlockAll));
   const target = useMemo(() => missionTarget(mission), [mission]);
   const base = useMemo<Grid>(() => makeGrid(target.width, target.height), [target]);
   const [program, setProgram] = useState<Block[]>(() => initialProgram(mission));
@@ -112,7 +117,7 @@ export function MissionMode({ active, missionId, setMissionId, progress, onCompl
 
   const errorId = runner.status === 'error' ? runner.result?.error?.blockId ?? null : null;
   const activeId = runner.status === 'running' || runner.status === 'paused' ? runner.step?.blockId ?? null : null;
-  const next = MISSIONS[mIndex + 1];
+  const next = list[mIndex + 1];
   const best = progress[mission.id];
 
   const goMission = (id: string) => {
@@ -298,7 +303,7 @@ export function MissionMode({ active, missionId, setMissionId, progress, onCompl
           </div>
         </div>
         <footer className="mission-nav">
-          <button type="button" className="btn plain small" disabled={mIndex === 0} onClick={() => goMission(MISSIONS[mIndex - 1].id)}>
+          <button type="button" className="btn plain small" disabled={mIndex === 0} onClick={() => goMission(list[mIndex - 1].id)}>
             <Icon name="chevL" size={16} /> 이전
           </button>
           <span className="par-note">
@@ -307,7 +312,7 @@ export function MissionMode({ active, missionId, setMissionId, progress, onCompl
           <button
             type="button"
             className="btn plain small"
-            disabled={!next || !isUnlocked(mIndex + 1, progress, unlockAll)}
+            disabled={!nextOpen(next)}
             onClick={() => next && goMission(next.id)}
           >
             다음 <Icon name="chevR" size={16} />
@@ -317,7 +322,7 @@ export function MissionMode({ active, missionId, setMissionId, progress, onCompl
 
       {showList && (
         <Modal title="마법 미션 지도" icon="map" onClose={() => setShowList(false)} wide>
-          <MissionMap current={mission.id} progress={progress} unlockAll={unlockAll} onPick={goMission} />
+          <MissionMap current={mission.id} progress={progress} unlockAll={unlockAll} onPick={goMission} only={inLesson ? list.map((m) => m.id) : undefined} />
         </Modal>
       )}
 
@@ -395,11 +400,11 @@ export function MissionMode({ active, missionId, setMissionId, progress, onCompl
   );
 }
 
-export function MissionMap({ current, progress, unlockAll, onPick }: { current: string; progress: Progress; unlockAll: boolean; onPick: (id: string) => void }) {
+export function MissionMap({ current, progress, unlockAll, onPick, only }: { current: string; progress: Progress; unlockAll: boolean; onPick: (id: string) => void; only?: string[] }) {
   const levels = ['easy', 'normal', 'challenge'] as const;
   return (
     <div className="mission-map">
-      {levels.map((lv) => (
+      {levels.filter((lv) => !only || MISSIONS.some((m) => m.level === lv && only.includes(m.id))).map((lv) => (
         <div key={lv} className="map-level">
           <h3>
             <span className={`level-badge lv-${lv}`}>{LEVEL_INFO[lv].name}</span>
@@ -407,8 +412,8 @@ export function MissionMap({ current, progress, unlockAll, onPick }: { current: 
           </h3>
           <div className="map-cards">
             {MISSIONS.map((m, i) => {
-              if (m.level !== lv) return null;
-              const open = isUnlocked(i, progress, unlockAll);
+              if (m.level !== lv || (only && !only.includes(m.id))) return null;
+              const open = !!only || isUnlocked(i, progress, unlockAll);
               const rec = progress[m.id];
               return (
                 <button

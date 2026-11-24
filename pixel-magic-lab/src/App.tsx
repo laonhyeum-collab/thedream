@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, type IconName } from './components/Icons';
 import { Logo, Mascot } from './components/Mascot';
 import { ConfirmModal, Modal, Stars, Toast } from './components/ui';
@@ -8,6 +8,8 @@ import { TheaterMode } from './modes/TheaterMode';
 import { MISSIONS, type Mission } from './data/missions';
 import { clearMissionData, loadProgress, loadSettings, saveProgress, saveSettings, type Progress, type Settings } from './lib/storage';
 import { setMuted, sfx } from './lib/sound';
+import { parseLesson } from './lib/lesson';
+import { LessonMaker } from './components/LessonMaker';
 
 type Mode = 'mission' | 'studio' | 'theater';
 
@@ -27,6 +29,8 @@ export function wizardTitle(stars: number): string {
 }
 
 export default function App() {
+  // 오늘 수업 모드(?lesson=m1.m3): 고른 미션만, 미션 모드만 보여요
+  const lessonList = useMemo(() => parseLesson(window.location.search), []);
   const [mode, setMode] = useState<Mode>('mission');
   const [settings, setSettings] = useState<Settings>(() => loadSettings());
   const [progress, setProgress] = useState<Progress>(() => loadProgress());
@@ -129,6 +133,14 @@ export default function App() {
             <p>작은 픽셀에 마법을 걸어봐!</p>
           </div>
         </div>
+        {lessonList ? (
+          <div className="lesson-banner" role="status">
+            <Icon name="target" size={20} />
+            <span>
+              <b>오늘 수업 모드</b> · 미션 {lessonList.length}개
+            </span>
+          </div>
+        ) : (
         <nav className="mode-tabs" aria-label="모드 선택">
           {MODES.map((m) => (
             <button
@@ -148,6 +160,7 @@ export default function App() {
             </button>
           ))}
         </nav>
+        )}
         <div className="top-right">
           <div className="wizard-badge" title={`모은 별 ${totalStars}개 · 완료한 미션 ${doneCount}개`}>
             <Icon name="star" size={20} className="star-on" />
@@ -178,6 +191,7 @@ export default function App() {
           onComplete={onComplete}
           unlockAll={settings.unlockAll}
           teacherTools={teacherTools}
+          lessonList={lessonList}
         />
         <StudioMode active={mode === 'studio'} onDirty={onDirtyStudio} registerSave={regStudio} toast={toast} />
         <TheaterMode active={mode === 'theater'} onDirty={onDirtyTheater} registerSave={regTheater} toast={toast} />
@@ -308,6 +322,12 @@ export default function App() {
                   <Icon name="trash" size={18} /> 미션 기록 초기화
                 </button>
               </div>
+              <LessonMaker initial={lessonList ? lessonList.map((m) => m.id) : []} toast={toast} />
+              {lessonList && (
+                <a className="btn plain" href={window.location.pathname}>
+                  수업 모드 끝내기(전체 화면으로)
+                </a>
+              )}
               <p className="modal-note">
                 모든 기록과 작품은 이 컴퓨터의 브라우저에만 저장돼요. 학생 작품은 공방·극장에서 PNG·GIF로 내려받아 모을 수 있어요.
               </p>
