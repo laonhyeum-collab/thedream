@@ -932,7 +932,7 @@ document.addEventListener("click", async e=>{
   const act=b.dataset.act; const now=new Date().toISOString();
   const t00 = tasks.find(x=>x._id===b.dataset.id)||{};
   const typed = (document.getElementById("rev-"+b.dataset.id)?.value||document.getElementById("rej-"+b.dataset.id)?.value||"").trim();
-  const HOLD_RE=/보류|당분간|나중에|잠시 멈|진행하지 않|진행 안|하지 않음|멈춰/;
+  const HOLD_RE=/보류/;
   let act0=act; if((act==="revise"||act==="reject") && HOLD_RE.test(typed)) act0="hold";
   if(act0==="hold"||act0==="resume"){
     const now2=new Date().toISOString(); let p;
