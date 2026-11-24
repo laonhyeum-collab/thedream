@@ -47,6 +47,10 @@ jobs:
         working-directory: games/snow-match
         run: npm test
 
+      - name: 블록 로봇 교실 미로 테스트
+        working-directory: games/robot-maze
+        run: npm test
+
       - name: 배포할 파일 모으기
         run: |
           mkdir -p _site
@@ -62,6 +66,7 @@ jobs:
           mkdir -p _site/myappmaker/docs && cp myappmaker/docs/*.docx _site/myappmaker/docs/
           mkdir -p _site/daeun/comfort-food && cp daeun/comfort-food/index.html daeun/comfort-food/qr.png daeun/comfort-food/qr-card.png _site/daeun/comfort-food/
           mkdir -p _site/games/snow-match && cp -r games/snow-match/index.html games/snow-match/style.css games/snow-match/js games/snow-match/data _site/games/snow-match/
+          mkdir -p _site/games/robot-maze && cp -r games/robot-maze/index.html games/robot-maze/style.css games/robot-maze/js games/robot-maze/data _site/games/robot-maze/
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v5
