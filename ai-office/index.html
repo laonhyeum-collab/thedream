@@ -185,6 +185,15 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
 .imr .drop{border:2px dashed var(--line);border-radius:10px;padding:14px;text-align:center;font-size:13px;color:var(--muted);cursor:pointer;background:var(--bg)}
 .imr .drop:focus{outline:2px solid var(--accent);outline-offset:2px}
 .imr .drop.on{border-color:var(--accent);color:var(--ink)}
+.imr .stg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:12px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg)}
+@media (max-width:640px){.imr .stg{grid-template-columns:1fr}}
+.imr .stg img{width:100%;max-height:320px;object-fit:contain;border-radius:8px;border:1px solid var(--line);background:var(--panel)}
+.imr .stg ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:13.5px}
+.imr .stg li{display:flex;gap:8px;align-items:flex-start;line-height:1.45}
+.imr .stg li .mk{flex:none;width:22px;text-align:center}
+.imr .stg li .why{display:block;font-size:12px;color:var(--muted)}
+.imr .stg .vd{font-weight:700;font-size:14px}
+.imr .stg .vd.ok{color:var(--ok,#1a7f4b)} .imr .stg .vd.bad{color:var(--bad,#b4232c)}
 .imr img.pv{max-width:220px;max-height:220px;border-radius:8px;display:block;border:1px solid var(--line)}
 .imgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .imgrid a{display:grid;gap:4px;font-size:12px;color:var(--ink);text-decoration:none}
@@ -1135,28 +1144,83 @@ function renderImages(){ renderTodo();
     <div class="meta">쓰는 곳: ${esc(r.place||"")}${r.ratio?` · 비율 ${esc(RATIO[r.ratio]||r.ratio)}`:""}${r.purpose?` · ${esc(r.purpose)}`:""}</div>
     <div class="pr" id="pr-${esc(r._id)}">${esc(r.prompt||"")}</div>
     <div class="acts"><button class="btn pri" type="button" data-copy="${esc(r._id)}">프롬프트 복사</button>${canWrite!==false?`<button class="btn ghost" type="button" data-imcancel="${esc(r._id)}">필요 없어요</button>`:""}<span class="note" id="imsg-${esc(r._id)}" aria-live="polite"></span></div>
-    ${canWrite!==false?`<div class="drop" tabindex="0" role="button" data-drop="${esc(r._id)}" aria-label="${esc(r.title||"그림")} 그림 올리기">여기를 누르고 그림을 붙여넣기(Ctrl+V)하거나, 눌러서 파일을 고르거나, 끌어다 놓으세요</div>`:""}
+    ${canWrite!==false?(stage[r._id]?stageHtml(r):`<div class="drop" tabindex="0" role="button" data-drop="${esc(r._id)}" aria-label="${esc(r.title||"그림")} 그림 올리기">여기를 누르고 그림을 붙여넣기(Ctrl+V)하거나, 눌러서 파일을 고르거나, 끌어다 놓으세요<br><span class="note">올리기 전에 요청한 컨셉과 맞는지 먼저 확인해 드려요</span></div>`):""}
   </div>`).join("") : `<div class="empty">지금 그려 주실 그림이 없어요.</div>`;
   const done = imgReqs.filter(r=>r.image&&r.image.url&&String(r.image.url).startsWith("/_blob/"));
   $("#imgDoneList").innerHTML = done.length ? done.slice(0,40).map(r=>`<a href="${esc(r.image.url)}" target="_blank" rel="noopener"><img src="${esc(r.image.url)}" alt="${esc(r.title||"")}"><span>${esc(r.title||"")}</span><span class="note">${esc(IMST[r.status]||r.status)}</span></a>`).join("") : `<div class="empty">아직 받은 그림이 없어요.</div>`;
 }
 const imgPick=document.createElement("input"); imgPick.type="file"; imgPick.accept="image/*"; imgPick.hidden=true; document.body.appendChild(imgPick);
 let imgTarget=null;
-async function uploadImageFor(id, file){
+// ---- 그림 컨셉 확인: 올리기 전에 요청과 나란히 비교 ----
+const stage={};   // id -> {file,url,items:[{t,ok,why}],verdict,by,busy,err}
+function checksOf(r){
+  if(Array.isArray(r.checks)&&r.checks.length) return r.checks.map(String).slice(0,8);
+  const out=[]; String(r.prompt||"").split("\n").forEach(l=>{ const m=l.match(/^\s*[-•]\s*(.+)$/); if(m) out.push(m[1].trim()); });
+  if(r.ratio) out.push("비율 "+(RATIO[r.ratio]||r.ratio));
+  return (out.length?out:[String(r.prompt||r.title||"요청한 그림")]).slice(0,8);
+}
+function stageHtml(r){
+  const g=stage[r._id], id=esc(r._id);
+  const items=g.items.map((x,k)=>`<li><input type="checkbox" data-stgck="${id}" data-k="${k}" ${x.ok===true?"checked":""} aria-label="${esc(cut(x.t,60))} 맞음"><span class="mk">${x.ok===true?"✅":x.ok===false?"⚠️":""}</span><label style="flex:1">${esc(cut(x.t,160))}${x.why?`<span class="why">${esc(x.why)}</span>`:""}</label></li>`).join("");
+  const bad=g.items.filter(x=>x.ok===false).length, unk=g.items.filter(x=>x.ok!==true&&x.ok!==false).length;
+  const vd = g.busy ? `<div class="vd">🔎 요청한 컨셉과 비교하는 중…</div>`
+    : bad ? `<div class="vd bad">⚠️ 요청과 다른 곳 ${bad}개 — 다시 그리는 걸 추천해요</div>`
+    : unk ? `<div class="vd">항목을 보고 맞으면 체크해 주세요 ${g.err?`<span class="note">(${esc(g.err)})</span>`:""}</div>`
+    : `<div class="vd ok">✅ 요청한 컨셉과 맞아요</div>`;
+  return `<div class="stg"><div><img src="${esc(g.url)}" alt="올리려는 그림 미리보기"><div class="note">올리려는 그림 · 아직 보내지 않았어요</div></div>
+    <div style="display:grid;gap:8px;align-content:start">${vd}<ul>${items}</ul>
+    ${g.fix&&bad?`<div class="note">다시 그릴 때 덧붙일 말: <b>${esc(g.fix)}</b> <button class="btn ghost" type="button" data-stgfix="${id}">복사</button></div>`:""}
+    <div class="acts"><button class="btn pri" type="button" data-stgsend="${id}" ${g.busy?"disabled":""}>${bad?"그래도 이대로 보내기":"이대로 보내기"}</button><button class="btn ghost" type="button" data-stgredo="${id}">다른 그림으로</button>${g.busy||g.by==="ai"?"":`<button class="btn ghost" type="button" data-stgai="${id}">AI로 비교</button>`}</div></div></div>`;
+}
+async function stageImage(id, file){
   const msg=t=>{ const el=document.getElementById("imsg-"+id); if(el) el.textContent=t; };
   if(!file || !/^image\//.test(file.type)){ msg("그림 파일만 올릴 수 있어요."); return; }
   if(file.size>MAXB){ msg("20MB가 넘는 그림은 올릴 수 없어요."); return; }
+  const r=imgReqs.find(x=>x._id===id); if(!r) return;
+  if(stage[id]?.url) URL.revokeObjectURL(stage[id].url);
+  stage[id]={file, url:URL.createObjectURL(file), items:checksOf(r).map(t=>({t,ok:null})), by:"ceo"};
+  renderImages(); aiCheck(id);
+}
+async function aiCheck(id){
+  const g=stage[id], r=imgReqs.find(x=>x._id===id); if(!g||!r) return;
+  const sample=await sampleReady; let lim=null; try{ lim=sample? await sample.limits():null; }catch(_){}
+  if(!sample||!lim?.images){ g.err="이 화면에서는 AI 비교를 쓸 수 없어 직접 체크해 주세요"; renderImages(); return; }
+  g.busy=true; renderImages();
+  const prompt=`너는 그림 검수자야. 첨부한 그림 1장이 아래 '요청'과 맞는지 항목별로 판단해.\n요청 제목: ${r.title||""}\n요청 프롬프트:\n${r.prompt||""}\n\n확인 항목(순서 그대로):\n${g.items.map((x,k)=>`${k}. ${x.t}`).join("\n")}\n\n규칙: 항목마다 그림에서 실제로 보이는 것으로만 판단. 글자 철자·사람 수·색·구도·비율·'넣지 말라'고 한 것까지 엄격히. 애매하면 ok=false. why는 초등 교사가 바로 이해할 20자 안팎 한국어.\nJSON만 출력: {"items":[{"ok":true|false,"why":"..."}],"fix":"다시 그릴 때 프롬프트 끝에 덧붙일 한 문장(모두 맞으면 빈 문자열)"}`;
+  try{
+    const j=await sample.json(prompt,{images:[g.file], modelTier:"quick"});
+    (j?.items||[]).forEach((x,k)=>{ if(g.items[k]){ g.items[k].ok=!!x.ok; g.items[k].why=String(x.why||""); } });
+    g.fix=String(j?.fix||""); g.by="ai"; g.err="";
+  }catch(e){ g.err = e?.code==="not_granted"?"AI 비교를 허용하지 않아 직접 체크해 주세요":"AI 비교를 못 했어요. 직접 체크해 주세요"; }
+  g.busy=false; renderImages();
+}
+async function uploadImageFor(id){
+  const g=stage[id]; if(!g) return; const file=g.file;
+  const msg=t=>{ const el=document.getElementById("imsg-"+id); if(el) el.textContent=t; };
   const a = await assetsReady; if(!a){ msg("그림은 이 페이지를 편집할 수 있는 계정에서만 올릴 수 있어요."); return; }
   if(!dbRef){ msg("사무실 데이터에 연결되지 않았어요."); return; }
   msg("그림 올리는 중…");
   let r; try{ r = await a.upload(file); }catch(e){ msg(attErr(e?.code)); return; }
   const now=new Date().toISOString();
   const name = file.name && file.name!=="image.png" ? file.name : "gpt-그림.png";
-  try{ await dbRef.doc("imageReqs/"+id).update({status:"uploaded", image:{id:r.id, url:r.url, name, type:r.contentType||file.type}, uploadedAt:now, updatedAt:now}); }
+  const bad=g.items.filter(x=>x.ok===false).map(x=>x.t);
+  const conceptCheck={by:g.by, at:now, items:g.items.map(x=>({t:x.t, ok:x.ok===true?true:x.ok===false?false:null, why:x.why||""})), mismatch:bad.length, sentAnyway:bad.length>0};
+  try{ await dbRef.doc("imageReqs/"+id).update({status:"uploaded", image:{id:r.id, url:r.url, name, type:r.contentType||file.type}, conceptCheck, uploadedAt:now, updatedAt:now}); }
   catch(e){ msg("저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."); return; }
+  URL.revokeObjectURL(g.url); delete stage[id]; renderImages();
   const w = await wakeOffice("image-"+id);
-  $("#imgMsg").textContent = w==="ok" ? "그림을 받았어요! 담당 직원이 바로 자리에 넣고 있어요." : "그림을 받았어요. 다음 정기 점검(매시 7분)에 자리에 넣어요.";
+  $("#imgMsg").textContent = (bad.length?"요청과 다른 곳이 있다고 표시해서 보냈어요. 담당 직원이 다시 확인해요. ":"")+(w==="ok" ? "그림을 받았어요! 담당 직원이 바로 자리에 넣고 있어요." : "그림을 받았어요. 다음 정기 점검(매시 7분)에 자리에 넣어요.");
 }
+document.addEventListener("click", e=>{
+  const sd=e.target.closest("[data-stgsend]"); if(sd){ sd.disabled=true; uploadImageFor(sd.dataset.stgsend); return; }
+  const rd=e.target.closest("[data-stgredo]"); if(rd){ const g=stage[rd.dataset.stgredo]; if(g) URL.revokeObjectURL(g.url); delete stage[rd.dataset.stgredo]; renderImages(); return; }
+  const ai=e.target.closest("[data-stgai]"); if(ai){ aiCheck(ai.dataset.stgai); return; }
+  const fx=e.target.closest("[data-stgfix]"); if(fx){ const g=stage[fx.dataset.stgfix]; const r=imgReqs.find(x=>x._id===fx.dataset.stgfix); if(g&&r){ navigator.clipboard?.writeText((r.prompt||"")+"\n- 꼭 지켜 주세요: "+g.fix).then(()=>{ fx.textContent="프롬프트+보완 복사됨"; },()=>{}); } return; }
+});
+document.addEventListener("change", e=>{
+  const c=e.target.closest?.("[data-stgck]"); if(!c) return; const g=stage[c.dataset.stgck]; if(!g) return;
+  const it=g.items[+c.dataset.k]; if(it){ it.ok = c.checked ? true : (g.by==="ai"&&it.why ? false : null); } renderImages();
+});
 document.addEventListener("click", async e=>{
   const c=e.target.closest("[data-copy]");
   if(c){ const r=imgReqs.find(x=>x._id===c.dataset.copy); if(!r) return; const el=document.getElementById("imsg-"+r._id);
@@ -1168,15 +1232,15 @@ document.addEventListener("click", async e=>{
   const x=e.target.closest("[data-imcancel]");
   if(x && dbRef){ x.disabled=true; try{ await dbRef.doc("imageReqs/"+x.dataset.imcancel).update({status:"canceled", updatedAt:new Date().toISOString()}); }catch(_){ x.disabled=false; } }
 });
-imgPick.addEventListener("change", ()=>{ if(imgTarget && imgPick.files[0]) uploadImageFor(imgTarget, imgPick.files[0]); });
+imgPick.addEventListener("change", ()=>{ if(imgTarget && imgPick.files[0]) stageImage(imgTarget, imgPick.files[0]); });
 document.addEventListener("paste", e=>{
   const d=document.activeElement?.closest?.("[data-drop]"); if(!d) return;
   const f=[...(e.clipboardData?.files||[])].find(f=>/^image\//.test(f.type)); if(!f) return;
-  e.preventDefault(); uploadImageFor(d.dataset.drop, f);
+  e.preventDefault(); stageImage(d.dataset.drop, f);
 });
 document.addEventListener("dragover", e=>{ const d=e.target.closest?.("[data-drop]"); if(d){ e.preventDefault(); d.classList.add("on"); } });
 document.addEventListener("dragleave", e=>{ const d=e.target.closest?.("[data-drop]"); if(d) d.classList.remove("on"); });
-document.addEventListener("drop", e=>{ const d=e.target.closest?.("[data-drop]"); if(!d) return; e.preventDefault(); d.classList.remove("on"); const f=[...(e.dataTransfer?.files||[])][0]; if(f) uploadImageFor(d.dataset.drop, f); });
+document.addEventListener("drop", e=>{ const d=e.target.closest?.("[data-drop]"); if(!d) return; e.preventDefault(); d.classList.remove("on"); const f=[...(e.dataTransfer?.files||[])][0]; if(f) stageImage(d.dataset.drop, f); });
 
 // ---------- Ask staff ----------
 let qna=[], company={}; const LEADS=["hangyeol","irum","saebom","haneul","harang","garam"];
