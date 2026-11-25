@@ -445,15 +445,15 @@ form.order input[type=checkbox]{flex:none}
 
   <section class="panel" data-pane="meet" hidden>
     <form class="order" id="meetForm" aria-labelledby="meetH">
-      <div class="r" style="align-items:center;justify-content:space-between"><h2 id="meetH" style="margin:0">회의 안건</h2>
+      <div class="r" style="align-items:center;justify-content:space-between"><h2 id="meetH" style="margin:0">회의 소집</h2>
         <div class="seg" role="tablist" aria-label="회의 종류"><button type="button" data-mkind="heads" aria-selected="true">부서장 회의</button><button type="button" data-mkind="dept" aria-selected="false">부서 회의</button><button type="button" data-mkind="free" aria-selected="false">자유 회의</button></div></div>
-      <textarea id="meetTopic" placeholder="대표님이 회의에서 꺼낼 안건이나 질문 (예: 이번 주 누락된 업무가 뭐가 있죠? 담당별로 알려 주세요)" aria-label="회의 안건" style="min-height:64px"></textarea>
+      <input id="meetTopic" placeholder="회의 제목 (선택 · 예: 주간 업무 점검)" aria-label="회의 제목">
       <div class="r" id="meetDeptWrap" hidden><select id="meetDept" aria-label="부서"></select></div>
       <div class="mtpick" id="meetWho" hidden></div>
       <div class="note" id="meetWhoSum"></div>
-      <div class="r"><button class="btn pri" type="submit" id="meetBtn">회의 시작</button><button class="btn ghost" type="button" id="meetStop" hidden>그만</button><span class="note" id="meetMsg" aria-live="polite"></span></div>
+      <div class="r"><button class="btn pri" type="submit" id="meetBtn">회의 소집</button><button class="btn ghost" type="button" id="meetStop" hidden>그만</button><span class="note" id="meetMsg" aria-live="polite"></span></div>
     </form>
-    <p class="note" style="margin:10px 0 0">진행: ① 대표님이 안건을 말하면(회의 시작) 참석자가 회의실에 모이고, 그 안건과 관련된 담당자만 답해요. 묻지 않은 의견은 내지 않아요 → ② 위 사무실 화면의 회의 창에서 대표님이 이어서 질문·지시를 말하면 담당자가 답해요(필요한 만큼) → ③ '회의 마치기'를 누르면 할 일이 업무로 올라가 배분표에 들어가요. '대표님이 정할 것'은 회의록에서 바로 정해요.</p>
+    <p class="note" style="margin:10px 0 0">진행: ① 회의 종류를 고르고 '회의 소집'을 누르면 참석자가 회의실에 모여요(아무도 먼저 말하지 않아요) → ② 사무실 화면의 회의 창에 대표님이 안건을 말씀하면 관련 담당자만 답해요. 이어서 질문·지시도 그렇게 해요 → ③ '회의 마치기'를 누르면 할 일이 업무로 올라가고, 모두 자기 자리로 돌아가 일해요. '대표님이 정할 것'은 회의록에서 바로 정해요.</p>
     <h2 style="margin-top:16px">회의록</h2>
     <div id="meetLive"></div>
     <div id="meetLog"></div>
@@ -837,7 +837,7 @@ function pickTrip(a){
   else spot = SPOTS.hall[Math.floor(Math.random()*SPOTS.hall.length)];
   routeTo(a, spot[0]*T+8, spot[1]*T+8); a.away=true;
 }
-function working(){ const k=kstParts(); const wk=!["Sat","Sun"].includes(k.wd); const st=office.status||""; if(st==="근무 중") return true; return k.h>=8; }
+function working(){ if(window.__meetHold) return true; const k=kstParts(); const wk=!["Sat","Sun"].includes(k.wd); const st=office.status||""; if(st==="근무 중") return true; return k.h>=8; }
 
 let last=performance.now(), tick=0;
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -888,7 +888,7 @@ function placeBubbles(){
   if(bubbleClock>4){ bubbleClock=0; bubbleTurn=(bubbleTurn+1)%actors.length; }
   actors.forEach((a,i)=>{
     const b=bubbles[a.m.id];
-    const show = (awake && (i===bubbleTurn || i===(bubbleTurn+4)%actors.length || a.sel)) || isSpeaking(a.m.id);
+    const show = (awake && !(window.__meetHold && (meetIds||[]).includes(a.m.id)) && (i===bubbleTurn || i===(bubbleTurn+4)%actors.length || a.sel)) || isSpeaking(a.m.id);
     const line = latestLine(a.m);
     if(show && line){ b.textContent=`${a.m.name}: ${line}`; b.style.left=(a.x/640*100)+"%"; b.style.top=((a.y-18)/400*100)+"%"; b.style.opacity=1; }
     else b.style.opacity=0;
@@ -1522,7 +1522,7 @@ document.addEventListener("click", async e=>{
 // ---------- Meetings (회의실) ----------
 let meetings=[]; const meetShown=new Set();
 const HEADS=["hangyeol","irum","saebom","haneul","harang","garam"];
-let meetKind="heads", liveId="";
+let meetKind="heads", liveId="", meetIds=[];
 try{ liveId=localStorage.getItem("office-live-meet")||""; }catch(_){ liveId=""; }
 const setLive=id=>{ liveId=id||""; try{ id?localStorage.setItem("office-live-meet",id):localStorage.removeItem("office-live-meet"); }catch(_){} renderRoom(); };
 // speech bubbles over the speaking staff
@@ -1530,9 +1530,10 @@ const speakNow={}; let speakingId="";
 function speak(who, text, ms){ const m=MEMBERS.find(x=>String(who||"").includes(x.name)); if(!m) return; speakNow[m.id]={text, until:Date.now()+(ms||6000)}; speakingId=m.id; }
 function isSpeaking(id){ const s=speakNow[id]; return !!(s && s.until>Date.now()); }
 function animateRecentMeeting(){ const m=meetings[0]; if(!m||meetBusy) return; const key=m._id+"|"+m.updatedAt; if(meetShown.has(key)) return; meetShown.add(key);
-  if(Date.now()-new Date(m.updatedAt||m.at)>15*60e3) return;
+  if(Date.now()-new Date(m.updatedAt||m.at)>15*60e3 && !(m.status==="live" && m._id===liveId)) return;
   const withCeo=m.convenedBy==="대표"||m.requestedBy==="대표"||(m.rounds||[]).some(r=>r.ceo);
-  const go=()=>{ if(window.__o3meet){ try{ window.__o3meet(m.attendees||[], withCeo); }catch(_){} } else setTimeout(go,1500); }; go(); }
+  const hold=m.status==="live" && m._id===liveId;
+  const go=()=>{ if(window.__o3meet){ try{ window.__o3meet(m.attendees||[], withCeo, hold); }catch(_){} } else setTimeout(go,1500); }; go(); }
 function meetAttendees(){
   if(meetKind==="heads") return HEADS.slice();
   if(meetKind==="dept"){ const d=$("#meetDept").value; return MEMBERS.filter(m=>m.dept===d).map(m=>m.id).slice(0,8); }
@@ -1588,12 +1589,12 @@ async function runMeeting(mtg, ceoNote){
   const sample=await sampleReady; if(!sample||meetBusy) return; meetBusy=true;
   const people=mtg.attendees.map(id=>MEMBERS.find(m=>m.id===id)).filter(Boolean);
   const btn=$("#meetBtn"), stop=$("#meetStop"); btn.disabled=true; stop.hidden=false; const ctl=new AbortController(); stop.onclick=()=>ctl.abort();
-  $("#meetMsg").textContent=""; roomWait = (mtg.rounds||[]).length ? "담당자가 대표님 말씀에 답하는 중…" : `${people.map(m=>m.name).join("·")} 회의실에 모였어요 · 안건에 답하는 중…`;
+  $("#meetMsg").textContent=""; roomWait = "담당자가 대표님 말씀에 답하는 중…";
   const id=mtg._id||("m-"+Date.now().toString(36)); const before=allLines(mtg).length + (ceoNote?0:0);
   if(!mtg._id){ mtg._id=id; }
-  if(!meetings.some(x=>x._id===id)) meetings.unshift({...mtg, _id:id, rounds:[...(mtg.rounds||[]), {at:new Date().toISOString(), ceo:ceoNote||mtg.topic, speeches:[]}], at:new Date().toISOString(), updatedAt:new Date().toISOString(), status:"live"});
+  meetIds=mtg.attendees||[];
   reveal={id, n:allLines(mtg).length+1, timer:0}; setLive(id);
-  try{ window.__o3meet&&window.__o3meet(mtg.attendees, true); }catch(_){}
+  try{ window.__o3meet&&window.__o3meet(mtg.attendees, true, true); }catch(_){}
   window.scrollTo({top:0,behavior:"smooth"});
   let n=0;
   try{
@@ -1603,7 +1604,7 @@ async function runMeeting(mtg, ceoNote){
     else {
       const now=new Date().toISOString();
       const rounds=[...(mtg.rounds||[]), {at:now, ceo:ceoNote||mtg.topic, speeches:j.speeches.map(x=>({who:cut(x.who,20), text:cut(x.text,800)}))}];
-      const upd={topic:mtg.topic, attendees:mtg.attendees, kind:mtg.kind||meetKind, convenedBy:mtg.convenedBy||"대표", status:"live", rounds, conclusion:(j.conclusion||[]).map(x=>cut(x,300)), actions:(j.actions||[]).slice(0,8).map(a=>({dept:["edu","strategy","app","media"].includes(a.dept)?a.dept:"strategy", owner:cut(a.owner,20), title:cut(a.title,80), detail:cut(a.detail,500)})), decide:(j.decide||[]).map(x=>cut(x,200)), decisions:mtg.decisions||[], updatedAt:now, at:mtg.at||now};
+      const upd={topic:mtg.topic, untitled:false, attendees:mtg.attendees, kind:mtg.kind||meetKind, convenedBy:mtg.convenedBy||"대표", status:"live", rounds, conclusion:(j.conclusion||[]).map(x=>cut(x,300)), actions:(j.actions||[]).slice(0,8).map(a=>({dept:["edu","strategy","app","media"].includes(a.dept)?a.dept:"strategy", owner:cut(a.owner,20), title:cut(a.title,80), detail:cut(a.detail,500)})), decide:(j.decide||[]).map(x=>cut(x,200)), decisions:mtg.decisions||[], updatedAt:now, at:mtg.at||now};
       if(dbRef && canWrite!==false){ await dbRef.doc("meetings/"+id).set(upd); }
       const local={...upd,_id:id}; const i=meetings.findIndex(x=>x._id===id); if(i>=0) meetings[i]=local; else meetings.unshift(local);
       $("#meetTopic").value="";
@@ -1614,12 +1615,20 @@ async function runMeeting(mtg, ceoNote){
   }
   roomWait=""; btn.disabled=false; stop.hidden=true; meetBusy=false; renderRoom();
 }
-$("#meetForm").addEventListener("submit", e=>{ e.preventDefault();
-  const topic=$("#meetTopic").value.trim(); if(!topic){ $("#meetMsg").textContent="회의 안건을 적어 주세요."; $("#meetTopic").focus(); return; }
+$("#meetForm").addEventListener("submit", async e=>{ e.preventDefault();
+  const title=$("#meetTopic").value.trim();
   const ids=meetAttendees();
   if(ids.length<2){ $("#meetMsg").textContent="참석자를 2명 이상 골라 주세요."; return; }
   if(ids.length>8){ $("#meetMsg").textContent="참석자는 8명까지예요."; return; }
-  runMeeting({topic, attendees:ids, kind:meetKind, convenedBy:"대표", rounds:[]}, topic);
+  if(meetBusy) return;
+  const id="m-"+Date.now().toString(36), now=new Date().toISOString();
+  const mtg={topic:title||`${fmtMD(kstParts().date)} ${KIND[meetKind]}`, untitled:!title, attendees:ids, kind:meetKind, convenedBy:"대표", status:"live", rounds:[], conclusion:[], actions:[], decide:[], decisions:[], at:now, updatedAt:now};
+  try{ if(dbRef && canWrite!==false) await dbRef.doc("meetings/"+id).set(mtg); }catch(_){ $("#meetMsg").textContent="저장하지 못했어요."; return; }
+  if(!meetings.some(x=>x._id===id)) meetings.unshift({...mtg,_id:id});
+  meetIds=ids; setLive(id); $("#meetTopic").value="";
+  try{ window.__o3meet&&window.__o3meet(ids, true, true); }catch(_){}
+  window.scrollTo({top:0,behavior:"smooth"}); setTimeout(()=>$("#mrinT")?.focus({preventScroll:true}),500);
+  $("#meetMsg").textContent="회의실에 모였어요. 사무실 화면의 회의 창에 안건을 말씀해 주세요.";
 });
 async function finishMeeting(m){
   if(!dbRef||!m) return; const now=new Date().toISOString(), day=kstParts().date.replace(/-/g,"");
@@ -1631,6 +1640,7 @@ async function finishMeeting(m){
   }
   try{ await dbRef.doc("meetings/"+m._id).update({status:"closed", closedAt:now, updatedAt:now, ...(ids.length?{tasksCreated:ids}:{})}); }catch(_){}
   if(liveId===m._id) setLive("");
+  try{ window.__o3endMeet&&window.__o3endMeet(); }catch(_){}
   $("#meetMsg").textContent = ids.length ? `회의를 마쳤어요. 할 일 ${ids.length}건을 업무로 올렸어요. 한결이 배분표에 넣어요.` : "회의를 마쳤어요.";
   if(ids.length){ wakeOffice("meeting-"+m._id); }
 }
@@ -1652,13 +1662,13 @@ function renderRoom(){
   const names=(m?.attendees||[]).map(id=>MEMBERS.find(x=>x.id===id)?.name).filter(Boolean).join("·");
   const html = `<div class="mrh"><b>🗣 ${esc(cut(m?.topic||$("#meetTopic").value||"회의",40))}</b><button type="button" class="mrx" data-mroomhide aria-label="회의 창 접기">접기</button></div>
     <div class="note">참석: 대표님${names?" · "+esc(names):""}</div>
-    <div class="mrlog" id="mrlog">${shown.map((l,i)=>`<div class="ml ${l.who==="대표"?"me":""} ${i===shown.length-1?"new":""}"><b>${esc(l.who==="대표"?"대표님":l.who)}</b><span>${esc(l.text)}</span></div>`).join("")}${roomWait?`<div class="ml wait">${esc(roomWait)}</div>`:""}</div>
-    ${m&&!roomWait?`<form class="mrin" id="mrin"><input id="mrinT" placeholder="대표님 말씀 (질문·지시)" aria-label="대표님 말씀" autocomplete="off"><button class="btn pri" type="submit" ${meetBusy?"disabled":""}>말하기</button><button class="btn ghost" type="button" data-mfinish="${esc(m._id)}" ${meetBusy?"disabled":""}>${finLabel(m._id)}</button></form>`:""}`;
+    <div class="mrlog" id="mrlog">${shown.map((l,i)=>`<div class="ml ${l.who==="대표"?"me":""} ${i===shown.length-1?"new":""}"><b>${esc(l.who==="대표"?"대표님":l.who)}</b><span>${esc(l.text)}</span></div>`).join("")}${m&&!lines.length&&!roomWait?`<div class="ml wait">모두 모였어요. 안건을 말씀해 주세요. 말씀하시기 전에는 아무도 먼저 말하지 않아요.</div>`:""}${roomWait?`<div class="ml wait">${esc(roomWait)}</div>`:""}</div>
+    ${m&&!roomWait?`<form class="mrin" id="mrin"><input id="mrinT" placeholder="${lines.length?"이어서 질문·지시":"안건을 말씀해 주세요"}" aria-label="대표님 말씀" autocomplete="off"><button class="btn pri" type="submit" ${meetBusy?"disabled":""}>말하기</button><button class="btn ghost" type="button" data-mfinish="${esc(m._id)}" ${meetBusy?"disabled":""}>${finLabel(m._id)}</button></form>`:""}`;
   if(el.__html===html) return; el.__html=html; el.innerHTML=html;
   const lg=$("#mrlog"); if(lg) lg.scrollTop=lg.scrollHeight;
   const ti=$("#mrinT"); if(ti){ ti.value=keep; if(hadFocus) ti.focus({preventScroll:true}); }
 }
-document.addEventListener("submit", e=>{ if(e.target.id!=="mrin") return; e.preventDefault(); const v=$("#mrinT").value.trim(); const m=meetings.find(x=>x._id===liveId); if(!v||!m||meetBusy) return; const at=new Date().toISOString(); const tmp={...m, rounds:[...(m.rounds||[])]}; reveal={id:m._id,n:allLines(m).length+1,timer:0}; m.rounds=[...(m.rounds||[]),{at,ceo:v,speeches:[]}]; renderRoom(); m.rounds=tmp.rounds; runMeeting(tmp, v); });
+document.addEventListener("submit", e=>{ if(e.target.id!=="mrin") return; e.preventDefault(); const v=$("#mrinT").value.trim(); const m=meetings.find(x=>x._id===liveId); if(!v||!m||meetBusy) return; const at=new Date().toISOString(); const tmp={...m, rounds:[...(m.rounds||[])]}; if(!(m.rounds||[]).length && m.untitled){ tmp.topic=cut(v,60); tmp.untitled=false; m.topic=tmp.topic; } reveal={id:m._id,n:allLines(m).length+1,timer:0}; m.rounds=[...(m.rounds||[]),{at,ceo:v,speeches:[]}]; renderRoom(); m.rounds=tmp.rounds; runMeeting(tmp, v); });
 function renderMeetings(){
   renderRoom();
   $("#meetLog").innerHTML = meetings.slice(0,12).map(m=>{
@@ -1673,7 +1683,7 @@ function renderMeetings(){
 }
 document.addEventListener("click", e=>{
   const h=e.target.closest("[data-mroomhide]"); if(h){ setLive(""); return; }
-  const j=e.target.closest("[data-mjoin]"); if(j){ const m=meetings.find(x=>x._id===j.dataset.mjoin); if(!m) return; setLive(m._id); try{ window.__o3meet&&window.__o3meet(m.attendees||[], true); }catch(_){} window.scrollTo({top:0,behavior:"smooth"}); setTimeout(()=>$("#mrinT")?.focus(),400); return; }
+  const j=e.target.closest("[data-mjoin]"); if(j){ const m=meetings.find(x=>x._id===j.dataset.mjoin); if(!m) return; setLive(m._id); meetIds=m.attendees||[]; try{ window.__o3meet&&window.__o3meet(m.attendees||[], true, true); }catch(_){} window.scrollTo({top:0,behavior:"smooth"}); setTimeout(()=>$("#mrinT")?.focus(),400); return; }
   const f=e.target.closest("[data-mfinish]"); if(f){ const m=meetings.find(x=>x._id===f.dataset.mfinish); if(!m) return; if(!(finArm.id===m._id&&finArm.until>Date.now())){ finArm={id:m._id,until:Date.now()+5000}; renderMeetings(); setTimeout(()=>{ if(finArm.id===m._id){ finArm={id:"",until:0}; renderMeetings(); } },5100); return; } finArm={id:"",until:0}; f.disabled=true; finishMeeting(m); return; }
   const d=e.target.closest("[data-mdec]"); if(d){ const [id,k]=d.dataset.mdec.split(":"); const m=meetings.find(x=>x._id===id); const v=(document.getElementById(`mdec-${id}-${k}`)?.value||"").trim(); if(!v){ $("#meetMsg").textContent="결정을 적어 주세요."; return; } d.disabled=true; decideItem(m,+k,v); return; }
 });
@@ -2035,7 +2045,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   glass(35,10.5,40,10.5); glass(35,13,40,13); glass(35,15.5,40,15.5); glass(35,10.5,35,15.5,[11.75,14.25],1.2);
 
   // ---- CEO office ----
-  const CEO={g:null,home:null,x:0,z:0,path:[],state:"desk",wait:0,phase:0};
+  const CEO={g:null,home:null,x:0,z:0,path:[],state:"desk",wait:0,phase:0,hold:false}; let meetHold=new Set();
   const SPOTS=[]; const spot=(x,z,face,o={})=>{ const s={x,z,face,...o}; SPOTS.push(s); return s; };
   { const cx=4, cz=2.6; floorPatch(1.6,3.6,6.4,6.4,"#c98d7c"); floorPatch(1.8,3.8,6.2,6.2,"#dca896");
     const g=new THREE.Group(); box(g,2.2,.08,1,"#7a5232",0,.72,0); box(g,2.15,.7,.08,"#6a4428",0,0,.45); box(g,.08,.7,.9,"#6a4428",-1.05,0,0); box(g,.08,.7,.9,"#6a4428",1.05,0,0);
@@ -2197,21 +2207,21 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
     bubT+=dt; if(bubT>4){ bubT=0; turn=(turn+1)%actors.length; }
     actors.forEach((a,i)=>{ const top=(a.state==="desk"||(a.at&&a.at.sit&&a.state==="away"))?1.55:1.78; const [sx,sy]=toScreen(a.x,top,a.z);
       const t=tags[i]; const showTag=a.sel||view.zoom>1.9; t.style.opacity=showTag?1:0; t.style.left=sx+"%"; t.style.top=sy+"%";
-      const b=bubs[i]; const line=latestLine(a.m); const show=line && ((awake && (i===turn || i===(turn+7)%actors.length || i===(turn+14)%actors.length || a.sel)) || (O.isSpeaking && O.isSpeaking(a.m.id)));
+      const b=bubs[i]; const line=latestLine(a.m); const show=line && ((awake && !meetHold.has(a.m.id) && (i===turn || i===(turn+7)%actors.length || i===(turn+14)%actors.length || a.sel)) || (O.isSpeaking && O.isSpeaking(a.m.id)));
       if(show){ b.textContent=`${a.m.name}: ${line}`; b.style.left=sx+"%"; b.style.top=(sy-(showTag?3.2:0))+"%"; b.style.opacity=1; } else b.style.opacity=0; }); }
 
   // ---- behaviour ----
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   const SPEED=1.9;
   const WEIGHT={meet:30,lounge:18,cafe:16,collab:16,ceo:5,booth:5,studio:6,server:4,recep:2};
-  function pickTrip(a){ const freeS=SPOTS.filter(s=>!actors.some(b=>b.at===s)).filter(s=>(s.kind!=="studio"||a.m.dept==="media")&&(s.kind!=="server"||a.m.dept==="app"));
+  function pickTrip(a){ const freeS=SPOTS.filter(s=>!actors.some(b=>b.at===s)).filter(s=>!(meetHold.size && s.room===rBig)).filter(s=>(s.kind!=="studio"||a.m.dept==="media")&&(s.kind!=="server"||a.m.dept==="app"));
     if(!freeS.length) return false; let tot=freeS.reduce((t,s)=>t+(WEIGHT[s.kind]||5),0), r=Math.random()*tot; let s=freeS[0]; for(const c of freeS){ r-=WEIGHT[c.kind]||5; if(r<=0){ s=c; break; } }
     const p=findPath(a.seat.ax,a.seat.az,s.x,s.z); if(!p) return false; a.at=s; a.path=[[a.seat.ax,a.seat.az],...p]; a.state="walk"; return true; }
   function goHome(a){ const p=findPath(a.x,a.z,a.seat.ax,a.seat.az)||[[a.seat.ax,a.seat.az]]; a.path=[...p,[a.seat.x,a.seat.z]]; a.state="home"; }
   function update(a,dt,awake){ const p=a.g.userData.parts, t=performance.now()/1000;
     if(!awake||reduce){ if(a.state!=="desk"){ a.x=a.seat.x; a.z=a.seat.z; a.path=[]; a.state="desk"; a.at=null; } }
     else if(a.path.length){ const [tx,tz]=a.path[0]; const dx=tx-a.x, dz=tz-a.z, d=Math.hypot(dx,dz), sp=SPEED*dt;
-      if(d<=sp){ a.x=tx; a.z=tz; a.path.shift(); if(!a.path.length){ if(a.state==="home"){ a.state="desk"; a.at=null; a.wait=14+Math.random()*30; } else { a.state="away"; a.wait=a.stay||((a.at&&a.at.kind==="meet"?14:6)+Math.random()*12); a.stay=0; } } }
+      if(d<=sp){ a.x=tx; a.z=tz; a.path.shift(); if(!a.path.length){ if(a.state==="home"){ a.state="desk"; a.at=null; a.wait=a.afterMeet?180+Math.random()*60:14+Math.random()*30; a.afterMeet=false; } else { a.state="away"; a.wait=a.stay||((a.at&&a.at.kind==="meet"?14:6)+Math.random()*12); if(a.stay!==Infinity) a.stay=0; } } }
       else { a.x+=dx/d*sp; a.z+=dz/d*sp; a.g.rotation.y=Math.atan2(-dx,-dz); a.phase+=dt*9; } }
     else { a.wait-=dt; if(a.wait<=0){ if(a.state==="away") goHome(a); else if(a.state==="desk"){ const walkers=actors.filter(b=>b.state!=="desk").length; if(!(walkers<9 && Math.random()<.5 && pickTrip(a))) a.wait=6+Math.random()*16; } } }
     a.g.position.set(a.x,0,a.z);
@@ -2226,14 +2236,14 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
   function updateCeo(dt){ if(!CEO.g) return; const p=CEO.g.userData.parts;
     if(CEO.path.length){ const [tx,tz]=CEO.path[0]; const dx=tx-CEO.x, dz=tz-CEO.z, d=Math.hypot(dx,dz), sp=SPEED*dt;
-      if(d<=sp){ CEO.x=tx; CEO.z=tz; CEO.path.shift(); if(!CEO.path.length){ if(CEO.state==="go"){ CEO.state="meet"; CEO.wait=110; } else CEO.state="desk"; } }
+      if(d<=sp){ CEO.x=tx; CEO.z=tz; CEO.path.shift(); if(!CEO.path.length){ if(CEO.state==="go"){ CEO.state="meet"; CEO.wait=CEO.hold?Infinity:110; } else CEO.state="desk"; } }
       else { CEO.x+=dx/d*sp; CEO.z+=dz/d*sp; CEO.g.rotation.y=Math.atan2(-dx,-dz); CEO.phase+=dt*9; }
       const s=Math.sin(CEO.phase)*.6; p.hipL.rotation.x=s; p.hipR.rotation.x=-s; p.shL.rotation.x=-s*.8; p.shR.rotation.x=s*.8; CEO.g.position.set(CEO.x,Math.abs(Math.cos(CEO.phase))*.04,CEO.z); return; }
     if(CEO.state==="meet"){ CEO.wait-=dt; if(CEO.wait<=0){ const back=findPath(CEO.x,CEO.z,CEO.home.x,CEO.home.z)||[]; CEO.path=[...back,[CEO.home.x,CEO.home.z]]; CEO.state="back"; return; } }
     if(CEO.state==="preview"){ CEO.x=4; CEO.z=3.9; CEO.g.position.set(4,0,3.9); CEO.g.rotation.y=view.az+Math.PI; p.hipL.rotation.x=p.hipR.rotation.x=0; p.shL.rotation.x=0; p.shR.rotation.x=Math.sin(performance.now()/300)*.5-.6; return; }
     if(CEO.state==="desk"){ CEO.x=CEO.home.x; CEO.z=CEO.home.z; }
     const at=CEO.state==="meet"?CEO_MEET:CEO.home; CEO.g.position.set(at.x,0,at.z); CEO.g.rotation.y=at.face; sitPose(CEO.g); p.shL.rotation.x=p.shR.rotation.x=0; }
-  function ceoToMeeting(){ if(!CEO.g||CEO.state==="go"||CEO.state==="meet") { if(CEO.state==="meet") CEO.wait=110; return; } const path=findPath(CEO.x,CEO.z,CEO_MEET.x,CEO_MEET.z); if(!path) return; CEO.path=[...path,[CEO_MEET.x,CEO_MEET.z]]; CEO.state="go"; CEO.g.position.y=0; const pp=CEO.g.userData.parts; pp.hipL.rotation.x=pp.hipR.rotation.x=0; }
+  function ceoToMeeting(hold){ CEO.hold=!!hold; if(!CEO.g||CEO.state==="go"||CEO.state==="meet") { if(CEO.state==="meet") CEO.wait=CEO.hold?Infinity:110; return; } const path=findPath(CEO.x,CEO.z,CEO_MEET.x,CEO_MEET.z); if(!path) return; CEO.path=[...path,[CEO_MEET.x,CEO_MEET.z]]; CEO.state="go"; CEO.g.position.y=0; const pp=CEO.g.userData.parts; pp.hipL.rotation.x=pp.hipR.rotation.x=0; }
   let last=performance.now(), lastAwake=null;
   const SCREEN_ON=M("#9fd7ff",{emissive:"#7cc6ff",emissiveIntensity:.55}), SCREEN_OFF=M("#20263a");
   function frame(now){ const dt=Math.min(.05,(now-last)/1000); last=now;
@@ -2254,7 +2264,8 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   let ceoPreview=false;
   window.__o3setCeo=(opt)=>{ if(!CEO.g) return; const old=CEO.g; const g=buildCeo(opt); g.position.copy(old.position); g.rotation.copy(old.rotation); world.remove(old); CEO.g=g; if(!ceoPreview && (CEO.state==="desk"||CEO.state==="meet")) sitPose(g); };
   window.__o3previewCeo=(on)=>{ ceoPreview=!!on; if(!CEO.g) return; if(on){ CEO.path=[]; CEO.state="preview"; { const d=innerWidth>640?1.6:0; Object.assign(goal,{tx:4-Math.cos(goal.az)*d, tz:3.9+Math.sin(goal.az)*d+.4, zoom:4}); } } else { CEO.state="desk"; } };
-  window.__o3meet=(ids,withCeo)=>{ if(withCeo) ceoToMeeting(); const seats=SPOTS.filter(s=>s.room===rBig); let k=0; actors.filter(a=>ids.includes(a.m.id)).forEach(a=>{ const s=seats[k++]; if(!s) return; actors.forEach(b=>{ if(b!==a&&b.at===s){ b.at=null; goHome(b); } }); const from=a.state==="desk"?[a.seat.ax,a.seat.az]:[a.x,a.z]; const p=findPath(from[0],from[1],s.x,s.z); if(!p) return; a.at=s; a.path=a.state==="desk"?[[a.seat.ax,a.seat.az],...p]:p; a.state="walk"; a.stay=100; }); Object.assign(goal,meetGoal()); };
+  window.__o3meet=(ids,withCeo,hold)=>{ if(hold){ meetHold=new Set(ids); window.__meetHold=true; } actors.forEach(b=>{ if(!ids.includes(b.m.id) && b.at && b.at.room===rBig){ b.stay=0; b.at=null; goHome(b); } }); if(withCeo) ceoToMeeting(hold); const seats=SPOTS.filter(s=>s.room===rBig); let k=0; actors.filter(a=>ids.includes(a.m.id)).forEach(a=>{ const s=seats[k++]; if(!s) return; if(a.at===s && (a.state==="away"||a.state==="walk")){ a.stay=hold?Infinity:100; if(a.state==="away") a.wait=a.stay; return; } actors.forEach(b=>{ if(b!==a&&b.at===s){ b.at=null; goHome(b); } }); const from=a.state==="desk"?[a.seat.ax,a.seat.az]:[a.x,a.z]; const p=findPath(from[0],from[1],s.x,s.z); if(!p) return; a.at=s; a.path=a.state==="desk"?[[a.seat.ax,a.seat.az],...p]:p; a.state="walk"; a.stay=hold?Infinity:100; }); Object.assign(goal,meetGoal()); };
+  window.__o3endMeet=()=>{ window.__meetHold=false; actors.forEach(a=>{ if(a.at && a.at.room===rBig){ a.stay=0; a.afterMeet=true; if(a.state==="away") a.wait=.3+Math.random(); else if(a.state==="walk"){ a.at=null; goHome(a); } } }); meetHold=new Set(); CEO.hold=false; if(CEO.state==="meet") CEO.wait=.5; };
   host.classList.add("is3d"); host.appendChild(wrap); window.__office3d=true; resize();
   if(window.__ceoAvatar) window.__o3setCeo(window.__ceoAvatar);
   requestAnimationFrame(frame);
