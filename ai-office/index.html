@@ -350,6 +350,16 @@ form.order input[type=checkbox]{flex:none}
 .mroom .mrin .btn{padding:5px 10px;font-size:12.5px}
 @keyframes mlin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (max-width:640px){.mroom{left:6px;right:6px;width:auto;top:auto;height:62%;bottom:6px}}
+.avp{position:absolute;left:10px;top:46px;z-index:5;width:min(300px,calc(100% - 20px));max-height:calc(100% - 56px);overflow:auto;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px rgba(20,30,60,.22);padding:12px;display:grid;gap:8px}
+.avp h3{margin:0;font-size:15px}
+.avp .row{display:grid;gap:4px}
+.avp .lab{font-size:12px;color:var(--muted)}
+.avp .opts{display:flex;flex-wrap:wrap;gap:5px}
+.avp .opts button{border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:999px;padding:3px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+.avp .opts button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.avp .sw{width:26px;height:26px;border-radius:50%;padding:0!important;border:2px solid var(--line)!important}
+.avp .sw[aria-pressed="true"]{outline:3px solid var(--accent);outline-offset:1px}
+.avp .acts{display:flex;gap:6px;justify-content:flex-end}
 @media (prefers-reduced-motion:reduce){.bub{transition:none}.mroom .ml{animation:none}}
 
 </style>
@@ -369,6 +379,7 @@ form.order input[type=checkbox]{flex:none}
     <div id="overlay"></div>
     <div class="who" id="who" hidden><button id="whoX" aria-label="닫기">×</button><div id="whoBody"></div></div>
     <div class="mroom" id="mroom" hidden></div>
+    <div class="avp" id="avp" hidden role="dialog" aria-label="내 캐릭터 고르기"></div>
   </div>
 
 
@@ -1478,6 +1489,36 @@ document.addEventListener("click", e=>{
 });
 
 
+// ---------- CEO avatar (내 캐릭터) ----------
+let ceoAvatar=null, avDraft=null;
+const AV={gender:[["f","여성"],["m","남성"]], look:[["long","긴 머리"],["bob","단발"],["pony","포니테일"],["bun","올림머리"],["short","짧은 머리"],["spiky","뾰족 머리"]],
+  hair:[["#1f1a1a","검정"],["#5a3a26","갈색"],["#9a5f33","밝은 갈색"],["#d6b25e","금발"],["#e48aa8","분홍"]],
+  skin:[["#ffe3cf","밝은"],["#ffdcc2","보통"],["#f1c39e","따뜻한"],["#d9a47c","구릿빛"]],
+  shirt:[["#2f6fed","블루"],["#2fb3a3","민트"],["#e9765f","코랄"],["#7b6cc9","퍼플"],["#f4b400","옐로"],["#1F2A44","네이비"]]};
+const avDefault=()=>({gender:"f",look:"long",hair:"#1f1a1a",skin:"#ffdcc2",shirt:"#2f6fed",glasses:false});
+function renderAv(){
+  const d=avDraft, el=$("#avp"); if(!el||!d) return;
+  const chips=(k,list)=>`<div class="opts">${list.map(([v,l])=>`<button type="button" data-av="${k}" data-val="${esc(v)}" aria-pressed="${d[k]===v}">${esc(l)}</button>`).join("")}</div>`;
+  const sw=(k,list)=>`<div class="opts">${list.map(([v,l])=>`<button type="button" class="sw" data-av="${k}" data-val="${esc(v)}" aria-pressed="${d[k]===v}" title="${esc(l)}" aria-label="${esc(l)}" style="background:${esc(v)}"></button>`).join("")}</div>`;
+  el.innerHTML=`<h3>👤 내 캐릭터</h3>
+    <div class="row"><span class="lab">성별</span>${chips("gender",AV.gender)}</div>
+    <div class="row"><span class="lab">머리 모양</span>${chips("look",AV.look)}</div>
+    <div class="row"><span class="lab">머리 색</span>${sw("hair",AV.hair)}</div>
+    <div class="row"><span class="lab">피부</span>${sw("skin",AV.skin)}</div>
+    <div class="row"><span class="lab">옷 색</span>${sw("shirt",AV.shirt)}</div>
+    <div class="row"><span class="lab">안경</span><div class="opts"><button type="button" data-av="glasses" data-val="1" aria-pressed="${!!d.glasses}">안경 쓰기</button><button type="button" data-av="glasses" data-val="" aria-pressed="${!d.glasses}">안 쓰기</button></div></div>
+    <div class="acts"><span class="note" id="avMsg" style="margin-right:auto;align-self:center"></span><button class="btn ghost" type="button" data-avcancel>취소</button><button class="btn pri" type="button" data-avsave ${canWrite===false?"disabled":""}>저장</button></div>`;
+}
+window.__openAvatar=()=>{ avDraft={...avDefault(),...(ceoAvatar||{})}; renderAv(); $("#avp").hidden=false; window.__o3setCeo&&window.__o3setCeo(avDraft); };
+document.addEventListener("click", async e=>{
+  const b=e.target.closest("[data-av]"); if(b&&avDraft){ const k=b.dataset.av; let v=b.dataset.val; if(k==="glasses") v=!!v;
+    if(k==="gender" && v!==avDraft.gender){ avDraft.look = v==="f" ? "long" : "short"; }
+    avDraft[k]=v; window.__o3setCeo&&window.__o3setCeo(avDraft); renderAv(); return; }
+  if(e.target.closest("[data-avcancel]")){ $("#avp").hidden=true; window.__o3previewCeo&&window.__o3previewCeo(false); window.__o3setCeo&&window.__o3setCeo(ceoAvatar||{}); avDraft=null; return; }
+  if(e.target.closest("[data-avsave]")&&avDraft){ const now=new Date().toISOString(); const v={...avDraft, updatedAt:now};
+    try{ if(!dbRef) throw 0; await dbRef.doc("config/ceoAvatar").set(v); ceoAvatar=v; window.__ceoAvatar=v; $("#avp").hidden=true; avDraft=null; window.__o3previewCeo&&window.__o3previewCeo(false); window.__o3setCeo&&window.__o3setCeo(v); }catch(_){ const m=$("#avMsg"); if(m) m.textContent="저장하지 못했어요."; } }
+});
+
 // ---------- Meetings (회의실) ----------
 let meetings=[]; const meetShown=new Set();
 const HEADS=["hangyeol","irum","saebom","haneul","harang","garam"];
@@ -1827,6 +1868,7 @@ $("#genForm").addEventListener("submit", async e=>{
   db.collection("imageReqs").orderBy("createdAt","desc").limit(80).onSnapshot(s=>{ imgReqs=rows(s); renderImages(); }, err);
   db.collection("meetings").orderBy("updatedAt","desc").limit(20).onSnapshot(s=>{ meetings=rows(s); renderMeetings(); renderTodo(); animateRecentMeeting(); const nm=$("#nMeet"), c=meetings.filter(m=>needDecision(m)||m.status==="live").length; nm.hidden=!c; nm.textContent=c; }, err);
   db.collection("classes").orderBy("date","asc").limit(200).onSnapshot(s=>{ classes=rows(s); renderTodo(); renderClasses(); }, err);
+  db.doc("config/ceoAvatar").onSnapshot(s=>{ ceoAvatar=s.exists?s.data():null; window.__ceoAvatar=ceoAvatar; if(ceoAvatar&&!avDraft&&window.__o3setCeo) window.__o3setCeo(ceoAvatar); }, ()=>{});
   let planUnsub=null, planFor="";
   const watchPlan=()=>{ const k=planKey(); if(k===planFor) return; planFor=k; try{ planUnsub&&planUnsub(); }catch(_){} plan=null; safeRun(renderPlan);
     planUnsub = db.doc("plans/"+k).onSnapshot(s=>{ plan = s.exists? s.data() : null; safeRun(renderPlan); }, ()=>{}); };
@@ -1856,6 +1898,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
       <button type="button" data-v="top" title="위에서 보기">위</button>
       <button type="button" data-v="all" title="전체 보기">전체</button>
       <button type="button" data-v="spin" aria-pressed="false" title="천천히 돌기">자동 회전</button>
+      <button type="button" data-v="me" title="대표님 캐릭터 바꾸기">👤 내 캐릭터</button>
     </div>
     <div class="o3rooms" id="o3rooms"></div>
     <div class="o3hint">드래그해서 돌려 보고, 직원을 누르면 하는 일이 보여요</div>`;
@@ -1942,7 +1985,7 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 
   // ---- people ----
   const SKIN=["#ffdcc2","#f6c9a5","#eab48c","#ffe3cf"], LOOKS=["short","long","bun","short","bob","spiky"];
-  function person(m,i,o={}){ const g=new THREE.Group(); const pants="#3b4256", skin=SKIN[i%SKIN.length]; const look=LOOKS[i%LOOKS.length];
+  function person(m,i,o={}){ const g=new THREE.Group(); const pants=o.pants||"#3b4256", skin=o.skin||SKIN[i%SKIN.length]; const look=o.look||LOOKS[i%LOOKS.length];
     const mk=(w,h,d,c,x,y,z)=>{ const mm=new THREE.Mesh(G,M(c)); mm.scale.set(w,h,d); mm.position.set(x,y,z); mm.castShadow=true; return mm; };
     const hipL=new THREE.Group(), hipR=new THREE.Group(); hipL.position.set(-.1,.5,0); hipR.position.set(.1,.5,0);
     hipL.add(mk(.15,.5,.17,pants,0,-.25,0), mk(.16,.07,.22,"#2a2d36",0,-.47,-.03)); hipR.add(mk(.15,.5,.17,pants,0,-.25,0), mk(.16,.07,.22,"#2a2d36",0,-.47,-.03));
@@ -1955,8 +1998,11 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
     if(look==="bun") head.add(mk(.16,.14,.16,m.hair,0,.53,.12));
     if(look==="bob") head.add(mk(.07,.3,.36,m.hair,-.2,.25,.02), mk(.07,.3,.36,m.hair,.2,.25,.02));
     if(look==="spiky") head.add(mk(.12,.12,.12,m.hair,-.1,.52,0), mk(.12,.14,.12,m.hair,.08,.53,.05));
+    if(look==="pony") head.add(mk(.14,.32,.12,m.hair,0,.18,.25), mk(.1,.08,.1,m.hair,0,.38,.22));
+    if(o.glasses) head.add(mk(.13,.08,.02,"#1d2230",-.09,.21,-.192), mk(.13,.08,.02,"#1d2230",.09,.21,-.192), mk(.06,.02,.02,"#1d2230",0,.23,-.192), mk(.09,.05,.01,"#cfe8ff",-.09,.21,-.2), mk(.09,.05,.01,"#cfe8ff",.09,.21,-.2));
     head.add(mk(.05,.06,.02,"#232633",-.08,.21,-.185), mk(.05,.06,.02,"#232633",.08,.21,-.185), mk(.06,.03,.02,"#e79a9a",-.13,.13,-.185), mk(.06,.03,.02,"#e79a9a",.13,.13,-.185));
     if(o.badge) g.add(mk(.1,.1,.02,"#f4b400",-.12,.86,-.13));
+    if(o.skirt) g.add(mk(.5,.26,.32,o.skirtColor||m.shirt,0,.44,0));
     g.add(hipL,hipR,torso,shL,shR,head); g.userData.parts={hipL,hipR,shL,shR,head}; world.add(g); return g; }
   function sitPose(g){ const p=g.userData.parts; p.hipL.rotation.x=p.hipR.rotation.x=Math.PI/2; g.position.y=-.06; }
 
@@ -2108,7 +2154,8 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   bar.addEventListener("click",e=>{ const b=e.target.closest("button[data-v]"); if(!b) return; const v=b.dataset.v;
     if(v==="rotL") goal.az+=Math.PI/2; if(v==="rotR") goal.az-=Math.PI/2; if(v==="in") goal.zoom=Math.min(4,goal.zoom*1.3); if(v==="out") goal.zoom=Math.max(.7,goal.zoom/1.3);
     if(v==="top") goal.el=1.45; if(v==="all") Object.assign(goal,{...HOME, az:Math.round((goal.az-Math.PI/4)/(Math.PI/2))*Math.PI/2+Math.PI/4});
-    if(v==="spin"){ spin=!spin; setSpin(); } });
+    if(v==="spin"){ spin=!spin; setSpin(); }
+    if(v==="me"){ window.__o3previewCeo&&window.__o3previewCeo(true); window.__openAvatar&&window.__openAvatar(); } });
   const FOCUS=[...PODS.map(p=>({key:"pod-"+p.dept,label:p.label,color:p.color,x:p.cx,z:p.cz,size:p.w+2})), ...[rSupport,rCEO,rBig,rSmall,rLounge,rCafe,rStudio].map(r=>({key:r.key,label:r.label,color:r.color,x:(r.x0+r.x1)/2,z:(r.z0+r.z1)/2,size:Math.max(r.x1-r.x0,(r.z1-r.z0)*1.3)+2}))];
   const roomsBar=wrap.querySelector("#o3rooms");
   roomsBar.innerHTML=FOCUS.map(f=>`<button type="button" data-room="${f.key}" style="--c:${f.color}">${esc(f.label)}</button>`).join("");
@@ -2176,6 +2223,8 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
       else { CEO.x+=dx/d*sp; CEO.z+=dz/d*sp; CEO.g.rotation.y=Math.atan2(-dx,-dz); CEO.phase+=dt*9; }
       const s=Math.sin(CEO.phase)*.6; p.hipL.rotation.x=s; p.hipR.rotation.x=-s; p.shL.rotation.x=-s*.8; p.shR.rotation.x=s*.8; CEO.g.position.set(CEO.x,Math.abs(Math.cos(CEO.phase))*.04,CEO.z); return; }
     if(CEO.state==="meet"){ CEO.wait-=dt; if(CEO.wait<=0){ const back=findPath(CEO.x,CEO.z,CEO.home.x,CEO.home.z)||[]; CEO.path=[...back,[CEO.home.x,CEO.home.z]]; CEO.state="back"; return; } }
+    if(CEO.state==="preview"){ CEO.x=4; CEO.z=3.9; CEO.g.position.set(4,0,3.9); CEO.g.rotation.y=view.az+Math.PI; p.hipL.rotation.x=p.hipR.rotation.x=0; p.shL.rotation.x=0; p.shR.rotation.x=Math.sin(performance.now()/300)*.5-.6; return; }
+    if(CEO.state==="desk"){ CEO.x=CEO.home.x; CEO.z=CEO.home.z; }
     const at=CEO.state==="meet"?CEO_MEET:CEO.home; CEO.g.position.set(at.x,0,at.z); CEO.g.rotation.y=at.face; sitPose(CEO.g); p.shL.rotation.x=p.shR.rotation.x=0; }
   function ceoToMeeting(){ if(!CEO.g||CEO.state==="go"||CEO.state==="meet") { if(CEO.state==="meet") CEO.wait=110; return; } const path=findPath(CEO.x,CEO.z,CEO_MEET.x,CEO_MEET.z); if(!path) return; CEO.path=[...path,[CEO_MEET.x,CEO_MEET.z]]; CEO.state="go"; CEO.g.position.y=0; const pp=CEO.g.userData.parts; pp.hipL.rotation.x=pp.hipR.rotation.x=0; }
   let last=performance.now(), lastAwake=null;
@@ -2193,8 +2242,14 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
   window.__o3={actors,findPath,grid,GX,GZ,ceo:CEO};
   const meetGoal=()=>{ const d=innerWidth>640?4.2:0, cx=(rBig.x0+rBig.x1)/2, cz=(rBig.z0+rBig.z1)/2+(innerWidth>640?0:2.5); return {tx:cx+Math.cos(goal.az)*d, tz:cz-Math.sin(goal.az)*d, zoom:2.2}; };
   window.__o3focusMeet=()=>Object.assign(goal,meetGoal());
+  function buildCeo(opt){ const o=Object.assign({shirt:"#1F2A44",hair:"#2a2220"},opt||{}); const fem=o.gender==="f";
+    const g=person({shirt:o.shirt,hair:o.hair},2,{badge:true,look:o.look,skin:o.skin,glasses:!!o.glasses,skirt:fem,skirtColor:fem?"#"+new THREE.Color(o.shirt).multiplyScalar(.8).getHexString():undefined,pants:fem?(o.skin||"#ffdcc2"):undefined}); g.userData.isCeo=true; return g; }
+  let ceoPreview=false;
+  window.__o3setCeo=(opt)=>{ if(!CEO.g) return; const old=CEO.g; const g=buildCeo(opt); g.position.copy(old.position); g.rotation.copy(old.rotation); world.remove(old); CEO.g=g; if(!ceoPreview && (CEO.state==="desk"||CEO.state==="meet")) sitPose(g); };
+  window.__o3previewCeo=(on)=>{ ceoPreview=!!on; if(!CEO.g) return; if(on){ CEO.path=[]; CEO.state="preview"; { const d=innerWidth>640?1.6:0; Object.assign(goal,{tx:4-Math.cos(goal.az)*d, tz:3.9+Math.sin(goal.az)*d+.4, zoom:4}); } } else { CEO.state="desk"; } };
   window.__o3meet=(ids,withCeo)=>{ if(withCeo) ceoToMeeting(); const seats=SPOTS.filter(s=>s.room===rBig); let k=0; actors.filter(a=>ids.includes(a.m.id)).forEach(a=>{ const s=seats[k++]; if(!s) return; actors.forEach(b=>{ if(b!==a&&b.at===s){ b.at=null; goHome(b); } }); const from=a.state==="desk"?[a.seat.ax,a.seat.az]:[a.x,a.z]; const p=findPath(from[0],from[1],s.x,s.z); if(!p) return; a.at=s; a.path=a.state==="desk"?[[a.seat.ax,a.seat.az],...p]:p; a.state="walk"; a.stay=100; }); Object.assign(goal,meetGoal()); };
   host.classList.add("is3d"); host.appendChild(wrap); window.__office3d=true; resize();
+  if(window.__ceoAvatar) window.__o3setCeo(window.__ceoAvatar);
   requestAnimationFrame(frame);
 })();
 </script>

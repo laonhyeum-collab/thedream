@@ -48,6 +48,9 @@
 - '대표님이 정할 것'은 회의록에서 바로 '정하기'. 결정은 한결에게 업무로 넘어가요. 정할 것이 남은 회의는 대시보드 '🗣 회의 결정' 칸에 떠요.
 - 회의 데이터: meetings에 kind, convenedBy('대표'·'한결'), requestedBy, status('live'·'closed'), decisions, tasksCreated. 소집 권한: 대표님과 한결(config/workflow 19번).
 
+## 대표님 캐릭터
+- 3D 사무실 '👤 내 캐릭터' 버튼: 성별(치마)·머리 모양 6가지·머리 색·피부·옷 색·안경. 저장 위치 config/ceoAvatar.
+
 ## 대표님이 정한 규칙 (요약)
 - 대표님이 컨펌한 것만 병합. 외부 게시·영상 업로드·결제 금지. 학생 개인정보 금지.
 - 설치 열쇠(TEACHER_KEY)는 config.js에 넣거나 어디에도 보내지 않음.
