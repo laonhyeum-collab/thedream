@@ -324,6 +324,16 @@ form.order input[type=checkbox]{flex:none}
 .slot .it{font-size:12.5px;display:flex;gap:6px;align-items:flex-start;justify-content:space-between;border-top:1px dashed var(--line);padding-top:5px}
 .slot .it .t{overflow-wrap:anywhere;min-width:0}
 .slot .rs{font-size:11.5px;color:var(--muted)}
+.staffg{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.stf{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--panel2);display:grid;gap:4px;min-width:0}
+.stf.late{border-color:var(--bad);background:var(--bad-soft)}
+.stf .nm{display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:13px}
+.stf .nm b{font-weight:700}
+.stf .ln{font-size:12px;overflow-wrap:anywhere}
+.stf .ln.bad{color:var(--bad);font-weight:600}
+.latei{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap;font-size:13px;padding:6px 0;border-top:1px dashed var(--line)}
+.latei:first-child{border-top:0}
+.latei .why{color:var(--bad);font-size:12px;font-weight:600}
 @media (prefers-reduced-motion:reduce){.bub{transition:none}}
 
 </style>
@@ -333,7 +343,7 @@ form.order input[type=checkbox]{flex:none}
     <h1><span class="logo">Block <i>&amp;</i> Bit</span><small>블록앤비트 AI 사무실 · 레고 과학·코딩·AI 교육 · 대표 1명, AI 직원 23명</small></h1>
     <div class="clock" aria-live="polite">
       <div class="t" id="clk">--:--</div>
-      <div class="s"><b id="officeStatus">출근 대기</b><span id="nextRun">평일 08:00 출근</span></div>
+      <div class="s"><b id="officeStatus">출근 대기</b><span id="nextRun">매일 08:30 오전 회의</span></div>
     </div>
   </header>
 
@@ -362,6 +372,17 @@ form.order input[type=checkbox]{flex:none}
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><h2 style="margin:0">오늘 대표님이 할 일</h2><span class="note" id="todoSum"></span></div>
       <div id="classAlert"></div>
       <div class="todo" id="todo"></div>
+      <section class="gen plan-w" aria-labelledby="planH">
+        <div class="uh"><h2 id="planH">오늘 업무 배분표</h2><span class="note" id="planSum"></span></div>
+        <p class="note" style="margin:0">매일 08:30 오전 회의에서 한결이 사용량 구간(5시간씩)마다 할 일을 나눠요. 구간마다 긴급·수정 요청을 받을 여유를 남겨 둬요.</p>
+        <div class="planb" id="planBoard"></div>
+      </section>
+      <section class="gen plan-w" aria-labelledby="staffH" style="border-left-color:var(--bad)">
+        <div class="uh"><h2 id="staffH" style="color:var(--bad)">담당자별 현황 · 늦은 일</h2><span class="note" id="staffSum"></span></div>
+        <p class="note" style="margin:0">누가 어떤 일을 들고 있는지, 배분표 시간이 지났는데 끝나지 않은 일과 승인 뒤 24시간 넘게 시작하지 않은 일을 보여요. 최근 활동은 업무 피드 기준이에요.</p>
+        <div id="lateList"></div>
+        <div class="staffg" id="staffBoard"></div>
+      </section>
       <section class="urgent" style="margin:0" aria-labelledby="urgH">
         <div class="uh"><h2 id="urgH">긴급공지</h2><span class="note" id="urgHint">적어서 보내면 바로 처리해요. 결과는 대표 결재로 올라와요.</span></div>
         <form id="urgForm" class="uform">
@@ -384,14 +405,9 @@ form.order input[type=checkbox]{flex:none}
         </form>
         <div class="list" id="genList"></div>
       </section>
-      <section class="gen plan-w" aria-labelledby="planH">
-        <div class="uh"><h2 id="planH">오늘 업무 배분표</h2><span class="note" id="planSum"></span></div>
-        <p class="note" style="margin:0">매일 08:30 오전 회의에서 한결이 사용량 구간(5시간씩)마다 할 일을 나눠요. 구간마다 긴급·수정 요청을 받을 여유를 남겨 둬요.</p>
-        <div class="planb" id="planBoard"></div>
-      </section>
       <span hidden><span id="kP"></span><span id="kD"></span><span id="kC"></span><span id="kS"></span></span>
       <div class="two">
-        <div class="min0"><h2>오늘의 브리핑</h2><div class="brief" id="brief"><span class="note">매일 아침 비서실 도담이 하루 업무를 마치면 여기에 브리핑을 남겨요.</span></div></div>
+        <div class="min0"><h2>오늘의 브리핑</h2><div class="brief" id="brief"><span class="note">오전 회의와 비서실 도담의 브리핑이 여기에 올라와요.</span></div></div>
         <div class="min0"><h2>방금 들어온 소식</h2><div class="feed" id="miniFeed"></div></div>
       </div>
       <div class="status-line" id="dbStatus">사무실 데이터를 불러오는 중…</div>
@@ -400,7 +416,7 @@ form.order input[type=checkbox]{flex:none}
 
   <section class="panel" data-pane="approve" hidden>
     <h2>대표 결재함</h2>
-    <p class="note" style="margin-top:-4px">AI 직원이 올린 기획안을 승인하면 다음 출근 때 교육부서가 제작을 시작해요. 직접 지시를 내릴 수도 있어요.</p>
+    <p class="note" style="margin-top:-4px">AI 직원이 올린 기획안을 승인하면 한결이 오늘 배분표의 알맞은 시간에 넣어 제작해요. 직접 지시를 내릴 수도 있어요.</p>
     <form class="order" id="orderForm">
       <div class="r">
         <select id="orderDept" aria-label="담당 부서">
@@ -421,7 +437,7 @@ form.order input[type=checkbox]{flex:none}
       <div class="r"><button class="btn pri" type="submit" id="orderBtn">지시 내리기</button><span class="note" id="orderMsg"></span></div>
     </form>
     <h2 style="margin-top:16px">최종 컨펌 대기</h2>
-    <p class="note" style="margin-top:-4px">부서 검수와 총괄 검수(가람)를 모두 통과한 결과물이에요. 컨펌하면 완료, 수정 요청하면 담당 부서가 다음 출근 때 먼저 고쳐요.</p>
+    <p class="note" style="margin-top:-4px">부서 검수와 총괄 검수(가람)를 모두 통과한 결과물이에요. 컨펌하면 완료, 수정 요청하면 담당 부서가 다음 정기 점검(매시 7분)에 가장 먼저 고쳐요.</p>
     <div class="list" id="confirmList"></div>
     <h2 style="margin-top:16px">기획안 결재 대기</h2>
     <div class="list" id="approveList"></div>
@@ -787,7 +803,7 @@ function pickTrip(a){
   else spot = SPOTS.hall[Math.floor(Math.random()*SPOTS.hall.length)];
   routeTo(a, spot[0]*T+8, spot[1]*T+8); a.away=true;
 }
-function working(){ const k=kstParts(); const wk=!["Sat","Sun"].includes(k.wd); const st=office.status||""; if(st==="근무 중") return true; return wk && k.h>=8 && k.h<18; }
+function working(){ const k=kstParts(); const wk=!["Sat","Sun"].includes(k.wd); const st=office.status||""; if(st==="근무 중") return true; return k.h>=8; }
 
 let last=performance.now(), tick=0;
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -862,8 +878,8 @@ $("#whoX").addEventListener("click",()=>{ $("#who").hidden=true; actors.forEach(
 // ---------- Clock ----------
 function nextRunText(){
   const k=kstParts(); const wk=d=>!["Sat","Sun"].includes(d);
-  if(wk(k.wd) && k.h<8) { const mins=(8-k.h)*60-k.m; return `출근까지 ${Math.floor(mins/60)}시간 ${mins%60}분`; }
-  return "다음 출근 평일 08:00";
+  const m=k.h*60+k.m, left=(510-m+1440)%1440;
+  return left===0 ? "지금 오전 회의 중" : `오전 회의(08:30)까지 ${Math.floor(left/60)}시간 ${left%60}분`;
 }
 function tickClock(){
   const k=kstParts(); $("#clk").textContent=`${String(k.h).padStart(2,"0")}:${String(k.m).padStart(2,"0")}`;
@@ -885,7 +901,7 @@ try{ const t=localStorage.getItem("office-tab"); if(t) document.querySelector(`#
 
 // ---------- Renderers ----------
 function feedRows(list){
-  if(!list.length) return `<div class="empty">아직 업무 기록이 없어요. 평일 오전 8시에 첫 출근하면 직원들이 한 일이 여기에 쌓여요.</div>`;
+  if(!list.length) return `<div class="empty">아직 업무 기록이 없어요. 직원들이 일하면 여기에 쌓여요.</div>`;
   let out="", day="";
   list.forEach(f=>{
     const d=fmtDay(f.at); if(d!==day){ day=d; out+=`<div class="day">${esc(d)}</div>`; }
@@ -925,6 +941,38 @@ function renderPlan(){
     + ((Array.isArray(plan.later)&&plan.later.length)?`<div class="slot"><div class="sh"><b>내일 이후로</b></div>${plan.later.map(it=>`<div class="it"><span class="t">${esc(cut(it.title||"",60))}</span></div>`).join("")}</div>`:"");
   $("#planSum").textContent = `${plan.date||""} 오전 회의${plan.at?" · "+fmtTime(plan.at):""}${plan.summary?" · "+cut(plan.summary,60):""}`;
 }
+function slotEnd(t){ const d=SLOT_DEF.find(x=>x[0]===t.slot); if(!d||!t.planDate) return null; const day=(t.slot==="s4"||t.slot==="s5")?addDays(t.planDate,1):t.planDate; return new Date(`${day}T${d[3]}:00+09:00`); }
+function ownerOf(t){
+  const txt=[t.owner,(Array.isArray(t.support)?"":""),t.team].filter(Boolean).join(" ");
+  const byName=MEMBERS.find(m=>String(t.owner||"").includes(m.name)); if(byName) return byName;
+  const byTeam=MEMBERS.find(m=>m.team===t.team && (!t.dept||m.dept===t.dept)); if(byTeam) return byTeam;
+  const anyName=MEMBERS.find(m=>txt.includes(m.name)); if(anyName) return anyName;
+  const lead={edu:"saebom",app:"haneul",media:"harang",strategy:"hangyeol"}[t.dept]; return MEMBERS.find(m=>m.id===lead)||null;
+}
+function lateWhy(t){
+  const now=Date.now(), h=ms=>(now-new Date(ms))/36e5;
+  if(t.waitFor){ const w=tasks.find(x=>x._id===t.waitFor); if(w && w.status!=="done") return ""; }
+  const end=slotEnd(t);
+  if(end && now>end && ["approved","doing","handoff"].includes(t.status)) return `배분 시간(${t.slotLabel||t.slot}) 지남`;
+  if(t.status==="revise" && t.revisedAt && h(t.revisedAt)>3) return `수정 요청 ${Math.floor(h(t.revisedAt))}시간째 그대로`;
+  if(t.status==="doing" && t.updatedAt && h(t.updatedAt)>1.5 && !(end && now<end)) return `작업 중인데 ${Math.floor(h(t.updatedAt))}시간째 소식 없음`;
+  const ap=t.approvedAt||(t.by==="대표"?t.createdAt:null);
+  if(t.status==="approved" && !t.startedAt && ap && h(ap)>24 && !(end && now<end)) return `승인 뒤 ${Math.floor(h(ap))}시간째 시작 안 함`;
+  return "";
+}
+function renderStaff(){
+  const el=$("#staffBoard"); if(!el) return;
+  const open=tasks.filter(t=>["approved","doing","handoff","revise","final"].includes(t.status) && !t.ceoTodo && !t.mergedInto);
+  const by={}; open.forEach(t=>{ const m=ownerOf(t); const k=m?m.id:"none"; (by[k]=by[k]||[]).push(t); });
+  const late=open.map(t=>({t,why:lateWhy(t)})).filter(x=>x.why);
+  $("#lateList").innerHTML = late.length ? `<div class="item" style="border-color:var(--bad)">${late.map(({t,why})=>{ const m=ownerOf(t); return `<div class="latei">${deptChip(t.dept)}<b>${esc(m?m.name:"담당 없음")}</b><span style="flex:1;min-width:160px">${esc(cut(t.title,60))}</span><span class="why">⚠ ${esc(why)}</span></div>`; }).join("")}</div>` : `<div class="note" style="color:var(--ok);font-weight:600">✅ 지금 늦은 일 없음</div>`;
+  const lastAct=m=>{ const f=feed.find(x=>x.member===m.name); return f?f.at:""; };
+  const cards=MEMBERS.filter(m=>by[m.id]).map(m=>{ const list=by[m.id]; const nLate=list.filter(t=>lateWhy(t)).length; const la=lastAct(m);
+    return `<div class="stf ${nLate?"late":""}"><div class="nm"><span><b>${esc(m.name)}</b> <span class="note">${esc(m.team)}</span></span>${deptChip(m.dept)}</div>${list.slice(0,4).map(t=>{ const w=lateWhy(t); return `<div class="ln ${w?"bad":""}">· ${esc(cut(t.title,44))} <span class="note">${esc(STATUS[t.status]||t.status)}${t.slotLabel?" · "+esc(t.slotLabel):""}</span></div>`; }).join("")}${list.length>4?`<div class="note">외 ${list.length-4}건</div>`:""}<div class="note">최근 활동: ${la?esc(fmtDay(la))+" "+esc(fmtTime(la)):"기록 없음"}</div></div>`; });
+  const idle=MEMBERS.filter(m=>!by[m.id]).length;
+  el.innerHTML = cards.join("") || `<div class="empty">지금 맡은 일이 있는 직원이 없어요.</div>`;
+  $("#staffSum").textContent = `진행 ${open.length}건 · 늦은 일 ${late.length}건 · 맡은 일 없는 직원 ${idle}명`;
+}
 function renderGen(){
   const el=$("#genList"); if(!el) return;
   const gens=tasks.filter(t=>t.general && !["done","rejected"].includes(t.status)).slice(0,4);
@@ -951,12 +999,12 @@ function render(){
   const today=kstParts().date; const in7=new Date(Date.now()+7*864e5); const end=kstParts(in7).date;
   $("#kS").textContent=schedule.filter(s=>s.date>=today && s.date<=end).length;
   const n=$("#nApprove"); n.hidden=!(pending.length+confirms.length); n.textContent=pending.length+confirms.length;
-  safeRun(renderTodo); safeRun(renderClasses); safeRun(renderPlan); safeRun(renderGen);
-  $("#brief").innerHTML = office.briefing ? esc(office.briefing) : `<span class="note">매일 아침 비서실 도담이 하루 업무를 마치면 여기에 브리핑을 남겨요.</span>`;
+  safeRun(renderTodo); safeRun(renderClasses); safeRun(renderPlan); safeRun(renderStaff); safeRun(renderGen);
+  $("#brief").innerHTML = office.briefing ? esc(office.briefing) : `<span class="note">오전 회의와 비서실 도담의 브리핑이 여기에 올라와요.</span>`;
   $("#miniFeed").innerHTML = feedRows(feed.slice(0,6));
   $("#feedList").innerHTML = feedRows(feed);
   $("#confirmList").innerHTML = confirms.length ? confirms.map(t=>taskCard(t,"confirm")).join("") : `<div class="empty">컨펌할 결과물이 없어요. 부서 검수와 총괄 검수를 통과한 결과물이 여기로 와요.</div>`;
-  $("#approveList").innerHTML = pending.length ? pending.map(t=>taskCard(t,"approve")).join("") : `<div class="empty">결재할 기획안이 없어요. 교육부서가 출근하면 새 수업 아이디어를 올려요.</div>`;
+  $("#approveList").innerHTML = pending.length ? pending.map(t=>taskCard(t,"approve")).join("") : `<div class="empty">결재할 기획안이 없어요.</div>`;
   const rest = tasks.filter(t=>!["proposed","confirm"].includes(t.status));
   const isClosed = t=>t.status==="done" || (t.status==="rejected" && !["requested","doing"].includes(t.rewrite));
   const holds = rest.filter(t=>t.status==="hold");
