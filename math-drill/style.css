@@ -135,6 +135,8 @@ sup { font-size: .7em; line-height: 0; }
 }
 
 /* ---------- 화면에서 바로 풀기 ---------- */
+.concept-btn { width: 100%; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+.concept-btn[hidden] { display: none; }
 .solve-btn { width: 100%; background: var(--yellow); border-color: var(--yellow); }
 .solve-btn:hover { background: #ffc95a; }
 .solve { display: flex; flex-direction: column; gap: 12px; min-width: 0; }

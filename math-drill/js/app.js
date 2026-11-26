@@ -219,6 +219,12 @@
   $('grade').addEventListener('change', () => fillUnits());
   $('sem').addEventListener('change', () => fillUnits());
   $('unit').addEventListener('change', showTopic);
+  // 수학 개념 설명 사이트와 연결 (js/links.js: 개념 사이트가 배포되면 '개념 보기' 단추가 보여요)
+  function showConcept() { const c = window.MD_LINKS && window.MD_LINKS.concept($('unit').value); $('toConcept').hidden = !c; if (c) $('toConcept').href = c; }
+  $('unit').addEventListener('change', showConcept);
+  document.querySelectorAll('input[name="school"]').forEach((el) => el.addEventListener('change', showConcept));
+  $('grade').addEventListener('change', showConcept);
+  $('sem').addEventListener('change', showConcept);
   $('make').addEventListener('click', () => { $('seed').value = newSeed(); render(settings()); toast('새 문제지를 만들었어요'); });
   $('remake').addEventListener('click', () => { render(settings()); toast('문제 번호 ' + $('seed').value + '(으)로 만들었어요'); });
   $('space').addEventListener('change', () => { if (current) { current.st.space = $('space').value; render(current.st); } });
@@ -238,4 +244,5 @@
     $('seed').value = newSeed();
   }
   if (fromHash === 'solve') startSolve(settings()); else render(settings());
+  showConcept();
 })();

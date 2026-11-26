@@ -73,3 +73,10 @@ test('여러 가지로 쓴 답도 맞음', () => {
   assert.equal(C.grade('수아', P('민재 (' + fr(1, 9) + ' &lt; ' + fr(1, 4) + ')', 'cmp')), false);
   assert.ok(C.grade('1/x^3', P(fr(1, '<i>x</i><sup>3</sup>'), 'poly')));
 });
+
+test('개념 사이트 연결 주소: 같은 단원 id로 화면 풀기·문제지 출력', () => {
+  const LK = require('../js/links.js');
+  assert.strictEqual(LK.solve('e42_frac', 2, '12345'), 'index.html#u=e42_frac&d=2&n=10&s=12345&m=solve');
+  assert.strictEqual(LK.print('e42_frac', 2, 20, '12345'), 'index.html#u=e42_frac&d=2&n=20&s=12345');
+  assert.strictEqual(LK.concept('e42_frac'), LK.CONCEPT_PAGE ? LK.CONCEPT_PAGE + '#u=e42_frac' : '');
+});
