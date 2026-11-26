@@ -204,3 +204,40 @@ test('같은 시드면 같은 문제, 다른 시드면 다른 문제', () => {
 });
 
 test('검산한 문제 수', () => { assert.ok(total >= UNITS.length * 360); console.log('검산한 문제 수: ' + total); });
+
+/* ---------- 문장제·같은 틀 반복 막기 (대표님 회의 지시 2026-11-25) ---------- */
+const { W } = require('../js/words.js');
+const { skeleton } = require('../js/generators.js');
+
+test('문장제가 있는 단원은 네 문제마다 한 문제가 생활 속 문장제예요', () => {
+  for (const id of Object.keys(W)) {
+    assert.ok(UNITS.some((u) => u.id === id), id + ' 단원 정보');
+    for (const lv of [1, 2, 3]) {
+      const ps = makeProblems(id, lv, 20, '31');
+      ps.forEach((p, i) => assert.equal(!!p.chk.word, i % 4 === 3, id + ' ' + (i + 1) + '번 문장제 자리'));
+      // 문장제끼리도 같은 문장 틀이 연달아 나오지 않게 상황을 여러 개 둬요
+      const tpl = new Set(); for (const s of ['1', '2', '3', '4', '5']) makeProblems(id, lv, 20, s).filter((p) => p.chk.word).forEach((p) => tpl.add(skeleton(p)));
+      assert.ok(tpl.size >= 2, id + ' 난이도' + lv + ' 문장제 상황이 2가지 이상');
+    }
+  }
+});
+
+test('숫자만 바꾼 같은 문제가 세 번 연달아 나오지 않아요(틀이 여러 가지인 문제지)', () => {
+  let sheets = 0;
+  for (const u of UNITS) for (const lv of [1, 2, 3]) for (const s of ['1', '2', '3']) {
+    const ps = makeProblems(u.id, lv, 20, s), sk = ps.map(skeleton);
+    if (new Set(ps.filter((p) => !p.chk.word).map(skeleton)).size < 3) continue; // 계산 틀이 한두 가지뿐인 문제지(예: 곱셈구구 계산)는 숫자가 달라지는 게 정상
+    sheets++;
+    for (let i = 2; i < sk.length; i++) assert.ok(!(sk[i] === sk[i - 1] && sk[i] === sk[i - 2]), u.id + ' 난이도' + lv + ' ' + (i + 1) + '번: ' + sk[i]);
+  }
+  assert.ok(sheets > 100, '검사한 문제지 ' + sheets);
+});
+
+test('도형 문장제에는 그림이 들어가요', () => {
+  for (const [id, lv] of [['e51_area', 2], ['e22_times', 1], ['e22_length', 2], ['m22_pyth', 2], ['e12_clock', 1], ['e22_time', 2]]) {
+    const ws = makeProblems(id, lv, 30, '8').filter((p) => p.chk.word);
+    assert.ok(ws.some((p) => p.svg.startsWith('<svg')), id + ' 문장제 그림');
+  }
+  const ls = makeProblems('e51_area', 3, 30, '5').filter((p) => p.svg.includes('class="lshape"'));
+  assert.ok(ls.length > 0, 'ㄱ자 도형 문제');
+});

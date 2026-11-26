@@ -4,6 +4,7 @@
 (function (root) {
   'use strict';
   const MD = (typeof module !== 'undefined' && module.exports) ? require('./core.js') : root.MD;
+  const WORDS = (typeof module !== 'undefined' && module.exports) ? require('./words.js') : root.MD_WORDS;
   const {
     F, fr, add, sub, mul, div, gcd, lcm, fascii, MINUS, fracH, fH, mixH, sgnH, OPH, decStr, BOX,
     P, pAdd, pSub, pMul, pScale, pPow, pH, pA, lin, S, sAdd, sMul, sH, sA, sqfree, sqrtH,
@@ -1186,23 +1187,40 @@
   };
 
   /* ---------- 문제지 만들기 ---------- */
+  // 문제의 '틀': 숫자를 모두 # 로 바꾼 문장 (숫자만 바꾼 같은 문제인지 알아보는 데 써요)
+  const skeleton = (p) => p.q.replace(/<[^>]+>/g, '').replace(/\d+(\.\d+)?/g, '#').replace(/\s+/g, ' ').trim() + (p.svg ? '|그림' : '');
+  // 문장제를 넣을 자리: 네 문제마다 한 문제 (4, 8, 12 … 번)
+  const isWordSlot = (i) => i % 4 === 3;
+  const HELP = { clockSvg };
   function makeProblems(unitId, level, count, seed) {
     const gen = G[unitId];
     if (!gen) throw new Error('없는 단원: ' + unitId);
+    const wgen = WORDS && WORDS.W[unitId];
     const R = MD.makeRng(seed + '|' + unitId + '|' + level);
-    const out = [], seen = new Set();
-    let tries = 0;
-    while (out.length < count && tries < count * 40) {
-      tries++;
-      const p = gen(R, level);
-      const key = p.q + '|' + p.svg;
-      if (seen.has(key) && tries < count * 30) continue;
-      seen.add(key); out.push(p);
+    const RW = MD.makeRng(seed + '|' + unitId + '|' + level + '|문장제');
+    const out = [], seen = new Set(), sk = [];
+    // 같은 틀이 바로 이어지거나, 최근 5문제 안에 3번 나오면 다시 뽑아요(다른 틀이 없는 단원은 그대로 써요)
+    const tooSame = (s) => (sk.length && sk[sk.length - 1] === s) || sk.slice(-5).filter((x) => x === s).length >= 2;
+    while (out.length < count) {
+      const word = wgen && isWordSlot(out.length);
+      let pick = null, fallback = null, second = null;
+      for (let t = 0; t < 40 && !pick; t++) {
+        const p = word ? wgen(RW, level, HELP) : gen(R, level);
+        const key = p.q + '|' + p.svg;
+        if (seen.has(key)) continue;
+        const s = skeleton(p);
+        if (!fallback) fallback = p;
+        if (!second && s !== sk[sk.length - 1]) second = p; // 최소한 바로 앞 문제와는 다른 틀
+        if (!tooSame(s)) pick = p;
+      }
+      pick = pick || second;
+      pick = pick || fallback || (word ? wgen(RW, level, HELP) : gen(R, level));
+      seen.add(pick.q + '|' + pick.svg); sk.push(skeleton(pick)); out.push(pick);
     }
     return out;
   }
 
-  const API = { G, makeProblems };
+  const API = { G, makeProblems, skeleton };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.MD_GEN = API;
 })(typeof window !== 'undefined' ? window : this);
