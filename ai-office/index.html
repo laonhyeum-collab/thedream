@@ -415,21 +415,16 @@ form.order input[type=checkbox]{flex:none}
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><h2 style="margin:0">오늘 대표님이 할 일</h2><span class="note" id="todoSum"></span></div>
       <div id="classAlert"></div>
       <div class="todo" id="todo"></div>
+      <section class="gen plan-w" aria-labelledby="staffH" style="border-left-color:var(--bad)">
+        <div class="uh"><h2 id="staffH" style="color:var(--bad)">부서별 할 일 · 오늘 할 일 먼저</h2><span class="note" id="staffSum"></span></div>
+        <p class="note" style="margin:0">부서장이 매일 아침 순서를 정해요. 위에서부터 차례로 스스로 처리하고, 수정 지시가 오면 하던 일을 멈추고 그것부터 해요. 🔥 오늘 = 오늘 하는 일, 빨간 줄 = 늦은 일.</p>
+        <div id="lateList"></div>
+        <div class="staffg" id="staffBoard"></div>
+      </section>
       <section class="gen plan-w" aria-labelledby="reqH" style="border-left-color:var(--ink)">
         <div class="uh"><h2 id="reqH">📋 대표 요청 목록</h2><span class="note" id="reqSum"></span></div>
         <p class="note" style="margin:0">대표님이 어디서 시키든(업무 지시·총괄 지시·회의·💬 코멘트·직원에게 묻기·긴급공지) 여기에 모여요. 대표님이 '✓ 확인'을 눌러야 목록에서 빠져요. 빨간 줄은 지금 빠지고 있는 일이에요.</p>
         <div id="reqList" class="reql"></div>
-      </section>
-      <section class="gen plan-w" aria-labelledby="planH">
-        <div class="uh"><h2 id="planH">오늘 업무 배분표</h2><span class="note" id="planSum"></span></div>
-        <p class="note" style="margin:0">매일 08:30 오전 회의에서 한결이 하루 5번 점검(10·14·18·22·02시)마다 할 일을 나눠요. 구간마다 긴급·수정 요청을 받을 여유를 남겨 둬요.</p>
-        <div class="planb" id="planBoard"></div>
-      </section>
-      <section class="gen plan-w" aria-labelledby="staffH" style="border-left-color:var(--bad)">
-        <div class="uh"><h2 id="staffH" style="color:var(--bad)">담당자별 현황 · 늦은 일</h2><span class="note" id="staffSum"></span></div>
-        <p class="note" style="margin:0">누가 어떤 일을 들고 있는지, 배분표 시간이 지났는데 끝나지 않은 일과 승인 뒤 24시간 넘게 시작하지 않은 일을 보여요. 최근 활동은 업무 피드 기준이에요.</p>
-        <div id="lateList"></div>
-        <div class="staffg" id="staffBoard"></div>
       </section>
       <section class="urgent" style="margin:0" aria-labelledby="urgH">
         <div class="uh"><h2 id="urgH">긴급공지</h2><span class="note" id="urgHint">적어서 보내면 바로 처리해요. 결과는 대표 결재로 올라와요.</span></div>
@@ -1042,6 +1037,8 @@ function lateWhy(t){
   if(t.status==="approved" && !t.startedAt && ap && h(ap)>24 && !(end && now<end)) return `승인 뒤 ${Math.floor(h(ap))}시간째 시작 안 함`;
   return "";
 }
+let showAllStaff=false;
+document.addEventListener("click",e=>{ if(e.target.closest("[data-staffall]")){ showAllStaff=true; safeRun(renderStaff); } });
 function renderStaff(){
   const el=$("#staffBoard"); if(!el) return;
   const open=tasks.filter(t=>["approved","doing","handoff","revise","final"].includes(t.status) && !t.ceoTodo && !t.mergedInto);
@@ -1051,7 +1048,11 @@ function renderStaff(){
   const lastAct=m=>(by[m.id]||[]).map(t=>t.updatedAt||t.createdAt||"").sort().pop()||"";
   const askBtn=m=>canWrite===false?"":`<button type="button" class="btn ghost" style="padding:2px 8px;font-size:12px" data-askm="${esc(m.id)}">💬 지시·질문</button>`;
   const cards=MEMBERS.filter(m=>by[m.id]).map(m=>{ const list=by[m.id]; const nLate=list.filter(t=>lateWhy(t)).length; const la=lastAct(m);
-    return `<div class="stf ${nLate?"late":""}"><div class="nm"><span><b>${esc(m.name)}</b> <span class="note">${esc(m.team)}</span></span><span>${deptChip(m.dept)} ${askBtn(m)}</span></div>${list.slice(0,4).map(t=>{ const w=lateWhy(t); return `<div class="ln ${w?"bad":""}">· ${esc(cut(t.title,44))} <span class="note">${esc(STATUS[t.status]||t.status)}${originLabel(t)?" · "+esc(originLabel(t)):""}${t.slotLabel?" · "+esc(t.slotLabel):""}</span> ${cmtBadge(t)}${cmtBtn(t)}</div>`; }).join("")}${list.length>4?`<div class="note">외 ${list.length-4}건</div>`:""}<div class="note">마지막 갱신: ${la?esc(fmtDay(la))+" "+esc(fmtTime(la)):"기록 없음"}</div></div>`; });
+    const today=planKey(), isToday=t=>t.planDate===today||t.urgent||t.status==="revise"||t.status==="doing";
+    const rank=t=>t.status==="revise"?0:t.status==="doing"?1:isToday(t)?2:3;
+    list.sort((a,b)=>rank(a)-rank(b)||(a.order??99)-(b.order??99)||String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
+    const nToday=list.filter(isToday).length;
+    return `<div class="stf ${nLate?"late":""}"><div class="nm"><span><b>${esc(m.name)}</b> <span class="note">${esc(m.team)} · 오늘 ${nToday} / 전체 ${list.length}</span></span><span>${deptChip(m.dept)} ${askBtn(m)}</span></div>${list.slice(0,showAllStaff?99:6).map((t,i)=>{ const w=lateWhy(t); return `<div class="ln ${w?"bad":""}">${i+1}. ${t.status==="revise"?"✏️ ":t.status==="doing"?"▶ ":isToday(t)?"🔥 ":""}${esc(cut(t.title,44))} <span class="note">${esc(STATUS[t.status]||t.status)}${originLabel(t)?" · "+esc(originLabel(t)):""}${t.slotLabel?" · "+esc(t.slotLabel):""}</span> ${cmtBadge(t)}${cmtBtn(t)}</div>`; }).join("")}${list.length>6&&!showAllStaff?`<button class="more" type="button" data-staffall>외 ${list.length-6}건 더 보기</button>`:""}<div class="note">마지막 갱신: ${la?esc(fmtDay(la))+" "+esc(fmtTime(la)):"기록 없음"}</div></div>`; });
   const idle=MEMBERS.filter(m=>!by[m.id]).length;
   const idleM=MEMBERS.filter(m=>!by[m.id] && m.dept!=="ceo");
   el.innerHTML = (cards.join("") || `<div class="empty">지금 맡은 일이 있는 직원이 없어요.</div>`) + (idleM.length&&canWrite!==false?`<div class="stf" style="grid-column:1/-1"><div class="note" style="margin-bottom:4px">맡은 일 없는 직원 · 눌러서 지시·질문</div><div style="display:flex;flex-wrap:wrap;gap:6px">${idleM.map(m=>`<button type="button" class="btn ghost" style="padding:2px 8px;font-size:12px" data-askm="${esc(m.id)}">${esc(m.name)} <span class="note">${esc(m.team)}</span></button>`).join("")}</div></div>`:"");
