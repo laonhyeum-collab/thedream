@@ -1033,7 +1033,7 @@ function lateWhy(t){
   if(end && now>end && ["approved","doing","handoff"].includes(t.status)) return `배분 시간(${t.slotLabel||t.slot}) 지남`;
   if(t.status==="revise" && t.revisedAt && h(t.revisedAt)>3) return `수정 요청 ${Math.floor(h(t.revisedAt))}시간째 그대로`;
   if(t.status==="doing" && t.updatedAt && h(t.updatedAt)>1.5 && !(end && now<end)) return `작업 중인데 ${Math.floor(h(t.updatedAt))}시간째 소식 없음`;
-  const ap=t.approvedAt||(t.by==="대표"?t.createdAt:null);
+  const ap=t.planResetAt||t.approvedAt||(t.by==="대표"?t.createdAt:null);
   if(t.status==="approved" && !t.startedAt && ap && h(ap)>24 && !(end && now<end)) return `승인 뒤 ${Math.floor(h(ap))}시간째 시작 안 함`;
   return "";
 }
@@ -1073,7 +1073,7 @@ function reqState(t){
   let bad=lateWhy(t);
   if(!bad && t.ceoCommentNew && hrs(t.ceoCommentAt)>1.5) bad=`💬 코멘트를 ${Math.floor(hrs(t.ceoCommentAt))}시간째 확인 안 함`;
   if(!bad && t.status==="approved" && !t.slot && !t.startedAt && !t.waitFor){
-    const h=hrs(t.approvedAt||t.createdAt);
+    const h=hrs(t.planResetAt||t.approvedAt||t.createdAt);
     if(t.queue!=="plan" && t.queue!=="night" && h>2) bad=`${Math.floor(h)}시간째 처리 시간이 안 정해짐`;
     else if(h>26) bad=`${Math.floor(h)}시간째 배분표에 안 들어감`;
   }
