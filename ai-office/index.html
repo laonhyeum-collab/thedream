@@ -1300,7 +1300,7 @@ document.addEventListener("click", e=>{ const b=e.target.closest("[data-gotab]")
 // ---------- Image requests ----------
 let imgReqs=[]; const IMST={requested:"그림 기다리는 중",uploaded:"직원이 넣는 중",placed:"자리에 넣음",canceled:"취소"};
 const RATIO={"1:1":"정사각형 1:1","16:9":"가로 16:9","9:16":"세로 9:16","4:3":"가로 4:3","3:4":"세로 3:4"};
-function renderImages(){ renderTodo();
+function renderImages(){ safeRun(renderTodo);
   const open = imgReqs.filter(r=>r.status==="requested");
   const n=$("#nImages"); n.hidden=!open.length; n.textContent=open.length;
   const imHtml = open.length ? open.map(r=>`<div class="imr" data-imr="${esc(r._id)}">
@@ -1527,6 +1527,7 @@ document.addEventListener("click", async e=>{
 });
 
 // ---------- Meetings (회의실) ----------
+const asList=v=>Array.isArray(v)?v:(v==null||v===""?[]:[v]);
 let meetings=[]; const meetShown=new Set();
 const HEADS=["hangyeol","irum","saebom","haneul","harang","garam"];
 let meetKind="heads", liveId="", meetIds=[];
@@ -1538,7 +1539,7 @@ function speak(who, text, ms){ const m=MEMBERS.find(x=>String(who||"").includes(
 function isSpeaking(id){ const s=speakNow[id]; return !!(s && s.until>Date.now()); }
 function animateRecentMeeting(){ const m=meetings[0]; if(!m||meetBusy) return; const key=m._id+"|"+m.updatedAt; if(meetShown.has(key)) return; meetShown.add(key);
   if(Date.now()-new Date(m.updatedAt||m.at)>15*60e3 && !(m.status==="live" && m._id===liveId)) return;
-  const withCeo=m.convenedBy==="대표"||m.requestedBy==="대표"||(m.rounds||[]).some(r=>r.ceo);
+  const withCeo=m.convenedBy==="대표"||m.requestedBy==="대표"||asList(m.rounds).some(r=>r.ceo);
   const hold=m.status==="live" && m._id===liveId;
   const go=()=>{ if(window.__o3meet){ try{ window.__o3meet(m.attendees||[], withCeo, hold); }catch(_){} } else setTimeout(go,1500); }; go(); }
 function meetAttendees(){
@@ -1591,7 +1592,7 @@ function playRound(id, from, total){
   const tick=()=>{ const m=meetings.find(x=>x._id===id); const all=allLines(m); if(reveal.n>=all.length){ clearInterval(reveal.timer); renderRoom(); return; } const l=all[reveal.n]; if(l.who!=="대표") speak(l.who,l.text,7000); reveal.n++; renderRoom(); };
   tick(); reveal.timer=setInterval(tick, 2600);
 }
-function allLines(m){ const out=[]; (m?.rounds||[]).forEach(r=>{ if(r.ceo) out.push({who:"대표",text:r.ceo}); (r.speeches||[]).forEach(s=>out.push(s)); }); return out; }
+function allLines(m){ const out=[]; asList(m?.rounds).forEach(r=>{ if(!r) return; if(r.ceo) out.push({who:"대표",text:r.ceo}); asList(r.speeches).forEach(s=>s&&out.push(s)); }); return out; }
 async function runMeeting(mtg, ceoNote){
   const sample=await sampleReady; if(!sample||meetBusy) return; meetBusy=true;
   const people=mtg.attendees.map(id=>MEMBERS.find(m=>m.id===id)).filter(Boolean);
@@ -1599,7 +1600,7 @@ async function runMeeting(mtg, ceoNote){
   $("#meetMsg").textContent=""; roomWait = "담당자가 대표님 말씀에 답하는 중…";
   const id=mtg._id||("m-"+Date.now().toString(36)); const before=allLines(mtg).length + (ceoNote?0:0);
   if(!mtg._id){ mtg._id=id; }
-  meetIds=mtg.attendees||[];
+  meetIds=asList(mtg.attendees);
   reveal={id, n:allLines(mtg).length+1, timer:0}; setLive(id);
   try{ window.__o3meet&&window.__o3meet(mtg.attendees, true, true); }catch(_){}
   window.scrollTo({top:0,behavior:"smooth"});
@@ -1610,8 +1611,8 @@ async function runMeeting(mtg, ceoNote){
     if(!j){ $("#meetMsg").textContent="회의 내용을 정리하지 못했어요. 다시 말씀해 주세요."; }
     else {
       const now=new Date().toISOString();
-      const rounds=[...(mtg.rounds||[]), {at:now, ceo:ceoNote||mtg.topic, speeches:j.speeches.map(x=>({who:cut(x.who,20), text:cut(x.text,800)}))}];
-      const upd={topic:mtg.topic, untitled:false, attendees:mtg.attendees, kind:mtg.kind||meetKind, convenedBy:mtg.convenedBy||"대표", status:"live", rounds, conclusion:(j.conclusion||[]).map(x=>cut(x,300)), actions:(j.actions||[]).slice(0,8).map(a=>({dept:["edu","strategy","app","media"].includes(a.dept)?a.dept:"strategy", owner:cut(a.owner,20), title:cut(a.title,80), detail:cut(a.detail,500)})), decide:(j.decide||[]).map(x=>cut(x,200)), decisions:mtg.decisions||[], updatedAt:now, at:mtg.at||now};
+      const rounds=[...asList(mtg.rounds), {at:now, ceo:ceoNote||mtg.topic, speeches:j.speeches.map(x=>({who:cut(x.who,20), text:cut(x.text,800)}))}];
+      const upd={topic:mtg.topic, untitled:false, attendees:mtg.attendees, kind:mtg.kind||meetKind, convenedBy:mtg.convenedBy||"대표", status:"live", rounds, conclusion:(j.conclusion||[]).map(x=>cut(x,300)), actions:(j.actions||[]).slice(0,8).map(a=>({dept:["edu","strategy","app","media"].includes(a.dept)?a.dept:"strategy", owner:cut(a.owner,20), title:cut(a.title,80), detail:cut(a.detail,500)})), decide:(j.decide||[]).map(x=>cut(x,200)), decisions:asList(mtg.decisions), updatedAt:now, at:mtg.at||now};
       if(dbRef && canWrite!==false){ await dbRef.doc("meetings/"+id).set(upd); }
       const local={...upd,_id:id}; const i=meetings.findIndex(x=>x._id===id); if(i>=0) meetings[i]=local; else meetings.unshift(local);
       $("#meetTopic").value="";
@@ -1640,8 +1641,8 @@ $("#meetForm").addEventListener("submit", async e=>{ e.preventDefault();
 async function finishMeeting(m){
   if(!dbRef||!m) return; const now=new Date().toISOString(), day=kstParts().date.replace(/-/g,"");
   const ids=[];
-  for(const [i,a] of (m.actions||[]).entries()){
-    if((m.tasksCreated||[]).length) break;
+  for(const [i,a] of asList(m.actions).entries()){
+    if(asList(m.tasksCreated).length) break;
     const id=`t-${day}-m${Date.now().toString(36)}${i}`;
     try{ await dbRef.doc("tasks/"+id).set({title:a.title, detail:`${a.detail||""}\n\n[회의 '${cut(m.topic,50)}'에서 정한 일 · 담당 ${a.owner||""}]`, dept:a.dept, owner:`${DEPTS[a.dept]?.name||""} ${a.owner||""}`.trim(), status:"approved", by:"대표", queue:"plan", fromMeeting:m._id, note:"회의에서 정한 일 · 한결이 오늘 배분표에 넣어요", createdAt:now, updatedAt:now}); ids.push(id); }catch(_){}
   }
@@ -1652,14 +1653,14 @@ async function finishMeeting(m){
   if(ids.length){ wakeOffice("meeting-"+m._id); }
 }
 async function decideItem(m, k, answer){
-  if(!dbRef||!m||!answer) return; const now=new Date().toISOString(); const item=(m.decide||[])[k]; if(!item) return;
-  const decisions=[...(m.decisions||[]).filter(d=>d.k!==k), {k, item, answer, at:now}];
+  if(!dbRef||!m||!answer) return; const now=new Date().toISOString(); const item=asList(m.decide)[k]; if(!item) return;
+  const decisions=[...asList(m.decisions).filter(d=>d.k!==k), {k, item, answer, at:now}];
   const tid=`t-${kstParts().date.replace(/-/g,"")}-d${Date.now().toString(36)}`;
   try{ await dbRef.doc("tasks/"+tid).set({title:`[회의 결정] ${cut(item,60)}`, detail:`대표님 결정: ${answer}\n\n회의 '${cut(m.topic,60)}'의 '대표님이 정할 것'에 대한 답이에요. 한결이 담당 부서에 나눠 반영해요.`, dept:"strategy", team:"운영기획팀", owner:"전략 한결", general:"work", status:"approved", by:"대표", queue:"plan", fromMeeting:m._id, note:"회의 결정 · 한결이 담당 부서에 나눠요", createdAt:now, updatedAt:now}); await dbRef.doc("meetings/"+m._id).update({decisions, updatedAt:now}); $("#meetMsg").textContent="결정을 남겼어요. 한결이 담당 부서에 나눠 반영해요."; }catch(_){ $("#meetMsg").textContent="저장하지 못했어요."; }
 }
-function needDecision(m){ const d=m.decide||[]; return d.filter((_,k)=>!(m.decisions||[]).some(x=>x.k===k)).length; }
+function needDecision(m){ const d=asList(m.decide); return d.filter((_,k)=>!asList(m.decisions).some(x=>x&&x.k===k)).length; }
 const KIND={heads:"부서장 회의",dept:"부서 회의",free:"자유 회의",daily:"오전 회의"};
-function meetMeta(m){ const kind=m.kind||(String(m._id).endsWith("-am")?"daily":(m.attendees||[]).length===6&&HEADS.every(h=>(m.attendees||[]).includes(h))?"heads":"free"); const by=m.convenedBy||(String(m._id).endsWith("-am")||/한결 소집/.test(m.topic||"")?"한결":"대표"); return {kind:KIND[kind]||"회의", by, open:m.status==="live"}; }
+function meetMeta(m){ const kind=m.kind||(String(m._id).endsWith("-am")?"daily":asList(m.attendees).length===6&&HEADS.every(h=>asList(m.attendees).includes(h))?"heads":"free"); const by=m.convenedBy||(String(m._id).endsWith("-am")||/한결 소집/.test(m.topic||"")?"한결":"대표"); return {kind:KIND[kind]||"회의", by, open:m.status==="live"}; }
 function renderRoom(){
   const el=$("#mroom"); if(!el) return;
   const m=liveId && meetings.find(x=>x._id===liveId);
@@ -1675,22 +1676,22 @@ function renderRoom(){
   const lg=$("#mrlog"); if(lg) lg.scrollTop=lg.scrollHeight;
   const ti=$("#mrinT"); if(ti){ ti.value=keep; if(hadFocus) ti.focus({preventScroll:true}); }
 }
-document.addEventListener("submit", e=>{ if(e.target.id!=="mrin") return; e.preventDefault(); const v=$("#mrinT").value.trim(); const m=meetings.find(x=>x._id===liveId); if(!v||!m||meetBusy) return; const at=new Date().toISOString(); const tmp={...m, rounds:[...(m.rounds||[])]}; if(!(m.rounds||[]).length && m.untitled){ tmp.topic=cut(v,60); tmp.untitled=false; m.topic=tmp.topic; } reveal={id:m._id,n:allLines(m).length+1,timer:0}; m.rounds=[...(m.rounds||[]),{at,ceo:v,speeches:[]}]; renderRoom(); m.rounds=tmp.rounds; runMeeting(tmp, v); });
+document.addEventListener("submit", e=>{ if(e.target.id!=="mrin") return; e.preventDefault(); const v=$("#mrinT").value.trim(); const m=meetings.find(x=>x._id===liveId); if(!v||!m||meetBusy) return; const at=new Date().toISOString(); const tmp={...m, rounds:[...asList(m.rounds)]}; if(!asList(m.rounds).length && m.untitled){ tmp.topic=cut(v,60); tmp.untitled=false; m.topic=tmp.topic; } reveal={id:m._id,n:allLines(m).length+1,timer:0}; m.rounds=[...asList(m.rounds),{at,ceo:v,speeches:[]}]; renderRoom(); m.rounds=tmp.rounds; runMeeting(tmp, v); });
 function renderMeetings(){
   renderRoom();
   $("#meetLog").innerHTML = meetings.slice(0,12).map(m=>{
-    const names=(m.attendees||[]).map(id=>MEMBERS.find(x=>x.id===id)?.name).filter(Boolean).join("·"); const mm=meetMeta(m); const nd=needDecision(m);
+    const names=asList(m.attendees).map(id=>MEMBERS.find(x=>x.id===id)?.name).filter(Boolean).join("·"); const mm=meetMeta(m); const nd=needDecision(m);
     return `<div class="mtg"><div class="mh"><span><span class="ptype">${esc(mm.kind)}</span> 소집: ${esc(mm.by)} · ${esc(fmtDay(m.at))} ${esc(fmtTime(m.at))} · 참석 ${esc(names)}</span><span>${mm.open?`<span class="st st-doing">진행 중</span>`:m.status==="closed"?`<span class="st st-done">마침</span>`:""} ${nd?`<span class="st st-revise">결정 ${nd}건 필요</span>`:""}</span></div><div class="mt">${esc(m.topic||"")}</div>
-      <details><summary class="note" style="cursor:pointer">회의록 보기 (${(m.rounds||[]).length}차 논의)</summary>${allLines(m).map(l=>`<div class="sp ${l.who==="대표"?"ceo":""}"><b>${esc(l.who==="대표"?"대표":l.who)}</b><div>${esc(l.text)}</div></div>`).join("")}</details>
-      ${(m.conclusion||[]).length?`<h4>결론</h4><ul>${m.conclusion.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
-      ${(m.decide||[]).length?`<h4>대표님이 정할 것</h4>${m.decide.map((x,k)=>{ const d=(m.decisions||[]).find(y=>y.k===k); return `<div class="act"><div style="flex:1;min-width:0">${esc(x)}${d?`<div class="note" style="color:var(--ok);font-weight:600">✓ 결정: ${esc(d.answer)}</div>`:""}</div>${!d&&canWrite!==false?`<div class="more-r" style="margin:0;flex:1;min-width:180px"><input id="mdec-${esc(m._id)}-${k}" placeholder="결정 (예: 추천안대로)" aria-label="결정"><button class="btn ghost" type="button" data-mdec="${esc(m._id)}:${k}">정하기</button></div>`:""}</div>`; }).join("")}`:""}
-      ${(m.actions||[]).length?`<h4>할 일 ${m.tasksCreated?.length?`<span class="note">· 업무 ${m.tasksCreated.length}건으로 올림</span>`:""}</h4>${m.actions.map(a=>`<div class="act"><div>${deptChip(a.dept)} <b>${esc(a.title)}</b> <span class="note">${esc(a.owner||"")}</span><div class="note">${esc(a.detail||"")}</div></div></div>`).join("")}`:""}
+      <details><summary class="note" style="cursor:pointer">회의록 보기 (${asList(m.rounds).length}차 논의)</summary>${allLines(m).map(l=>`<div class="sp ${l.who==="대표"?"ceo":""}"><b>${esc(l.who==="대표"?"대표":l.who)}</b><div>${esc(l.text)}</div></div>`).join("")}</details>
+      ${asList(m.conclusion).length?`<h4>결론</h4><ul>${asList(m.conclusion).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+      ${asList(m.decide).length?`<h4>대표님이 정할 것</h4>${asList(m.decide).map((x,k)=>{ const d=asList(m.decisions).find(y=>y.k===k); return `<div class="act"><div style="flex:1;min-width:0">${esc(x)}${d?`<div class="note" style="color:var(--ok);font-weight:600">✓ 결정: ${esc(d.answer)}</div>`:""}</div>${!d&&canWrite!==false?`<div class="more-r" style="margin:0;flex:1;min-width:180px"><input id="mdec-${esc(m._id)}-${k}" placeholder="결정 (예: 추천안대로)" aria-label="결정"><button class="btn ghost" type="button" data-mdec="${esc(m._id)}:${k}">정하기</button></div>`:""}</div>`; }).join("")}`:""}
+      ${asList(m.actions).length?`<h4>할 일 ${asList(m.tasksCreated).length?`<span class="note">· 업무 ${m.tasksCreated.length}건으로 올림</span>`:""}</h4>${asList(m.actions).map(a=>`<div class="act"><div>${deptChip(a.dept)} <b>${esc(a.title)}</b> <span class="note">${esc(a.owner||"")}</span><div class="note">${esc(a.detail||"")}</div></div></div>`).join("")}`:""}
       ${canWrite!==false?`<div class="more-r">${m.status==="closed"?"":`<button class="btn pri" type="button" data-mjoin="${esc(m._id)}">${mm.open?"회의실로 돌아가기":"이어서 회의하기"}</button><button class="btn ghost" type="button" data-mfinish="${esc(m._id)}">${finLabel(m._id,true)}</button>`}</div>`:""}</div>`;
   }).join("") || `<div class="empty">아직 회의가 없어요. 위에서 안건을 적고 회의를 시작해 보세요.</div>`;
 }
 document.addEventListener("click", e=>{
   const h=e.target.closest("[data-mroomhide]"); if(h){ setLive(""); return; }
-  const j=e.target.closest("[data-mjoin]"); if(j){ const m=meetings.find(x=>x._id===j.dataset.mjoin); if(!m) return; setLive(m._id); meetIds=m.attendees||[]; try{ window.__o3meet&&window.__o3meet(m.attendees||[], true, true); }catch(_){} window.scrollTo({top:0,behavior:"smooth"}); setTimeout(()=>$("#mrinT")?.focus(),400); return; }
+  const j=e.target.closest("[data-mjoin]"); if(j){ const m=meetings.find(x=>x._id===j.dataset.mjoin); if(!m) return; setLive(m._id); meetIds=asList(m.attendees); try{ window.__o3meet&&window.__o3meet(m.attendees||[], true, true); }catch(_){} window.scrollTo({top:0,behavior:"smooth"}); setTimeout(()=>$("#mrinT")?.focus(),400); return; }
   const f=e.target.closest("[data-mfinish]"); if(f){ const m=meetings.find(x=>x._id===f.dataset.mfinish); if(!m) return; if(!(finArm.id===m._id&&finArm.until>Date.now())){ finArm={id:m._id,until:Date.now()+5000}; renderMeetings(); setTimeout(()=>{ if(finArm.id===m._id){ finArm={id:"",until:0}; renderMeetings(); } },5100); return; } finArm={id:"",until:0}; f.disabled=true; finishMeeting(m); return; }
   const d=e.target.closest("[data-mdec]"); if(d){ const [id,k]=d.dataset.mdec.split(":"); const m=meetings.find(x=>x._id===id); const v=(document.getElementById(`mdec-${id}-${k}`)?.value||"").trim(); if(!v){ $("#meetMsg").textContent="결정을 적어 주세요."; return; } d.disabled=true; decideItem(m,+k,v); return; }
 });
@@ -1890,7 +1891,7 @@ $("#genForm").addEventListener("submit", async e=>{
   db.collection("qna").orderBy("at","desc").limit(30).onSnapshot(s=>{ qna=rows(s); renderAsk(); }, err);
   db.doc("config/company").onSnapshot(s=>{ const d=s.exists?s.data():{}; company={이름:d.name, 영문:d.nameEn, 로고:d.logo, 유튜브핸들:d.youtubeHandle, 캐릭터:d.characters}; }, ()=>{});
   db.collection("imageReqs").orderBy("createdAt","desc").limit(80).onSnapshot(s=>{ imgReqs=rows(s); renderImages(); }, err);
-  db.collection("meetings").orderBy("updatedAt","desc").limit(20).onSnapshot(s=>{ meetings=rows(s); renderMeetings(); renderTodo(); animateRecentMeeting(); const nm=$("#nMeet"), c=meetings.filter(m=>needDecision(m)||m.status==="live").length; nm.hidden=!c; nm.textContent=c; }, err);
+  db.collection("meetings").orderBy("updatedAt","desc").limit(20).onSnapshot(s=>{ meetings=rows(s); safeRun(renderMeetings); safeRun(renderTodo); try{ animateRecentMeeting(); }catch(_){} const nm=$("#nMeet"), c=meetings.filter(m=>needDecision(m)||m.status==="live").length; nm.hidden=!c; nm.textContent=c; }, err);
   db.collection("classes").orderBy("date","asc").limit(200).onSnapshot(s=>{ classes=rows(s); renderTodo(); renderClasses(); }, err);
   db.doc("config/ceoAvatar").onSnapshot(s=>{ ceoAvatar=s.exists?s.data():null; window.__ceoAvatar=ceoAvatar; if(ceoAvatar&&!avDraft&&window.__o3setCeo) window.__o3setCeo(ceoAvatar); }, ()=>{});
   let planUnsub=null, planFor="";
