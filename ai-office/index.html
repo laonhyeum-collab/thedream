@@ -404,7 +404,6 @@ form.order input[type=checkbox]{flex:none}
     <button role="tab" data-tab="dash" aria-selected="true">대시보드</button>
     <button role="tab" data-tab="meet">회의실<span class="n" id="nMeet" hidden>0</span></button>
     <button role="tab" data-tab="approve">대표 결재<span class="n" id="nApprove" hidden>0</span></button>
-    <button role="tab" data-tab="ask">직원에게 묻기</button>
     <button role="tab" data-tab="images">이미지 요청함<span class="n" id="nImages" hidden>0</span></button>
     <button role="tab" data-tab="feed">업무 피드</button>
     <button role="tab" data-tab="sched">일정</button>
@@ -415,14 +414,14 @@ form.order input[type=checkbox]{flex:none}
 
   <section class="panel" data-pane="dash">
     <div class="grid">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><h2 style="margin:0">오늘 대표님이 할 일</h2><span class="note" id="todoSum"></span></div>
+      <div id="classAlert"></div>
+      <div class="todo" id="todo"></div>
       <section class="gen plan-w" aria-labelledby="reqH" style="border-left-color:var(--ink)">
         <div class="uh"><h2 id="reqH">📋 대표 요청 목록</h2><span class="note" id="reqSum"></span></div>
         <p class="note" style="margin:0">대표님이 어디서 시키든(업무 지시·총괄 지시·회의·💬 코멘트·직원에게 묻기·긴급공지) 여기에 모여요. 대표님이 '✓ 확인'을 눌러야 목록에서 빠져요. 빨간 줄은 지금 빠지고 있는 일이에요.</p>
         <div id="reqList" class="reql"></div>
       </section>
-      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap"><h2 style="margin:0">오늘 대표님이 할 일</h2><span class="note" id="todoSum"></span></div>
-      <div id="classAlert"></div>
-      <div class="todo" id="todo"></div>
       <section class="gen plan-w" aria-labelledby="planH">
         <div class="uh"><h2 id="planH">오늘 업무 배분표</h2><span class="note" id="planSum"></span></div>
         <p class="note" style="margin:0">매일 08:30 오전 회의에서 한결이 사용량 구간(5시간씩)마다 할 일을 나눠요. 구간마다 긴급·수정 요청을 받을 여유를 남겨 둬요.</p>
@@ -510,19 +509,20 @@ form.order input[type=checkbox]{flex:none}
     <div class="list" id="taskList"></div>
   </section>
 
-  <section class="panel" data-pane="ask" hidden>
-    <h2>직원에게 묻기</h2><p class="note" style="margin:-6px 0 8px">여러 직원과 함께 의논하려면 <button class="more" type="button" data-gotab="meet">회의실 →</button></p>
-    <p class="note" style="margin-top:-4px">부서장이나 팀장에게 바로 물어보세요. 그 직원이 사무실 기록(업무, 자료실, 일정, 피드, 브리핑)을 보고 곧바로 답해요. 실제로 일을 시켜야 하면 답 아래 <b>지시로 보내기</b>를 누르세요.</p>
-    <form class="order" id="askForm">
-      <div class="r">
-        <select id="askWho" aria-label="물어볼 직원"></select>
-        <input id="askQ" placeholder="예: 다음 주 레고 수업 준비물은 뭘 챙기면 돼?" aria-label="질문" required>
-      </div>
-      <div class="r"><button class="btn pri" type="submit" id="askBtn">물어보기</button><button class="btn ghost" type="button" id="askStop" hidden>그만</button><span class="note" id="askMsg" aria-live="polite"></span></div>
+  <div class="modal" id="askView" hidden role="dialog" aria-modal="true" aria-labelledby="askTitle">
+  <div class="sheet" style="width:min(640px,100%)">
+    <div class="sheet-h"><h2 id="askTitle">지시·질문</h2><button class="btn ghost" type="button" id="askClose">닫기</button></div>
+    <p class="note" id="askInfo" style="margin:0"></p>
+    <form class="uform" id="askForm">
+      <select id="askWho" aria-label="직원" hidden></select>
+      <textarea id="askQ" placeholder="업무 지시나 질문을 적어 주세요. (예: 다음 주 레고 수업 준비물 정리해 줘 / 이 일 언제 끝나요?)" aria-label="지시 또는 질문" required style="min-height:84px"></textarea>
+      <div class="r"><label class="ck"><input type="checkbox" id="askUrg"> 🔥 급함</label></div>
+      <div class="r"><button class="btn pri" type="button" id="askOrderBtn">📌 업무로 지시</button><button class="btn ghost" type="submit" id="askBtn">❓ 질문하기</button><button class="btn ghost" type="button" id="askStop" hidden>그만</button><span class="note" id="askMsg" aria-live="polite"></span></div>
     </form>
     <div id="askLive"></div>
-    <div id="askLog"></div>
-  </section>
+    <div id="askLog" style="display:grid;gap:6px;max-height:42vh;overflow:auto"></div>
+  </div>
+  </div>
 
   <section class="panel" data-pane="images" hidden>
     <h2>이미지 요청함</h2>
@@ -1047,11 +1047,13 @@ function renderStaff(){
   const by={}; open.forEach(t=>{ const m=ownerOf(t); const k=m?m.id:"none"; (by[k]=by[k]||[]).push(t); });
   const late=open.map(t=>({t,why:lateWhy(t)})).filter(x=>x.why);
   $("#lateList").innerHTML = late.length ? `<div class="item" style="border-color:var(--bad)">${late.map(({t,why})=>{ const m=ownerOf(t); return `<div class="latei">${deptChip(t.dept)}<b>${esc(m?m.name:"담당 없음")}</b><span style="flex:1;min-width:160px">${esc(cut(t.title,60))} ${cmtBadge(t)}</span><span class="why">⚠ ${esc(why)}</span>${cmtBtn(t)}</div>`; }).join("")}</div>` : `<div class="note" style="color:var(--ok);font-weight:600">✅ 지금 늦은 일 없음</div>`;
-  const lastAct=m=>{ const f=feed.find(x=>x.member===m.name); return f?f.at:""; };
+  const lastAct=m=>(by[m.id]||[]).map(t=>t.updatedAt||t.createdAt||"").sort().pop()||"";
+  const askBtn=m=>canWrite===false?"":`<button type="button" class="btn ghost" style="padding:2px 8px;font-size:12px" data-askm="${esc(m.id)}">💬 지시·질문</button>`;
   const cards=MEMBERS.filter(m=>by[m.id]).map(m=>{ const list=by[m.id]; const nLate=list.filter(t=>lateWhy(t)).length; const la=lastAct(m);
-    return `<div class="stf ${nLate?"late":""}"><div class="nm"><span><b>${esc(m.name)}</b> <span class="note">${esc(m.team)}</span></span>${deptChip(m.dept)}</div>${list.slice(0,4).map(t=>{ const w=lateWhy(t); return `<div class="ln ${w?"bad":""}">· ${esc(cut(t.title,44))} <span class="note">${esc(STATUS[t.status]||t.status)}${originLabel(t)?" · "+esc(originLabel(t)):""}${t.slotLabel?" · "+esc(t.slotLabel):""}</span> ${cmtBadge(t)}${cmtBtn(t)}</div>`; }).join("")}${list.length>4?`<div class="note">외 ${list.length-4}건</div>`:""}<div class="note">최근 활동: ${la?esc(fmtDay(la))+" "+esc(fmtTime(la)):"기록 없음"}</div></div>`; });
+    return `<div class="stf ${nLate?"late":""}"><div class="nm"><span><b>${esc(m.name)}</b> <span class="note">${esc(m.team)}</span></span><span>${deptChip(m.dept)} ${askBtn(m)}</span></div>${list.slice(0,4).map(t=>{ const w=lateWhy(t); return `<div class="ln ${w?"bad":""}">· ${esc(cut(t.title,44))} <span class="note">${esc(STATUS[t.status]||t.status)}${originLabel(t)?" · "+esc(originLabel(t)):""}${t.slotLabel?" · "+esc(t.slotLabel):""}</span> ${cmtBadge(t)}${cmtBtn(t)}</div>`; }).join("")}${list.length>4?`<div class="note">외 ${list.length-4}건</div>`:""}<div class="note">마지막 갱신: ${la?esc(fmtDay(la))+" "+esc(fmtTime(la)):"기록 없음"}</div></div>`; });
   const idle=MEMBERS.filter(m=>!by[m.id]).length;
-  el.innerHTML = cards.join("") || `<div class="empty">지금 맡은 일이 있는 직원이 없어요.</div>`;
+  const idleM=MEMBERS.filter(m=>!by[m.id] && m.dept!=="ceo");
+  el.innerHTML = (cards.join("") || `<div class="empty">지금 맡은 일이 있는 직원이 없어요.</div>`) + (idleM.length&&canWrite!==false?`<div class="stf" style="grid-column:1/-1"><div class="note" style="margin-bottom:4px">맡은 일 없는 직원 · 눌러서 지시·질문</div><div style="display:flex;flex-wrap:wrap;gap:6px">${idleM.map(m=>`<button type="button" class="btn ghost" style="padding:2px 8px;font-size:12px" data-askm="${esc(m.id)}">${esc(m.name)} <span class="note">${esc(m.team)}</span></button>`).join("")}</div></div>`:"");
   $("#staffSum").textContent = `진행 ${open.length}건 · 늦은 일 ${late.length}건 · 맡은 일 없는 직원 ${idle}명`;
 }
 // ---------- 대표 요청 목록 (one ledger for everything the CEO asked) ----------
@@ -1082,7 +1084,7 @@ function reqNotices(){ return (typeof notices!=="undefined"?notices:[]).filter(n
   return {kind:"n", id:n._id, title:n.text, at:n.createdAt, origin:"긴급공지", who:"", report:n.result||"", st}; }); }
 function renderReqs(){
   const el=$("#reqList"); if(!el) return;
-  const items=tasks.filter(isReq).map(t=>{ const m=ownerOf(t); return {kind:"t", t, id:t._id, title:t.title, at:t.createdAt, origin:(t.from==="qna"?"직원에게 묻기":originLabel(t))||"대표 지시", who:m?m.name:"담당 없음", report:t.ceoCommentReply?.text||t.result||t.note||t.reviseNote||"", st:reqState(t)}; }).concat(reqNotices());
+  const items=tasks.filter(isReq).map(t=>{ const m=ownerOf(t); return {kind:"t", t, id:t._id, title:t.title, at:t.createdAt, origin:(t.from==="qna"?"질문 중 지시":t.from==="staff"?"직원에게 지시":originLabel(t))||"대표 지시", who:m?m.name:"담당 없음", report:t.ceoCommentReply?.text||t.result||t.note||t.reviseNote||"", st:reqState(t)}; }).concat(reqNotices());
   items.sort((a,b)=>a.st.g-b.st.g || String(b.at||"").localeCompare(String(a.at||"")));
   const G=[[0,"⚠ 빠지고 있는 일"],[1,"대표님 확인·결정 차례"],[2,"진행 중"],[3,"보류"]];
   const row=x=>`<div class="rq ${x.st.bad?"bad":x.st.ack||x.st.go?"ask":""}"><span class="rt"><span class="note">${esc(fmtMD(kstParts(new Date(x.at||Date.now())).date))} · ${esc(x.origin)}${x.who?" · "+esc(x.who):""}</span><br><b>${esc(cut(x.title,90))}</b> ${x.t?cmtBadge(x.t):""}</span><span class="rs ${x.st.cls||""}">${esc(x.st.txt)}</span>${x.st.ack&&canWrite!==false?`<button class="btn pri" type="button" data-reqack="${esc(x.kind+":"+x.id)}" title="결과를 확인했으면 목록에서 빼요">✓ 확인</button>`:""}${x.st.go?`<button class="btn ghost" type="button" data-gotab="${x.st.go}">결재 탭 →</button>`:""}${x.t&&x.t.docId?`<button class="btn ghost" type="button" data-doc="${esc(x.t.docId)}">자료</button>`:""}${x.t&&canWrite!==false?`<button class="btn ghost" type="button" data-cmt="${esc(x.id)}">💬 ${x.st.ack?"다시 지시":"지시"}</button>`:""}${x.report?`<div class="sub">보고: ${esc(cut(x.report,160))}</div>`:""}</div>`;
@@ -1585,14 +1587,34 @@ ${q}`;
   btn.disabled=false; stop.hidden=true;
 }
 $("#askForm").addEventListener("submit", askStaff);
+function openAsk(id){ const m=MEMBERS.find(x=>x.id===id); if(!m) return; const sel=$("#askWho");
+  if(![...sel.options].some(o=>o.value===id)) sel.insertAdjacentHTML("beforeend",`<option value="${esc(id)}">${esc(m.name)}</option>`);
+  sel.value=id; $("#askTitle").textContent=`💬 ${m.name} · ${DEPTS[m.dept]?.name||""} ${m.team}`; $("#askInfo").textContent="📌 업무로 지시: 이 직원에게 바로 업무가 올라가요(대표 요청 목록에 표시). ❓ 질문하기: 사무실 기록을 보고 바로 답해요(지시로 보이면 업무로도 올려요).";
+  $("#askMsg").textContent=""; $("#askLive").innerHTML=""; $("#askUrg").checked=false; renderAsk(); $("#askView").hidden=false; document.body.style.overflow="hidden"; setTimeout(()=>$("#askQ").focus(),30); }
+const closeAsk=()=>{ $("#askView").hidden=true; document.body.style.overflow=""; };
+$("#askClose").addEventListener("click",closeAsk);
+$("#askView").addEventListener("click",e=>{ if(e.target.id==="askView") closeAsk(); });
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-askm]"); if(b){ e.preventDefault(); openAsk(b.dataset.askm); } });
+$("#askOrderBtn").addEventListener("click", async ()=>{
+  const text=$("#askQ").value.trim(); if(!text){ $("#askQ").focus(); return; } if(!dbRef||canWrite===false){ $("#askMsg").textContent="사무실 데이터에 쓸 수 없어요."; return; }
+  const m=MEMBERS.find(x=>x.id===$("#askWho").value); if(!m) return; const urgent=$("#askUrg").checked; const now=new Date().toISOString(); const id="o-"+Date.now().toString(36);
+  const btn=$("#askOrderBtn"); btn.disabled=true;
+  try{ await dbRef.doc("tasks/"+id).set({title:cut(text.split("\n")[0],60), detail:text, dept:m.dept==="ceo"?"strategy":m.dept, owner:m.name, team:m.team, status:"approved", by:"대표", from:"staff", queue:"plan", urgent, createdAt:now, updatedAt:now}); }
+  catch(_){ btn.disabled=false; $("#askMsg").textContent="저장하지 못했어요. 다시 눌러 주세요."; return; }
+  btn.disabled=false; $("#askQ").value="";
+  const r=await wakeOffice("order-"+id, urgent);
+  $("#askMsg").textContent = `${m.name}에게 업무로 올렸어요. ` + (r==="paused" ? "지금은 업무 정지 중이라 다시 시작하면 처리해요." : r==="ok" ? "지금 바로 시작해요." : "한결이 배분표에 넣어 처리해요.");
+});
 function renderAsk(){
-  $("#askLog").innerHTML = qna.length ? qna.map(x=>{ const m=MEMBERS.find(y=>y.id===x.who); return `<div class="qa"><div class="who">${deptChip(x.dept)} <b>${esc(x.member||"")}</b> ${esc(m?.team||"")} · ${esc(fmtDay(x.at))} ${esc(fmtTime(x.at))}</div><div class="q">Q. ${esc(x.q)}</div><div class="a">${esc(x.a)}</div><div class="acts"><button class="btn ghost" type="button" data-toorder="${esc(x._id)}">지시로 보내기</button></div></div>`; }).join("") : `<div class="empty">아직 물어본 내용이 없어요.</div>`;
+  const who=$("#askWho").value; const mine=qna.filter(x=>x.who===who).slice(0,5);
+  $("#askLog").innerHTML = mine.length ? mine.map(x=>{ const m=MEMBERS.find(y=>y.id===x.who); return `<div class="qa"><div class="who">${deptChip(x.dept)} <b>${esc(x.member||"")}</b> ${esc(m?.team||"")} · ${esc(fmtDay(x.at))} ${esc(fmtTime(x.at))}</div><div class="q">Q. ${esc(x.q)}</div><div class="a">${esc(x.a)}</div><div class="acts"><button class="btn ghost" type="button" data-toorder="${esc(x._id)}">지시로 보내기</button></div></div>`; }).join("") : `<div class="empty">아직 물어본 내용이 없어요.</div>`;
 }
 document.addEventListener("click", e=>{
   const b=e.target.closest("[data-toorder]"); if(!b) return;
   const x=qna.find(y=>y._id===b.dataset.toorder); if(!x) return;
   const d = DEPTS[x.dept] && x.dept!=="ceo" ? x.dept : "edu";
   $("#orderDept").value=d; $("#orderTitle").value=cut(x.q,60); $("#orderDetail").value=`[${x.member}에게 물어본 내용]\nQ. ${x.q}\nA. ${cut(x.a,1500)}`;
+  try{ closeAsk(); }catch(_){}
   document.querySelector('#tabs button[data-tab="approve"]')?.click(); $("#orderTitle").focus();
   $("#orderMsg").textContent="질문 내용을 지시서에 옮겼어요. 다듬어서 '지시 내리기'를 눌러 주세요.";
 });
