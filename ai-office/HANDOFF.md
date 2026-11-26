@@ -8,7 +8,7 @@
 ## 핵심 위치
 - 사무실 페이지: https://claude.ai/artifact/VfA5m37psAvPz4w1SzYFid (소스: `ai-office/index.html`)
 - 데이터(DB 컬렉션): tasks, feed, docs, notices, classes, imageReqs, qna, meetings, apps, schedule, **plans(오늘 업무 배분표)**
-- 규칙: `config/workflow`(1~16번), `config/media`, `config/classes`, `config/library`, `config/proposal-template`, `config/marketing`(보류), `config/system`
+- 규칙: `config/workflow`(1~22번), `config/media`, `config/classes`, `config/library`, `config/proposal-template`, `config/marketing`(보류), `config/system`
 - main에 직접 push 금지, 강제 push·브랜치 삭제 금지
 
 ## 하루가 돌아가는 방식 (2026-11-25부터)
@@ -49,6 +49,12 @@
 - 회의 중 할 일은 말씀마다 쌓여요(덮어쓰지 않음). '회의 마치기'를 누르면 회의록 전체를 다시 읽어 대표님 말씀의 할 일·일하는 방식 규칙·답 못 한 질문을 뽑아 업무로 올리고, 한결에게 '[회의 후속 점검]'(대표님 말씀 전문 포함, urgent)을 항상 남겨요(규칙 21번 ⑨).
 - '대표님이 정할 것'은 회의록에서 바로 '정하기' → 한결에게 업무로 넘어가요. 정할 것이 남은 회의는 대시보드 '🗣 회의 결정' 칸에 떠요.
 - 회의 데이터: meetings에 kind, convenedBy('대표'·'한결'), requestedBy, status('live'·'closed'), decisions, tasksCreated. 소집 권한: 대표님과 한결(config/workflow 19번).
+
+## 업무 코멘트·지시 (2026-11-26)
+- 담당자별 현황·늦은 일·결재 탭의 업무마다 💬 버튼: 지시·코멘트를 남기면 task에 `ceoComments`가 쌓이고 `ceoCommentNew: true`, 급함이면 `urgent`. 정기 점검이 바로 깨어나요(`comment-<id>`).
+- 직원은 수정 요청과 같은 순위로 처리하고 `ceoCommentReply {at, by, text}`를 남겨요(config/workflow 22번). 답은 💬 창에서 보여요.
+- 상태 이름: '승인됨' → '제작 대기'(결재가 아님). 업무 카드에 출처(회의 지시·총괄 지시·컨펌 후속·기획안 승인·대표 지시)가 붙어요.
+- 고르기가 필요한 기획안은 컨펌 카드만이 아니라 고르기 카드도 함께 올려요(22번 ②). 마곡초 5차 기획안 반별 고르기 카드 `t-20261126-mg1~mg3`.
 
 ## 대표님 캐릭터
 - 3D 사무실 '👤 내 캐릭터' 버튼: 성별(치마)·머리 모양 6가지·머리 색·피부·옷 색·안경. 저장 위치 config/ceoAvatar.
