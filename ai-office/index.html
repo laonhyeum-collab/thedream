@@ -383,7 +383,7 @@ form.order input[type=checkbox]{flex:none}
 
 <div class="wrap">
   <header class="top">
-    <h1><span class="logo">Block <i>&amp;</i> Bit</span><small>블록앤비트 AI 사무실 · 레고 과학·코딩·AI 교육 · 대표 1명, AI 직원 23명</small></h1>
+    <h1><span class="logo">Block <i>&amp;</i> Bit</span><small>블록앤비트 AI 사무실 · 레고 과학·코딩·AI 교육 · 대표 1명, AI 직원 5명</small></h1>
     <div class="clock" aria-live="polite">
       <div class="t" id="clk">--:--</div>
       <div class="s"><b id="officeStatus">출근 대기</b><span id="nextRun">매일 08:30 오전 회의</span></div>
@@ -405,11 +405,9 @@ form.order input[type=checkbox]{flex:none}
     <button role="tab" data-tab="meet">회의실<span class="n" id="nMeet" hidden>0</span></button>
     <button role="tab" data-tab="approve">대표 결재<span class="n" id="nApprove" hidden>0</span></button>
     <button role="tab" data-tab="images">이미지 요청함<span class="n" id="nImages" hidden>0</span></button>
-    <button role="tab" data-tab="feed">업무 피드</button>
     <button role="tab" data-tab="sched">일정</button>
     <button role="tab" data-tab="docs">자료실</button>
     <button role="tab" data-tab="apps">앱 관리</button>
-    <button role="tab" data-tab="org">조직도</button>
   </nav>
 
   <section class="panel" data-pane="dash">
@@ -424,7 +422,7 @@ form.order input[type=checkbox]{flex:none}
       </section>
       <section class="gen plan-w" aria-labelledby="planH">
         <div class="uh"><h2 id="planH">오늘 업무 배분표</h2><span class="note" id="planSum"></span></div>
-        <p class="note" style="margin:0">매일 08:30 오전 회의에서 한결이 사용량 구간(5시간씩)마다 할 일을 나눠요. 구간마다 긴급·수정 요청을 받을 여유를 남겨 둬요.</p>
+        <p class="note" style="margin:0">매일 08:30 오전 회의에서 한결이 하루 5번 점검(10·14·18·22·02시)마다 할 일을 나눠요. 구간마다 긴급·수정 요청을 받을 여유를 남겨 둬요.</p>
         <div class="planb" id="planBoard"></div>
       </section>
       <section class="gen plan-w" aria-labelledby="staffH" style="border-left-color:var(--bad)">
@@ -501,7 +499,7 @@ form.order input[type=checkbox]{flex:none}
       <div class="r"><button class="btn pri" type="submit" id="orderBtn">지시 내리기</button><span class="note" id="orderMsg"></span></div>
     </form>
     <h2 style="margin-top:16px">최종 컨펌 대기</h2>
-    <p class="note" style="margin-top:-4px">부서 검수와 총괄 검수(가람)를 모두 통과한 결과물이에요. 컨펌하면 완료, 수정 요청하면 담당 부서가 다음 정기 점검(매시 7분)에 가장 먼저 고쳐요.</p>
+    <p class="note" style="margin-top:-4px">검수(가람)를 통과한 결과물이에요. 컨펌하면 완료, 수정 요청하면 담당 부서가 다음 정기 점검(10·14·18·22·02시)에 가장 먼저 고쳐요.</p>
     <div class="list" id="confirmList"></div>
     <h2 style="margin-top:16px">기획안 결재 대기</h2>
     <div class="list" id="approveList"></div>
@@ -697,31 +695,34 @@ const DEPTS = {
 };
 // hair, shirt colors for each member sprite
 const MEMBERS = [
-  {id:"hangyeol", name:"한결", dept:"strategy", team:"운영기획팀", role:"월간 운영 계획, 부서 간 업무 배분, 사무실 시스템·규칙 총괄(규칙 정리·단순화·멈춘 업무 점검)", hair:"#3a2a22", shirt:"#3f7fb8", desk:[2.5,4]},
+  {id:"hangyeol", name:"한결", dept:"strategy", team:"전략부서장", role:"대표 지시 접수·담당 배정·하루 배분, 대표 요청 대조(하루 3번)·보고, 수업 일정", hair:"#3a2a22", shirt:"#3f7fb8", desk:[2.5,4]},
   {id:"daon", name:"다온", dept:"strategy", team:"일정관리팀", role:"수업·제작 일정, 마감 관리", hair:"#7a4a2a", shirt:"#5b9bd5", desk:[6.5,4]},
   {id:"nuri", name:"누리", dept:"strategy", team:"성과분석팀", role:"완료 현황 집계, 개선점 정리", hair:"#1f1f2a", shirt:"#2f6a9a", desk:[2.5,8]},
   {id:"roa", name:"로아", dept:"strategy", team:"검토팀", role:"일정 충돌, 수치, 대표 보고서 사실 확인", hair:"#5a3a2a", shirt:"#4a8cc8", desk:[6.5,8]},
   {id:"irum", name:"이룸", dept:"strategy", team:"마케팅·수익화팀", role:"앱·게임·유튜브·굿즈·수업의 수익화 가능성 점검과 제안, 홍보 전략", hair:"#8a4b2a", shirt:"#2f86c9", desk:[4.5,6]},
-  {id:"saebom", name:"새봄", dept:"edu", team:"수업기획팀", role:"수업 주제 발굴, 차시 구성, 학습 목표", hair:"#a4532e", shirt:"#4f9e7a", desk:[11.5,4]},
+  {id:"saebom", name:"새봄", dept:"edu", team:"교육부서장", role:"기획서·지도안·교안·활동지·디자인 전부", hair:"#a4532e", shirt:"#4f9e7a", desk:[11.5,4]},
   {id:"raon", name:"라온", dept:"edu", team:"교안제작팀", role:"슬라이드 원고, 강의 대본", hair:"#2c2c3a", shirt:"#68b48f", desk:[16,4]},
   {id:"boram", name:"보람", dept:"edu", team:"활동지·평가팀", role:"학생 활동지, 퀴즈, 평가 기준", hair:"#c9a14a", shirt:"#3d8a66", desk:[20.5,4]},
   {id:"ieum", name:"이음", dept:"edu", team:"품질검수팀", role:"학년 수준, 안전, 오류 검수", hair:"#5a3a5a", shirt:"#2f7a58", desk:[16,8]},
   {id:"dasom", name:"다솜", dept:"edu", team:"교안디자인팀", role:"교육 목적에 맞춘 PPT·지도안·활동지 디자인", hair:"#d9774a", shirt:"#86c9a5", desk:[11.5,8]},
-  {id:"harang", name:"하랑", dept:"media", team:"콘텐츠기획팀", role:"영상 기획 PD: 회차 브리프, 교과 연계, 부서 요청 정리", hair:"#e0d6c8", shirt:"#7b6cc9", desk:[26.5,4]},
+  {id:"harang", name:"하랑", dept:"media", team:"미디어부서장", role:"영상 기획·대본·그림·영상·채널 전부", hair:"#e0d6c8", shirt:"#7b6cc9", desk:[26.5,4]},
   {id:"seoyun", name:"서윤", dept:"media", team:"대본팀", role:"한국어·영어 대본과 자막 (직역 아닌 현지화)", hair:"#4a2c2a", shirt:"#8d80d0", desk:[30.5,4]},
   {id:"chaea", name:"채아", dept:"media", team:"아트팀", role:"캐릭터, 장면 콘티, 썸네일", hair:"#e07aa0", shirt:"#9b8fd9", desk:[34.5,4]},
   {id:"gaon", name:"가온", dept:"media", team:"사운드팀", role:"징글, 효과음, 배경음, 캐릭터 목소리", hair:"#2c2c3a", shirt:"#6a5cc0", desk:[38,4]},
   {id:"ideun", name:"이든", dept:"media", team:"영상편집팀", role:"9:16 쇼츠 편집, 한·영 두 버전 렌더링", hair:"#7a4a2a", shirt:"#7b6cc9", desk:[26.5,8]},
   {id:"bareum", name:"바름", dept:"media", team:"검수팀", role:"사실 확인, 아동 안전, 저작권·플랫폼 정책", hair:"#3a3a3a", shirt:"#5e52a8", desk:[30.5,8]},
   {id:"narae", name:"나래", dept:"media", team:"채널운영팀", role:"제목·설명·태그, 아동용 설정, 업로드 준비", hair:"#b5652e", shirt:"#a597ef", desk:[34.5,8]},
-  {id:"haneul", name:"하늘", dept:"app", team:"앱기획팀", role:"앱 개선 기획, 수업 연계 요구사항 정리", hair:"#3b2b4a", shirt:"#d0703f", desk:[21,17]},
+  {id:"haneul", name:"하늘", dept:"app", team:"앱개발부서장", role:"앱 기획·개발·배포 전부", hair:"#3b2b4a", shirt:"#d0703f", desk:[21,17]},
   {id:"doyun", name:"도윤", dept:"app", team:"앱개발팀", role:"승인된 기능 개발, 버그 수정", hair:"#1f1f24", shirt:"#e08a5a", desk:[26,17]},
   {id:"byeol", name:"별", dept:"app", team:"점검·배포팀", role:"배포 상태 점검, 업데이트 노트", hair:"#b5652e", shirt:"#b85c30", desk:[21,21]},
   {id:"siu", name:"시우", dept:"app", team:"품질검수팀", role:"기능·기기 테스트, 접근성, 아동 안전 검수", hair:"#2c2c3a", shirt:"#c86a3a", desk:[26,21]},
-  {id:"garam", name:"가람", dept:"ceo", team:"총괄검수", role:"대표 컨펌 전 모든 부서 결과물 최종 검수", hair:"#1f1f24", shirt:"#b07a20", desk:[36,15.6]},
+  {id:"garam", name:"가람", dept:"ceo", team:"검수", role:"모든 최종 결과물 검수(지시·반려 메모와 대조, 앱은 직접 시험)", hair:"#1f1f24", shirt:"#b07a20", desk:[36,15.6]},
   {id:"dodam", name:"도담", dept:"ceo", team:"비서실", role:"하루 업무 마감, 대표 브리핑 작성", hair:"#6a3b2a", shirt:"#c98a2b", desk:[36,19]}
 ];
 
+// 2026-11-26 대표 지시: 직원 최소 인원(부서장 4명 + 검수 1명)만 남김
+const KEEP_STAFF=new Set(["hangyeol","saebom","haneul","harang","garam"]);
+for(let i=MEMBERS.length-1;i>=0;i--) if(!KEEP_STAFF.has(MEMBERS[i].id)) MEMBERS.splice(i,1);
 const MEDIA_GHOSTS = [];
 const ROOMS = [
   {key:"strategy", x:0,y:0,w:9,h:10, floor:["#c9d8e8","#bccce0"], label:"전략부서"},
@@ -778,7 +779,7 @@ document.addEventListener("click", async e=>{
 
 // ---------- State ----------
 let tasks=[], feed=[], schedule=[], docs=[], apps=[], notices=[], office={}, classes=[], plan=null;
-const SLOT_DEF=[["s1","오전","08:30","13:30"],["s2","오후","13:30","18:30"],["s3","저녁","18:30","23:30"],["s4","밤","23:30","04:30"],["s5","새벽","04:30","08:30"]];
+const SLOT_DEF=[["s1","10시 점검","08:30","12:00"],["s2","14시 점검","12:00","16:00"],["s3","18시 점검","16:00","20:00"],["s4","22시 점검","20:00","00:00"],["s5","02시 점검","00:00","08:30"]];
 const URGENT_TRIGGER = "trig_01F2xPSizJ7HiWEFXm3YWp9y";
 const NSTATUS = {new:"접수됨",processing:"처리 중",done:"처리 완료",failed:"처리 못 함"};
 let canWrite = null;
@@ -1193,7 +1194,7 @@ document.addEventListener("click", async e=>{
   const pk=e.target.closest("[data-pick]");
   if(pk && dbRef){ pk.disabled=true; const t=tasks.find(x=>x._id===pk.dataset.pick); if(!t||!t.choice) return; const now=new Date().toISOString(); const o=(t.choice.options||[]).find(x=>x.key===pk.dataset.key)||{};
     try{ await dbRef.doc("tasks/"+t._id).update({status:"done", confirmedAt:now, decidedBy:"대표", updatedAt:now, choice:{...t.choice, picked:o.key, pickedAt:now}, note:`선택: ${o.key} ${o.label||""}\n대표님이 골랐어요. 담당 직원이 이어서 진행해요.`});
-      const w=await wakeOffice("pick-"+t._id); $("#orderMsg").textContent=`${o.key}로 골랐어요. `+(w==="ok"?"담당 직원이 바로 이어서 진행해요.":"다음 정기 점검(매시 7분)에 이어서 진행해요."); }
+      const w=await wakeOffice("pick-"+t._id); $("#orderMsg").textContent=`${o.key}로 골랐어요. `+(w==="ok"?"담당 직원이 바로 이어서 진행해요.":"다음 정기 점검(10·14·18·22·02시)에 이어서 진행해요."); }
     catch(_){ pk.disabled=false; $("#orderMsg").textContent="저장하지 못했어요."; }
     return; }
   const b=e.target.closest("[data-act]"); if(!b || !dbRef) return;
@@ -1225,9 +1226,9 @@ document.addEventListener("click", async e=>{
     else if(!/대체|다른\s*안|다시\s*기획|새\s*기획/.test(v)) patch.followUp = "skipped"; }
   try{ await dbRef.doc("tasks/"+b.dataset.id).update(patch);
     const t = tasks.find(x=>x._id===b.dataset.id);
-    const later = "다음 정기 점검(매시 7분)에 처리돼요.";
+    const later = "다음 정기 점검(10·14·18·22·02시)에 처리돼요.";
     if(act==="approve"){ $("#orderMsg").textContent="승인했어요. 한결이 오늘 배분표의 알맞은 시간에 넣어요(대시보드 '오늘 업무 배분표')."; }
-    if(act==="approveNow"){ $("#orderMsg").textContent="승인했어요. 담당 팀을 부르는 중…"; const r=await wakeOffice("order-"+b.dataset.id, true); if(r==="ok"){ try{ await dbRef.doc("tasks/"+b.dataset.id).update({calledAt:new Date().toISOString()}); }catch(_){} } $("#orderMsg").textContent = r==="ok" ? "승인했어요. 담당 팀이 지금 바로 만들기 시작했어요." : "승인했어요. 다음 정기 점검(매시 7분)에 바로 시작해요."; }
+    if(act==="approveNow"){ $("#orderMsg").textContent="승인했어요. 담당 팀을 부르는 중…"; const r=await wakeOffice("order-"+b.dataset.id, true); if(r==="ok"){ try{ await dbRef.doc("tasks/"+b.dataset.id).update({calledAt:new Date().toISOString()}); }catch(_){} } $("#orderMsg").textContent = r==="ok" ? "승인했어요. 담당 팀이 지금 바로 만들기 시작했어요." : "승인했어요. 다음 정기 점검(10·14·18·22·02시)에 바로 시작해요."; }
     if(act==="confirm" && t && t.branch){ const r = await wakeOffice("merge-"+b.dataset.id, true); $("#orderMsg").textContent = r==="ok" ? "컨펌했어요. 앱개발부서가 지금 병합을 시작해요." : "컨펌했어요. "+later; }
     if(act==="revise"){ $("#orderMsg").textContent="수정 요청을 보냈어요. 담당 팀을 부르는 중…"; const r = await wakeOffice("revise-"+b.dataset.id, true); $("#orderMsg").textContent = r==="ok" ? "담당 팀이 바로 고치기 시작했어요. 다 고치면 검수를 거쳐 다시 컨펌 대기로 올라와요." : "수정 요청을 남겼어요. "+later; }
     if(act==="reject"){ $("#orderMsg").textContent="반려했어요. 담당 팀을 부르는 중…"; const r = (rejResult || !patch.followUp) ? await wakeOffice("reject-"+b.dataset.id, true) : "later"; $("#orderMsg").textContent = rejResult ? (patch.rewrite ? "반려했어요. '처음부터'라고 적어 주셔서 새로 작성해요." : "반려했어요. 반려 메모에 적은 부분만 고쳐서 다시 올려요(전부 새로 만들지 않아요). 처음부터 다시 원하시면 메모에 '처음부터'라고 적어 주세요.") : (patch.followUp==="skipped" ? "반려했어요. 이 기획은 여기서 끝내요(대체안이 필요하면 메모에 '대체안'이라고 적어 주세요)." : "반려했어요. 메모대로 대체안 1개를 만들어요."); } }
@@ -1473,7 +1474,7 @@ async function uploadImageFor(id){
   catch(e){ msg("저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."); imStep(id,"그림은 올렸지만 요청 카드에 기록하지 못했어요"+(e?.code?` (${e.code})`:"")+". 다시 보내 주세요."); return; }
   imStep(id,""); URL.revokeObjectURL(g.url); delete stage[id]; renderImages();
   const w = await wakeOffice("image-"+id);
-  $("#imgMsg").textContent = (bad.length?"요청과 다른 곳이 있다고 표시해서 보냈어요. 담당 직원이 다시 확인해요. ":"")+(w==="ok" ? "그림을 받았어요! 담당 직원이 바로 자리에 넣고 있어요." : "그림을 받았어요. 다음 정기 점검(매시 7분)에 자리에 넣어요.");
+  $("#imgMsg").textContent = (bad.length?"요청과 다른 곳이 있다고 표시해서 보냈어요. 담당 직원이 다시 확인해요. ":"")+(w==="ok" ? "그림을 받았어요! 담당 직원이 바로 자리에 넣고 있어요." : "그림을 받았어요. 다음 정기 점검(10·14·18·22·02시)에 자리에 넣어요.");
 }
 document.addEventListener("click", e=>{
   const sd=e.target.closest("[data-stgsend]"); if(sd){ sd.disabled=true; uploadImageFor(sd.dataset.stgsend); return; }
@@ -1508,7 +1509,7 @@ document.addEventListener("dragleave", e=>{ const d=e.target.closest?.("[data-dr
 document.addEventListener("drop", e=>{ const d=e.target.closest?.("[data-drop]"); if(!d) return; e.preventDefault(); d.classList.remove("on"); const f=[...(e.dataTransfer?.files||[])][0]; if(f) stageImage(d.dataset.drop, f); });
 
 // ---------- Ask staff ----------
-let qna=[], company={}; const LEADS=["hangyeol","irum","saebom","haneul","harang","garam"];
+let qna=[], company={}; const LEADS=["hangyeol","saebom","haneul","harang","garam"];
 (function fillWho(){
   const sel=$("#askWho"); const by=id=>MEMBERS.find(m=>m.id===id);
   const lead = LEADS.map(by).filter(Boolean);
@@ -1653,7 +1654,7 @@ document.addEventListener("click", async e=>{
 // ---------- Meetings (회의실) ----------
 const asList=v=>Array.isArray(v)?v:(v==null||v===""?[]:[v]);
 let meetings=[]; const meetShown=new Set();
-const HEADS=["hangyeol","irum","saebom","haneul","harang","garam"];
+const HEADS=["hangyeol","saebom","haneul","harang","garam"];
 let meetKind="heads", liveId="", meetIds=[];
 try{ liveId=localStorage.getItem("office-live-meet")||""; }catch(_){ liveId=""; }
 const setLive=id=>{ liveId=id||""; try{ id?localStorage.setItem("office-live-meet",id):localStorage.removeItem("office-live-meet"); }catch(_){} renderRoom(); };
@@ -1969,7 +1970,7 @@ $("#orderForm").addEventListener("submit", async e=>{
     if(when==="night"){ $("#orderMsg").textContent="지시를 남겼어요"+att+". 오늘 밤(00~08시) 야간 근무 때 처리하고 아침에 컨펌 대기로 올라와요."; btn.disabled=false; return; }
     const r = await wakeOffice("order-"+id, when==="now");
     if(r==="ok"){ try{ await dbRef.doc("tasks/"+id).update({calledAt:new Date().toISOString()}); }catch(_){} }
-    $("#orderMsg").textContent = r==="ok" ? "지시를 남겼어요"+att+". 담당 팀이 지금 바로 시작했어요. 끝나면 '최종 컨펌 대기'로 올라와요." : "지시를 남겼어요"+att+". 매시 7분 정기 점검 때 한결이 배분표에 넣어 처리해요.";
+    $("#orderMsg").textContent = r==="ok" ? "지시를 남겼어요"+att+". 담당 팀이 지금 바로 시작했어요. 끝나면 '최종 컨펌 대기'로 올라와요." : "지시를 남겼어요"+att+". 정기 점검(10·14·18·22·02시) 때 한결이 배분표에 넣어 처리해요.";
   }catch(err){ $("#orderMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; }
   btn.disabled=false;
 });
@@ -2004,7 +2005,7 @@ $("#urgForm").addEventListener("submit", async e=>{
   $("#urgMsg").textContent="공지를 올렸어요. 담당 직원을 부르는 중…";
   const r = await wakeOffice("notice "+id, true);
   btn.disabled=false;
-  const later="매시 7분 정기 점검 때 처리돼요.";
+  const later="정기 점검(10·14·18·22·02시) 때 처리돼요.";
   $("#urgMsg").textContent =
     r==="ok" ? "담당 직원이 바로 출근했어요. 처리하면 아래에 보고가 올라와요." :
     r==="approval_required"||r==="not_in_manifest" ? "바로 부르려면 Claude Code Remote 연결을 허용해 주세요. 지금은 "+later :
@@ -2035,8 +2036,8 @@ $("#cmtForm").addEventListener("submit", async e=>{ e.preventDefault();
   try{ await dbRef.doc("tasks/"+cmtId).update(patch); }catch(_){ btn.disabled=false; $("#cmtMsg").textContent="저장하지 못했어요. 다시 보내 주세요."; return; }
   btn.disabled=false; $("#cmtText").value=""; $("#cmtMsg").textContent="보냈어요. 담당 직원을 부르는 중…";
   const r=await wakeOffice("comment-"+cmtId, urgent);
-  $("#cmtMsg").textContent = r==="ok" ? "보냈어요. 담당 직원이 지금 확인하고 이 창에 답을 남겨요." : "보냈어요. 다음 정기 점검(매시 7분)에 가장 먼저 반영하고 답을 남겨요.";
-  const tt=tasks.find(x=>x._id===cmtId); if(tt){ Object.assign(tt,patch); openCmt(cmtId); $("#cmtMsg").textContent = r==="ok" ? "보냈어요. 담당 직원이 지금 확인하고 이 창에 답을 남겨요." : "보냈어요. 다음 정기 점검(매시 7분)에 가장 먼저 반영하고 답을 남겨요."; }
+  $("#cmtMsg").textContent = r==="ok" ? "보냈어요. 담당 직원이 지금 확인하고 이 창에 답을 남겨요." : "보냈어요. 다음 정기 점검(10·14·18·22·02시)에 가장 먼저 반영하고 답을 남겨요.";
+  const tt=tasks.find(x=>x._id===cmtId); if(tt){ Object.assign(tt,patch); openCmt(cmtId); $("#cmtMsg").textContent = r==="ok" ? "보냈어요. 담당 직원이 지금 확인하고 이 창에 답을 남겨요." : "보냈어요. 다음 정기 점검(10·14·18·22·02시)에 가장 먼저 반영하고 답을 남겨요."; }
 });
 
 // ---------- General orders (총괄 지시) ----------
@@ -2053,7 +2054,7 @@ $("#genForm").addEventListener("submit", async e=>{
   if(urgent) t.urgent=true;
   try{ await dbRef.doc("tasks/"+id).set(t); }catch(_){ btn.disabled=false; msg("저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."); return; }
   $("#genText").value=""; $("#genNow").checked=false;
-  if(urgent){ msg("지시를 남겼어요. 한결을 부르는 중…"); const r=await wakeOffice("general-"+id, true); msg(r==="ok" ? "한결이 지금 부서를 나누고 있어요." : "지시를 남겼어요. 다음 정기 점검(매시 7분)에 한결이 바로 나눠요."); }
+  if(urgent){ msg("지시를 남겼어요. 한결을 부르는 중…"); const r=await wakeOffice("general-"+id, true); msg(r==="ok" ? "한결이 지금 부서를 나누고 있어요." : "지시를 남겼어요. 다음 정기 점검(10·14·18·22·02시)에 한결이 바로 나눠요."); }
   else msg("지시를 남겼어요. 오전 회의(08:30)에서 한결이 부서와 처리 시간을 정해요. 회의가 끝난 뒤에 들어온 지시는 정기 점검 때 오늘 배분표의 빈 칸에 넣어요.");
   btn.disabled=false;
 });
