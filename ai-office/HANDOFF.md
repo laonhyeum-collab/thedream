@@ -8,7 +8,7 @@
 ## 핵심 위치
 - 사무실 페이지: https://claude.ai/artifact/VfA5m37psAvPz4w1SzYFid (소스: `ai-office/index.html`)
 - 데이터(DB 컬렉션): tasks, feed, docs, notices, classes, imageReqs, qna, meetings, apps, schedule, **plans(오늘 업무 배분표)**
-- 규칙: `config/workflow`(1~22번), `config/media`, `config/classes`, `config/library`, `config/proposal-template`, `config/marketing`(보류), `config/system`
+- 규칙: `config/workflow`(0~22번), `config/media`, `config/classes`, `config/library`, `config/proposal-template`, `config/marketing`(보류), `config/system`
 - main에 직접 push 금지, 강제 push·브랜치 삭제 금지
 
 ## 하루가 돌아가는 방식 (2026-11-25부터)
@@ -33,6 +33,14 @@
 - 정기 점검 매시 7분: `trig_01F2xPSizJ7HiWEFXm3YWp9y` (페이지의 '바로' 버튼도 이 작업을 즉시 실행해요)
 - 야간 정기 업무 평일 01:31: `trig_01TvF8PnhkyTvrVxTdfENxP3`
 - 각 지침의 전문은 예약 작업에 저장돼 있어요(claude.ai의 예약 작업 화면에서 볼 수 있어요).
+
+## 대표 요청 목록 (2026-11-26, 누락 막기)
+- 대시보드 맨 위. 대표님이 어디서 시키든(업무 지시·총괄 지시·회의·💬 코멘트·직원에게 묻기·긴급공지) 한 목록에 모여요. 따로 저장하지 않고 tasks·notices에서 바로 계산해요(isReq/reqState).
+- 묶음: ⚠ 빠지고 있는 일(담당·시간 미정 2시간, 배분 안 됨 26시간, 배분 시간 지남, 승인 뒤 24시간 시작 안 함, 작업 중 소식 없음, 수정 3시간, 💬 미확인 1.5시간, 긴급공지 1시간) → 대표님 확인·결정 차례 → 진행 중 → 보류.
+- 목록에서 빠지는 건 대표님이 컨펌하거나 '✓ 확인'(ceoAck)을 눌렀을 때뿐. 끝난 업무에 💬로 다시 지시하면 revise로 돌아가요.
+- 직원에게 묻기: 대표님 말이 지시면 직원이 make_order 도구로 바로 업무(from "qna", queue plan)를 올려요. "처리할 수 없어요" 답 금지.
+- 정기 점검 지침 0번 = 이 목록 대조(빨간 줄부터 없애기). config/workflow 0번 = 한 흐름(요청 → 담당 → 배분 → 보고 → 대표 확인).
+- 대시보드에서 겹치던 '지시·승인한 일 진행' 칸과 총괄 지시 결과 목록은 이 목록으로 합쳤어요.
 
 ## 사무실 화면 (대시보드)
 - **총괄 지시 · 한결**: 부서를 몰라도 적으면, 한결이 회의에서 부서와 시간을 정해요. '업무 지시'와 '운영·규칙 지시' 중 하나를 고르고, 급하면 '🔥 급함'에 체크해요(그러면 정기 점검이 바로 처리해요). 저장 형식: tasks에 `general: "work" | "rule"`, `owner: 한결`, `queue: "plan"`.
