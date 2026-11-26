@@ -1956,6 +1956,7 @@ $("#orderForm").addEventListener("submit", async e=>{
 // Usage saver: only urgent things wake a worker session at once; everything else waits for the hourly check.
 // Repeated wakes within 5 minutes are merged into the session that is already running.
 async function wakeOffice(id, urgent){
+  if(office && office.paused) return "paused";
   if(!urgent) return "later";
   try{ const last=+localStorage.getItem("office-wake")||0; if(Date.now()-last<5*60e3) return "ok"; localStorage.setItem("office-wake", String(Date.now())); }catch(_){}
   let mcp=null; try{ mcp = await window.claude?.use?.("mcp"); }catch(_){}
