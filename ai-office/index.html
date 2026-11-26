@@ -1325,14 +1325,14 @@ function stageHtml(r){
   const g=stage[r._id], id=esc(r._id);
   const items=g.items.map((x,k)=>`<li><input type="checkbox" data-stgck="${id}" data-k="${k}" ${x.ok===true?"checked":""} aria-label="${esc(cut(x.t,60))} 맞음"><span class="mk">${x.ok===true?"✅":x.ok===false?"⚠️":""}</span><label style="flex:1">${esc(cut(x.t,160))}${x.why?`<span class="why">${esc(x.why)}</span>`:""}</label></li>`).join("");
   const bad=g.items.filter(x=>x.ok===false).length, unk=g.items.filter(x=>x.ok!==true&&x.ok!==false).length;
-  const vd = g.busy ? `<div class="vd">🔎 요청한 컨셉과 비교하는 중…</div>`
+  const vd = g.busy ? `<div class="vd">🔎 요청한 컨셉과 비교하는 중… <span class="note">(기다리지 않고 바로 보내도 돼요)</span></div>`
     : bad ? `<div class="vd bad">⚠️ 요청과 다른 곳 ${bad}개 — 다시 그리는 걸 추천해요</div>`
     : unk ? `<div class="vd">항목을 보고 맞으면 체크해 주세요 ${g.err?`<span class="note">(${esc(g.err)})</span>`:""}</div>`
     : `<div class="vd ok">✅ 요청한 컨셉과 맞아요</div>`;
   return `<div class="stg"><div><img src="${esc(g.url)}" alt="올리려는 그림 미리보기"><div class="note">올리려는 그림 · 아직 보내지 않았어요</div></div>
     <div style="display:grid;gap:8px;align-content:start">${vd}<ul>${items}</ul>
     ${g.fix&&bad?`<div class="note">다시 그릴 때 덧붙일 말: <b>${esc(g.fix)}</b> <button class="btn ghost" type="button" data-stgfix="${id}">복사</button></div>`:""}
-    <div class="acts"><button class="btn pri" type="button" data-stgsend="${id}" ${g.busy?"disabled":""}>${bad?"그래도 이대로 보내기":"이대로 보내기"}</button><button class="btn ghost" type="button" data-stgredo="${id}">다른 그림으로</button>${g.busy||g.by==="ai"?"":`<button class="btn ghost" type="button" data-stgai="${id}">AI로 비교</button>`}</div></div></div>`;
+    <div class="acts"><button class="btn pri" type="button" data-stgsend="${id}">${bad?"그래도 이대로 보내기":"이대로 보내기"}</button><button class="btn ghost" type="button" data-stgredo="${id}">다른 그림으로</button>${g.busy||g.by==="ai"?"":`<button class="btn ghost" type="button" data-stgai="${id}">AI로 비교</button>`}</div></div></div>`;
 }
 async function stageImage(id, file){
   const msg=t=>{ const el=document.getElementById("imsg-"+id); if(el) el.textContent=t; };
@@ -1347,17 +1347,17 @@ async function aiCheck(id){
   const g=stage[id], r=imgReqs.find(x=>x._id===id); if(!g||!r) return;
   const sample=await sampleReady; let lim=null; try{ lim=sample? await sample.limits():null; }catch(_){}
   if(!sample||!lim?.images){ g.err="이 화면에서는 AI 비교를 쓸 수 없어 직접 체크해 주세요"; renderImages(); return; }
-  g.busy=true; renderImages();
+  g.busy=true; renderImages(); const ctl=new AbortController(); g.ctl=ctl; const tm=setTimeout(()=>ctl.abort(),40000);
   const prompt=`너는 그림 검수자야. 첨부한 그림 1장이 아래 '요청'과 맞는지 항목별로 판단해.\n요청 제목: ${r.title||""}\n요청 프롬프트:\n${r.prompt||""}\n\n확인 항목(순서 그대로):\n${g.items.map((x,k)=>`${k}. ${x.t}`).join("\n")}\n\n규칙: 항목마다 그림에서 실제로 보이는 것으로만 판단. 글자 철자·사람 수·색·구도·비율·'넣지 말라'고 한 것까지 엄격히. 애매하면 ok=false. why는 초등 교사가 바로 이해할 20자 안팎 한국어.\nJSON만 출력: {"items":[{"ok":true|false,"why":"..."}],"fix":"다시 그릴 때 프롬프트 끝에 덧붙일 한 문장(모두 맞으면 빈 문자열)"}`;
   try{
-    const j=await sample.json(prompt,{images:[g.file], modelTier:"quick"});
+    const j=await sample.json(prompt,{images:[g.file], modelTier:"quick", signal:ctl.signal});
     (j?.items||[]).forEach((x,k)=>{ if(g.items[k]){ g.items[k].ok=!!x.ok; g.items[k].why=String(x.why||""); } });
     g.fix=String(j?.fix||""); g.by="ai"; g.err="";
-  }catch(e){ g.err = e?.code==="not_granted"?"AI 비교를 허용하지 않아 직접 체크해 주세요":"AI 비교를 못 했어요. 직접 체크해 주세요"; }
-  g.busy=false; renderImages();
+  }catch(e){ g.err = e?.code==="not_granted"?"AI 비교를 허용하지 않아 직접 체크해 주세요":e?.code==="cancelled"?"AI 비교가 오래 걸려 멈췄어요. 직접 체크하거나 그대로 보내 주세요":"AI 비교를 못 했어요. 직접 체크해 주세요"; }
+  clearTimeout(tm); if(stage[id]!==g) return; g.busy=false; renderImages();
 }
 async function uploadImageFor(id){
-  const g=stage[id]; if(!g) return; const file=g.file;
+  const g=stage[id]; if(!g) return; const file=g.file; if(g.busy){ try{ g.ctl?.abort(); }catch(_){} g.busy=false; }
   const msg=t=>{ const el=document.getElementById("imsg-"+id); if(el) el.textContent=t; };
   const a = await assetsReady; if(!a){ msg("그림은 이 페이지를 편집할 수 있는 계정에서만 올릴 수 있어요."); return; }
   if(!dbRef){ msg("사무실 데이터에 연결되지 않았어요."); return; }
