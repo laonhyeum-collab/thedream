@@ -103,8 +103,7 @@
 - 다시 시작은 대표님 지시가 있을 때만: 예약 작업 3개 enabled true, office/state.paused false.
 
 ## 대표 지시 10가지 (2026-11-26 19시) — 지금의 기준
-- 규칙은 DB `config/rules` 한 장(1~10번)이 모든 것보다 우선. 예전 `config/workflow` 0~23번은 참고 기록.
-- 교육 문서 디자인 기준: `config/design-notes`(재개 후 다솜이 첫 일로 채움).
+- 규칙은 DB `config/rules` 한 장(1~10번 + design 목록)이 전부. 예전 config/workflow(0~23번)·system·collaboration·media·design-notes는 합친 뒤 DB에서 지웠고 원문은 `ai-office/archive/`에 보관(직원은 읽지 않음).
 - 예약 작업: 매시 정기 점검(13시·18시대는 한결 대조 보고 포함), 매일 08:30 오전 부서장 회의(배분 + 아침 보고, 월요일 주간 정리, 수업·배포 점검 흡수). 01:31 야간 업무는 오전 회의로 합쳐서 계속 꺼 둠.
 - 두 지침 모두 office/state.paused가 true면 바로 끝남.
 - 화면: '직원에게 묻기' 탭 삭제 → 대시보드 '담당자별 현황'의 직원마다 '💬 지시·질문'(📌 업무로 지시 = tasks from "staff" / ❓ 질문 = qna). 대시보드 맨 위 = 대표님이 할 일, 그다음 대표 요청 목록.
