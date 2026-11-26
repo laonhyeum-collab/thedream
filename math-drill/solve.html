@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="태블릿에서 10문제를 한 장씩 풀고 바로 채점해요. 틀린 문제는 다시 풀어요. (초1~중3 연산, 2022 개정 교육과정)" />
+    <meta name="theme-color" content="#24345c" />
+    <title>화면으로 바로 풀기 | 연산 문제은행</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='84' height='84' rx='18' fill='%2324345c'/%3E%3Cpath d='M30 50h40M50 30v40' stroke='%23ffb627' stroke-width='12' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./solve.css" />
+  </head>
+  <body class="solve-page">
+    <header class="top">
+      <div class="brand"><span class="logo" aria-hidden="true">B&amp;B</span> <span>Block &amp; Bit</span></div>
+      <h1>화면으로 바로 풀기</h1>
+      <p class="lead">단원과 난이도를 고르면 10문제를 한 장씩 풀어요. 답을 쓰면 바로 맞음·틀림이 나와요.</p>
+      <nav class="tabs" aria-label="문제은행 메뉴">
+        <a id="toPrint" href="./index.html">🖨 문제지 출력하기</a>
+        <a class="on" href="./solve.html" aria-current="page">✏️ 화면으로 풀기</a>
+        <a id="toConcept" href="#" hidden>📘 개념 보기</a>
+      </nav>
+    </header>
+
+    <main class="solve-main">
+      <!-- 1. 고르기 -->
+      <section class="panel" id="setup" aria-labelledby="setup-h">
+        <h2 id="setup-h" class="sv-h">무엇을 풀까요?</h2>
+        <div class="row" role="group" aria-label="학교">
+          <span class="lab">학교</span>
+          <div class="seg">
+            <label><input type="radio" name="school" value="초" checked /> 초등학교</label>
+            <label><input type="radio" name="school" value="중" /> 중학교</label>
+          </div>
+        </div>
+        <div class="grid2">
+          <label class="field">학년 <select id="grade"></select></label>
+          <label class="field">학기 <select id="sem"><option value="1">1학기</option><option value="2">2학기</option></select></label>
+        </div>
+        <label class="field">단원 <select id="unit"></select></label>
+        <p class="topic" id="topic"></p>
+        <div class="row" role="group" aria-label="난이도">
+          <span class="lab">난이도</span>
+          <div class="seg">
+            <label><input type="radio" name="level" value="1" checked /> 쉬움</label>
+            <label><input type="radio" name="level" value="2" /> 보통</label>
+            <label><input type="radio" name="level" value="3" /> 어려움</label>
+          </div>
+        </div>
+        <div class="seedrow">
+          <label class="field">문제 번호 <input id="seed" type="text" inputmode="numeric" maxlength="8" autocomplete="off" /></label>
+          <p class="hint">선생님이 알려 준 번호를 쓰면 반 친구들과 똑같은 10문제가 나와요.</p>
+        </div>
+        <div class="btns">
+          <button type="button" class="btn main" id="start">풀기 시작</button>
+          <button type="button" class="btn" id="newseed">새 번호</button>
+        </div>
+        <div class="share" id="share">
+          <p class="hint">반 전체가 같은 문제를 풀려면 이 주소를 칠판에 띄우거나 나눠 주세요.</p>
+          <input id="shareUrl" type="text" readonly aria-label="같은 문제 주소" />
+          <button type="button" class="btn tiny" id="copy">주소 복사</button>
+        </div>
+        <p class="hint small">로그인·이름 입력이 없고, 푼 기록은 어디에도 저장하지 않아요. 창을 닫으면 사라져요.</p>
+      </section>
+
+      <!-- 2. 한 장씩 풀기 -->
+      <section class="card-wrap" id="play" hidden aria-live="polite">
+        <div class="progress"><span id="pTitle"></span><span id="pCount"></span></div>
+        <div class="dots" id="dots" aria-hidden="true"></div>
+        <article class="qcard">
+          <div class="qhead"><span class="pn" id="qNum">1</span><span class="qround" id="qRound"></span></div>
+          <p class="hint" id="qInst"></p>
+          <div class="qt big" id="qText"></div>
+          <div class="pf" id="qFig"></div>
+          <form id="ansForm" class="ansrow" autocomplete="off">
+            <label class="sr-only" for="ans">답</label>
+            <input id="ans" type="text" placeholder="답을 써요" enterkeyhint="done" autocapitalize="off" spellcheck="false" />
+            <button type="submit" class="btn main" id="check">채점</button>
+          </form>
+          <p class="hint" id="ansHint"></p>
+          <div class="keys" id="keys" aria-label="기호 단추"></div>
+          <div class="result" id="result" role="status"></div>
+          <div class="btns">
+            <button type="button" class="btn main" id="next" hidden>다음 문제 ▶</button>
+          </div>
+        </article>
+        <button type="button" class="btn link" id="quit">처음으로</button>
+      </section>
+
+      <!-- 3. 결과 -->
+      <section class="card-wrap" id="done" hidden aria-live="polite">
+        <article class="qcard center">
+          <p class="score" id="score"></p>
+          <p id="scoreMsg"></p>
+          <ol class="review" id="review"></ol>
+          <div class="btns">
+            <button type="button" class="btn main" id="retry">틀린 문제 다시 풀기</button>
+            <button type="button" class="btn" id="again">같은 단원 새 10문제</button>
+            <button type="button" class="btn" id="home">단원 다시 고르기</button>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./js/core.js"></script>
+    <script src="./js/units.js"></script>
+    <script src="./js/words.js"></script>
+    <script src="./js/generators.js"></script>
+    <script src="./js/check.js"></script>
+    <script src="./js/links.js"></script>
+    <script src="./js/solve.js"></script>
+  </body>
+</html>

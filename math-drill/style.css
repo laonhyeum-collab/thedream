@@ -54,6 +54,7 @@ main { width: min(1180px, 100% - 32px); margin: 18px auto 48px; display: grid; g
 .btn:hover { background: var(--blue-pale); }
 .btn.main { background: var(--navy); color: #fff; }
 .btn.main:hover { background: #33477a; }
+.btn.solve-link { display: flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; border-color: var(--yellow); background: var(--yellow-pale); }
 .btn.tiny { font-size: 12px; padding: 2px 8px; min-height: 28px; border-width: 1.5px; border-radius: 8px; }
 .btn:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
 

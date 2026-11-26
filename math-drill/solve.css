@@ -1,0 +1,53 @@
+/* 화면으로 바로 풀기 (태블릿 우선) — style.css 위에 더해요 */
+[hidden] { display: none !important; }
+.tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+.tabs a { color: #fff; text-decoration: none; font-weight: 700; font-size: 14px; padding: 6px 12px; border-radius: 999px; border: 1.5px solid rgba(255, 255, 255, .45); }
+.tabs a.on { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
+.tabs a:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+
+.solve-main { display: block; width: min(760px, 100% - 32px); }
+.solve-page .panel { position: static; }
+.sv-h { margin: 0; font-size: 20px; }
+.share { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: var(--blue-pale); border-radius: 12px; padding: 10px; }
+.share .hint { width: 100%; }
+.share input { flex: 1 1 220px; min-width: 0; font: inherit; font-size: 13px; padding: 6px 8px; border-radius: 8px; border: 1.5px solid var(--line); background: #fff; color: var(--navy); }
+
+.card-wrap { display: flex; flex-direction: column; gap: 10px; }
+.progress { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 14px; font-weight: 700; color: var(--muted); }
+.dots { display: flex; gap: 6px; flex-wrap: wrap; }
+.dots span { width: 22px; height: 8px; border-radius: 4px; background: var(--line); }
+.dots span.cur { background: var(--yellow); }
+.dots span.ok { background: #2e9b5b; }
+.dots span.no { background: var(--red); }
+
+.qcard { background: #fff; border: 2px solid var(--line); border-radius: 18px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.qcard.center { text-align: center; align-items: center; }
+.qhead { display: flex; align-items: center; gap: 8px; }
+.qhead .pn { min-width: 34px; height: 34px; font-size: 17px; }
+.qround { font-size: 13px; font-weight: 700; color: var(--red); }
+.qt.big { font-size: 24px; line-height: 1.9; color: #111; }
+@media (max-width: 600px) { .qt.big { font-size: 20px; } }
+.qcard .pf svg { width: min(100%, 420px); }
+
+.ansrow { display: flex; gap: 8px; }
+.ansrow input { flex: 1; min-width: 0; font: inherit; font-size: 24px; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--navy); color: #111; }
+.ansrow input:disabled { background: var(--bg); }
+.ansrow input:focus-visible { outline: 3px solid var(--yellow); outline-offset: 1px; }
+.keys { display: flex; flex-wrap: wrap; gap: 6px; }
+.key { font: inherit; font-size: 20px; font-weight: 700; min-width: 48px; min-height: 48px; padding: 4px 10px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--navy); cursor: pointer; }
+.key.wide { font-size: 15px; }
+.key:active { background: var(--blue-pale); }
+
+.result { font-size: 20px; font-weight: 800; min-height: 1.5em; }
+.result.ok { color: #1f7a45; }
+.result.no { color: var(--red); }
+.result .ansv { color: #111; font-size: 22px; }
+
+.score { font-size: 26px; font-weight: 800; margin: 0; }
+.review { list-style: none; padding: 0; margin: 0; width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; text-align: left; }
+.review li { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 10px; border: 1.5px solid var(--line); font-size: 15px; }
+.review li.no { border-color: #e6a59e; background: #fdf0ee; }
+.review li.ok { border-color: #a8d8b9; background: #eef9f2; }
+.qcard.center .btns { justify-content: center; }
+.btn.link { align-self: flex-start; border: 0; background: none; text-decoration: underline; font-weight: 400; font-size: 14px; color: var(--muted); }
+

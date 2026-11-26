@@ -88,6 +88,7 @@
       document.querySelector('.f-date').value = dateVal;
     });
     saveHash(st);
+    $('toSolve').href = window.MD_LINKS.solve(u.id, st.level, st.seed);
     document.title = '연산문제은행_' + u.school + u.grade + '-' + u.sem + '_' + u.unit.replace(/[\s()·]/g, '') + '_' + LEVELS.find((l) => l.id === st.level).name + '_' + st.seed;
   }
 
