@@ -33,6 +33,7 @@ body.world { background: #2B2350; overflow: hidden; height: 100dvh; touch-action
 .topnav em { font-style: normal; color: #7CE38B; }
 .me-btn { border: 2px solid #6E4FC0; border-radius: 999px; padding: 2px 14px 2px 4px; }
 .me-btn canvas { width: 36px; height: 36px; border-radius: 50%; background: #E8F7FF; image-rendering: pixelated; }
+.online { color: #B8F5C8; font-family: "Jua", sans-serif; font-size: 15px; white-space: nowrap; padding: 0 6px; }
 .gear { padding: 4px 10px; border: 2px solid #6E4FC0; }
 .gear span { font-size: 20px; }
 .sidebar { position: fixed; left: 10px; top: 80px; z-index: 10; display: grid; gap: 6px; padding: 8px; border-radius: 18px; background: rgba(43,35,80,.88); box-shadow: 0 4px 0 #1C1638; }

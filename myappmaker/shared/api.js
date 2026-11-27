@@ -82,6 +82,8 @@ export function createApi(cfg, fetchImpl = globalThis.fetch.bind(globalThis)) {
     booth: (id) => call('GET', { action: 'booth', classCode, id }),
     asset: (key) => call('GET', { action: 'asset', classCode, key }),
     teacherAppHtml: () => call('GET', { action: 'teacherAppHtml', classCode }),
+    // 함께 보기: 내 위치를 보내고 지금 들어와 있는 친구들을 받아요
+    presence: (o) => call('POST', { action: 'presence', classCode, ...o }),
     // 관리자 계정 (teacherKey 자리에 로그인 출입증을 넣어요)
     adminSetup: (setupKey, adminId, password) => call('POST', { action: 'adminSetup', setupKey, adminId, password }),
     adminLogin: (adminId, password) => call('POST', { action: 'adminLogin', adminId, password }),

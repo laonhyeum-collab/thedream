@@ -224,3 +224,17 @@ test('학생 계정: 선생님이 만들고, 학생은 아이디·비밀번호�
   assert.equal(g.post({ action: 'loadDraft', classCode: C, token: g.post({ action: 'studentLogin', classCode: C, loginId: '01', pin: np }).token }).ok, false);
   assert.ok([...g.files.values()].filter((f) => f.name.startsWith('draft_01')).every((f) => f.trashed));
 });
+
+test('함께 보기(presence): 서로의 위치·캐릭터가 보이고, 나가면 사라짐', () => {
+  const g = createGas();
+  const C = 'TEST-CLASS';
+  assert.equal(g.post({ action: 'presence', classCode: 'nope', sid: 'a1' }).ok, false);
+  const a = g.post({ action: 'presence', classCode: C, sid: 'a1', nick: '<b>하늘', avatar: { skin: 2, hair: 3, bad: 'x' }, x: 100, y: 200, w: 1920 });
+  assert.equal(a.ok, true); assert.equal(a.others.length, 0);
+  const b = g.post({ action: 'presence', classCode: C, sid: 'b2', nick: '새봄', avatar: {}, x: 300, y: 400, w: 1920 });
+  assert.equal(b.others.length, 1);
+  assert.equal(b.others[0].nick, 'b하늘'); assert.equal(b.others[0].x, 100); assert.deepEqual(b.others[0].avatar, { skin: 2, hair: 3 });
+  assert.equal(g.post({ action: 'presence', classCode: C, sid: 'a1', x: 1, y: 1 }).others[0].sid, 'b2');
+  g.post({ action: 'presence', classCode: C, sid: 'b2', leave: true });
+  assert.equal(g.post({ action: 'presence', classCode: C, sid: 'a1', x: 1, y: 1 }).others.length, 0);
+});

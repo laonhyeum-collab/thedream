@@ -62,6 +62,7 @@ function route_(p) {
   if (a === 'booth') return booth_(p);
   if (a === 'asset') return asset_(p);
   if (a === 'teacherAppHtml') return teacherAppHtml_();
+  if (a === 'presence') return presence_(p);
   throw new Error('모르는 요청이에요: ' + a);
 }
 
@@ -609,4 +610,39 @@ function loadDraft_(p) {
   var plan = null;
   if (a.draftFileId) { try { plan = JSON.parse(readText_(a.draftFileId)); } catch (e) { plan = null; } }
   return { loginId: a.loginId, plan: plan, draftAt: a.draftAt || '' };
+}
+
+
+// ---------- 메타버스: 지금 월드에 들어와 있는 친구들 (함께 보기) ----------
+// 각 기기가 몇 초마다 「내 위치·캐릭터·별명」을 보내면, 최근 20초 안에 보낸 다른 친구들을 돌려줘요.
+// 시트·드라이브에 적지 않고 캐시(잠깐 기억)에만 둬요 → 빠르고, 창을 닫으면 저절로 사라져요.
+var PRESENCE_KEY = 'presence';
+var PRESENCE_TTL = 20000;      // 이 시간(ms) 동안 소식이 없으면 나간 것으로
+var PRESENCE_MAX = 60;
+function presence_(p) {
+  var sid = str_(p.sid, 40).replace(/[^A-Za-z0-9_-]/g, '');
+  if (!sid) throw new Error('기기 구분 값이 없어요');
+  var cache = CacheService.getScriptCache();
+  var now = Date.now();
+  var read = function () { var all = {}; try { all = JSON.parse(cache.get(PRESENCE_KEY) || '{}') || {}; } catch (e) { all = {}; } return all; };
+  var prune = function (all) { Object.keys(all).forEach(function (k) { if (!all[k] || now - Number(all[k].t) > PRESENCE_TTL) delete all[k]; }); return all; };
+  var all;
+  var lock = LockService.getScriptLock();
+  if (lock.tryLock(4000)) {
+    try {
+      all = prune(read());
+      if (p.leave) delete all[sid];
+      else {
+        var av = {};
+        var src = p.avatar && typeof p.avatar === 'object' ? p.avatar : {};
+        Object.keys(src).slice(0, 12).forEach(function (k) { var n = Number(src[k]); if (/^[a-z]{1,10}$/.test(k) && n >= 0 && n < 100 && Math.floor(n) === n) av[k] = n; });
+        all[sid] = { n: str_(p.nick, 10).replace(/[<>]/g, ''), a: av, x: Math.round(Number(p.x) || 0), y: Math.round(Number(p.y) || 0), w: Math.round(Number(p.w) || 0), t: now };
+        var ids = Object.keys(all);
+        if (ids.length > PRESENCE_MAX) ids.sort(function (a, b) { return all[a].t - all[b].t; }).slice(0, ids.length - PRESENCE_MAX).forEach(function (k) { delete all[k]; });
+      }
+      cache.put(PRESENCE_KEY, JSON.stringify(all), 600);
+    } finally { lock.releaseLock(); }
+  } else all = prune(read());   // 붐빌 땐 이번엔 읽기만
+  var others = Object.keys(all).filter(function (k) { return k !== sid; }).map(function (k) { var o = all[k]; return { sid: k, nick: o.n, avatar: o.a, x: o.x, y: o.y, w: o.w, age: now - o.t }; });
+  return { others: others, interval: 3000 };
 }
