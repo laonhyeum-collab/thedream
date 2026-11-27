@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="학년·학기·단원을 고르면 개념 설명 → 개념 영상 → 문제지 만들기로 이어지는 수학 개념 사이트 (2022 개정 교육과정)" />
+    <meta name="theme-color" content="#24345c" />
+    <title>수학 개념 | Block &amp; Bit</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='84' height='84' rx='18' fill='%2324345c'/%3E%3Cpath d='M30 50h40M50 30v40' stroke='%23ffb627' stroke-width='12' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand"><span class="logo" aria-hidden="true">B&amp;B</span> <span>Block &amp; Bit</span></div>
+      <h1>수학 개념</h1>
+      <p class="lead">학년 · 학기 · 단원을 고르면 개념 설명 → 개념 영상 → 문제지 만들기로 이어져요.</p>
+      <nav class="tabs" aria-label="사이트 메뉴"><a class="tab on" href="./concept.html" aria-current="page">📘 개념 보기</a><a class="tab" id="toDrill" href="./index.html">🖨 문제지 만들기</a></nav>
+    </header>
+
+    <main>
+      <section class="panel" aria-labelledby="pick-h">
+        <h2 id="pick-h" class="sr-only">단원 고르기</h2>
+        <div class="row" role="group" aria-label="학교">
+          <span class="lab">학교</span>
+          <div class="seg" id="school">
+            <label><input type="radio" name="school" value="초" checked /> 초등학교</label>
+            <label><input type="radio" name="school" value="중" /> 중학교</label>
+          </div>
+        </div>
+        <div class="grid2">
+          <label class="field">학년 <select id="grade"></select></label>
+          <label class="field">학기 <select id="sem"><option value="1">1학기</option><option value="2">2학기</option></select></label>
+        </div>
+        <label class="field">단원 <select id="unit"></select></label>
+        <p class="hint small">지금은 연산 단원이에요. 개념 설명은 초등 1학년부터 차례로 더하고 있어요.</p>
+      </section>
+
+      <article class="concept" id="concept" aria-live="polite"></article>
+    </main>
+
+    <script src="./js/core.js"></script>
+    <script src="./js/units.js"></script>
+    <script src="./js/words.js"></script>
+    <script src="./js/generators.js"></script>
+    <script src="./js/concepts.js"></script>
+    <script src="./js/concept-app.js"></script>
+  </body>
+</html>

@@ -25,7 +25,11 @@
     if (keepId && list.some((u) => u.id === keepId)) $('unit').value = keepId;
     showTopic();
   }
-  function showTopic() { const u = UNITS.find((x) => x.id === $('unit').value); $('topic').textContent = u ? '나오는 문제: ' + u.topic + (u.fig ? ' (그림 문제 포함)' : '') : ''; }
+  function showTopic() {
+    const u = UNITS.find((x) => x.id === $('unit').value);
+    $('topic').textContent = u ? '나오는 문제: ' + u.topic + (u.fig ? ' (그림 문제 포함)' : '') : '';
+    if (u) $('toConcept').href = './concept.html#u=' + u.id; // 같은 단원의 개념 화면으로
+  }
 
   function settings() {
     return { unit: $('unit').value, level: Number(radio('level')), count: Number($('count').value), space: $('space').value, seed: ($('seed').value || '').replace(/[^0-9]/g, '').slice(0, 8) || newSeed() };
