@@ -1046,7 +1046,8 @@ let showReqHold=false, showReqRun=false;
 const hrs=at=>at?(Date.now()-new Date(at))/36e5:0;
 const ceoSaw=t=>t.status==="done" && (t.confirmedAt||t.choice?.picked||t.decidedBy==="대표") && !reqKids(t).length;
 // 직원 답(ceoCommentReply)이 대표님이 마지막으로 읽은 때(replyReadAt)와 마지막 코멘트보다 새것이면 📩 새 답이에요.
-const newReply=t=>{ const r=t.ceoCommentReply; if(!r||!r.at) return false; const c=cmtList(t), lastC=c.length?c[c.length-1].at:""; const seen=[t.replyReadAt,lastC].filter(Boolean).map(x=>+new Date(x)); return +new Date(r.at) > Math.max(0,...seen); };
+const replyKey=r=>String(r.at||"")+"|"+String(r.text||"").slice(0,60);
+const newReply=t=>{ const r=t.ceoCommentReply; if(!r||!r.at) return false; if(t.replyReadKey===replyKey(r)) return false; const c=cmtList(t), lastC=c.length?c[c.length-1].at:""; const seen=[t.replyReadAt,lastC].filter(Boolean).map(x=>+new Date(x)); return +new Date(r.at) > Math.max(0,...seen); };
 function isReq(t){ if(!t.mergedInto && newReply(t)) return true; return !t.mergedInto && !t.ceoTodo && !t.ceoAck && t.status!=="rejected" && !ceoSaw(t) && (t.by==="대표"||t.general||t.fromMeeting||t.from==="qna"||t.followUpOf||t.approvedAt||cmtList(t).length); }
 function reqKids(t){ return tasks.filter(x=>(x.followUpOf===t._id||x.waitFor===t._id) && !["done","rejected"].includes(x.status) && !x.mergedInto); }
 function reqState(t){ const st=reqState0(t); return newReply(t) ? {...st, g:-1, txt:"📩 새 답 · "+st.txt, cls:"new", read:true} : st; }
@@ -1090,7 +1091,7 @@ function renderReqs(){
 document.addEventListener("click", async e=>{
   const sx=e.target.closest("[data-subx],[data-subx-more]"); if(sx){ const row=sx.closest(".rq"); const sub=row&&row.querySelector("[data-subx]"); if(sub){ const o=sub.classList.toggle("open"); const m=row.querySelector("[data-subx-more]"); if(m) m.textContent=o?"접기 ▴":"전체 보기 ▾"; } return; }
   const f=e.target.closest("[data-reqfold]"); if(f){ if(f.dataset.reqfold==="hold") showReqHold=!showReqHold; else showReqRun=!showReqRun; safeRun(renderReqs); return; }
-  const rr=e.target.closest("[data-reqread]"); if(rr&&dbRef){ rr.disabled=true; try{ await dbRef.doc("tasks/"+rr.dataset.reqread).update({replyReadAt:new Date().toISOString()}); }catch(_){ rr.disabled=false; rr.textContent="다시 눌러 주세요"; } return; }
+  const rr=e.target.closest("[data-reqread]"); if(rr&&dbRef){ rr.disabled=true; const tr=tasks.find(x=>x._id===rr.dataset.reqread); try{ await dbRef.doc("tasks/"+rr.dataset.reqread).update({replyReadAt:new Date().toISOString(), ...(tr&&tr.ceoCommentReply?{replyReadKey:replyKey(tr.ceoCommentReply)}:{})}); }catch(_){ rr.disabled=false; rr.textContent="다시 눌러 주세요"; } return; }
   const b=e.target.closest("[data-reqack]"); if(!b||!dbRef) return;
   const [k,id]=b.dataset.reqack.split(":"); b.disabled=true;
   try{ await dbRef.doc((k==="n"?"notices/":"tasks/")+id).update({ceoAck:true, ceoAckAt:new Date().toISOString()}); }catch(_){ b.disabled=false; b.textContent="다시 눌러 주세요"; }
@@ -2033,7 +2034,7 @@ function openCmt(id){ const t=tasks.find(x=>x._id===id); if(!t) return; cmtId=id
   $("#cmtHist").innerHTML=h||`<div class="note">아직 남긴 코멘트가 없어요.</div>`;
   $("#cmtText").value=""; $("#cmtUrgent").checked=false; $("#cmtMsg").textContent=""; if($("#cmtView").hidden) clearAtt("cmt");
   $("#cmtView").hidden=false; document.body.style.overflow="hidden"; setTimeout(()=>$("#cmtText").focus(),30);
-  if(newReply(t) && dbRef && canWrite!==false) dbRef.doc("tasks/"+id).update({replyReadAt:new Date().toISOString()}).catch(()=>{}); }
+  if(newReply(t) && dbRef && canWrite!==false) dbRef.doc("tasks/"+id).update({replyReadAt:new Date().toISOString(), replyReadKey:replyKey(t.ceoCommentReply)}).catch(()=>{}); }
 const closeCmt=()=>{ $("#cmtView").hidden=true; cmtId=""; document.body.style.overflow=""; };
 $("#cmtClose").addEventListener("click",closeCmt);
 $("#cmtView").addEventListener("click",e=>{ if(e.target.id==="cmtView") closeCmt(); });
