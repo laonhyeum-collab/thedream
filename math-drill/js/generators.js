@@ -184,7 +184,7 @@
   function sectorSvg(rLab, theta, extra) {
     const cx = 30, cy = 110, r = 82, t = theta * Math.PI / 180;
     const big = theta > 180 ? 1 : 0;
-    let W = 190, H = 124, ox = 0, oy = 0;
+    let W = 190, H = 132, ox = 0, oy = 0;
     if (theta > 90) { ox = 80; W = 250; }
     if (theta > 180) { oy = 0; H = 210; }
     const CX = cx + ox, CY = cy + oy;
@@ -1191,7 +1191,7 @@
   const skeleton = (p) => p.q.replace(/<[^>]+>/g, '').replace(/\d+(\.\d+)?/g, '#').replace(/\s+/g, ' ').trim() + (p.svg ? '|그림' : '');
   // 문장제를 넣을 자리: 네 문제마다 한 문제 (4, 8, 12 … 번)
   const isWordSlot = (i) => i % 4 === 3;
-  const HELP = { clockSvg };
+  const HELP = { clockSvg, fracBarSvg, fracPieSvg, numberLineSvg, circleSvg, triangleSvg, straightAngleSvg, boxSvg, sectorSvg, crossSvg, parallelSvg };
   function makeProblems(unitId, level, count, seed) {
     const gen = G[unitId];
     if (!gen) throw new Error('없는 단원: ' + unitId);
