@@ -1220,7 +1220,7 @@
     return out;
   }
 
-  const API = { G, makeProblems, skeleton };
+  const API = { G, makeProblems, skeleton, HELP };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   else root.MD_GEN = API;
 })(typeof window !== 'undefined' ? window : this);

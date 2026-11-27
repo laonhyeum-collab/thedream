@@ -133,3 +133,35 @@ sup { font-size: .7em; line-height: 0; }
   body.print-answers .problems { display: none; }
   body.print-answers .answers { break-before: auto; page-break-before: auto; }
 }
+
+/* ---------- 메뉴 (개념 보기 · 문제지 만들기) ---------- */
+.tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.tab { color: #fff; text-decoration: none; font-weight: 700; font-size: 15px; padding: 8px 16px; min-height: 44px; display: inline-flex; align-items: center; border-radius: 999px; border: 2px solid rgba(255,255,255,.5); }
+.tab:hover { background: rgba(255,255,255,.12); }
+.tab.on { background: var(--yellow); border-color: var(--yellow); color: var(--navy); }
+.tab:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+a.btn { text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+
+/* ---------- 개념 화면 ---------- */
+.concept { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.crumb { margin: 0; font-size: 14px; color: var(--muted); font-weight: 700; }
+.ctitle { margin: 0; font-size: 26px; }
+.concept > .topic { margin: 0; color: var(--muted); }
+.cbox { background: var(--card); border: 2px solid var(--line); border-radius: 16px; padding: 16px; }
+.cbox h3 { margin: 0 0 10px; font-size: 19px; display: flex; align-items: center; gap: 8px; }
+.step { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 15px; flex: none; }
+.clines { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 17px; }
+.cfigs { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 14px; }
+.cfigs figure, .exfig { margin: 0; background: #fbfcff; border: 1.5px dashed var(--line); border-radius: 12px; padding: 10px; max-width: 100%; overflow-x: auto; }
+.cfigs svg, .exfig svg { max-width: 100%; height: auto; display: block; }
+.exq { font-size: 17px; margin: 0 0 10px; }
+.exfig { display: block; width: fit-content; margin-bottom: 10px; }
+.sol { margin: 12px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 4px; font-size: 17px; }
+.sol .exa { list-style: none; margin-left: -22px; margin-top: 4px; color: var(--red); }
+.soon { margin: 0; color: var(--muted); background: var(--yellow-pale); border-radius: 10px; padding: 10px 12px; }
+.vwrap { position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #000; }
+.vwrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.cbox.go { border-color: var(--navy); }
+.cbox.go p { margin: 0 0 12px; }
+.cbox.later { border-style: dashed; }
+.concept-link { margin: 0; }
