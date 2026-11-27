@@ -214,12 +214,16 @@ function enterWorld(openSettings = false) {
   $('#stage').hidden = false;
   resize();
   $('#map').focus();
+  // 친구들과 같은 자리에 겹쳐 서지 않게 시작 위치를 조금씩 흩어요
+  if (state.world && state.source === 'server') pos = snap({ x: state.world.spawn.x + (Math.random() - 0.5) * 160, y: state.world.spawn.y + (Math.random() - 0.5) * 40 });
+  setTimeout(syncPresence, 300);
   // 별명을 아직 안 정했으면 설정 창부터
   if (openSettings || !me.nick) { saveMe(); settingsPanel(true); }
 }
 function leaveWorld() {
   closeRoom(); closePanel();
   account = null; target = null; route = [];
+  leavePresence();
   $('#stage').hidden = true; $('#lobby').hidden = false;
   renderLobby();
 }
@@ -389,9 +393,11 @@ function drawIllustrated(t) {
   if (near && near.booth) ring(near.booth.door.x, near.booth.door.y);
   const list = [
     ...w.booths.filter((b) => b.item).map((b) => ({ y: b.host.y, fn: () => drawChar(b.item.avatar ? cleanAvatar(b.item.avatar) : avatarFromText(b.item.developer), b.host.x, b.host.y, 0) })),
+    ...othersDraw(),
     { y: pos.y + PLAYER_R, fn: () => drawChar(me.avatar, pos.x, pos.y + PLAYER_R, moving ? Math.floor(walkT / 0.16) % 2 : 0) },
   ].sort((a, b) => a.y - b.y);
   for (const d of list) d.fn();
+  othersLabels(62, 13);
   for (const b of w.booths) {
     if (b.item) {
       if (small) label(`${b.item.appName} · ${b.item.developer}`, b.x, b.y + 36, { size: 13, maxW: 200 });
@@ -440,9 +446,11 @@ function draw(t) {
     { y: state.world.arch.y, fn: drawArch },
     ...state.world.booths.map((b) => ({ y: b.y, fn: () => drawBooth(b, t) })),
     ...state.world.booths.filter((b) => b.item).map((b) => ({ y: b.host.y, fn: () => drawChar(b.item.avatar ? cleanAvatar(b.item.avatar) : avatarFromText(b.item.developer), b.host.x, b.host.y, 0) })),
+    ...othersDraw(),
     { y: pos.y + PLAYER_R, fn: () => drawChar(me.avatar, pos.x, pos.y + PLAYER_R, moving ? Math.floor(walkT / 0.16) % 2 : 0) },
   ].sort((a, b) => a.y - b.y);
   for (const d of list) d.fn();
+  othersLabels(64, 13);
 
   // 이름표 (맨 위)
   const hl = state.world.hall;
@@ -509,7 +517,7 @@ function stepToward(wp, mx, my) {
 let last = performance.now();
 function frame(t) {
   const dt = Math.min(0.05, (t - last) / 1000); last = t;
-  if (state.world && !$('#stage').hidden) { step(dt); draw(t); }
+  if (state.world && !$('#stage').hidden) { step(dt); stepOthers(dt); draw(t); }
   requestAnimationFrame(frame);
 }
 
@@ -812,6 +820,62 @@ window.__worldDebug = {
     return { routes, steps, bad, wet, arrived };
   },
 };
+
+// ---------- 함께 보기: 지금 들어와 있는 친구들 ----------
+// 몇 초마다 내 위치를 우리 반 저장소에 보내고, 다른 친구들의 위치를 받아 부드럽게 따라 그려요.
+const SID = (() => { try { let v = sessionStorage.getItem('myappmaker.world.sid'); if (!v) { v = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); sessionStorage.setItem('myappmaker.world.sid', v); } return v; } catch { return Math.random().toString(36).slice(2, 14); } })();
+const others = new Map();   // sid → { nick, avatar, x, y, tx, ty, moving, seen }
+let presenceBusy = false, presenceFails = 0, presenceWarned = false;
+const inWorld = () => !$('#stage').hidden && state.world && state.source === 'server';
+async function syncPresence() {
+  if (presenceBusy || !inWorld() || document.hidden) return;
+  presenceBusy = true;
+  try {
+    const r = await api.presence({ sid: SID, nick: me.nick || '방문자', avatar: me.avatar, x: Math.round(pos.x), y: Math.round(pos.y), w: state.world.width });
+    presenceFails = 0;
+    const now = performance.now(), seen = new Set();
+    for (const o of r.others || []) {
+      if (o.w && o.w !== state.world.width) continue;   // 다른 지도를 보고 있는 기기
+      seen.add(o.sid);
+      const cur = others.get(o.sid);
+      if (cur) Object.assign(cur, { nick: o.nick, avatar: cleanAvatar(o.avatar), tx: o.x, ty: o.y, seen: now });
+      else others.set(o.sid, { nick: o.nick, avatar: cleanAvatar(o.avatar), x: o.x, y: o.y, tx: o.x, ty: o.y, moving: false, seen: now });
+    }
+    for (const k of [...others.keys()]) if (!seen.has(k)) others.delete(k);
+    paintOnline();
+  } catch (e) {
+    presenceFails++;
+    // 저장소가 예전 Code.gs 면 「모르는 요청이에요: presence」 — 선생님이 Code.gs 를 새로 붙여 넣고 배포해야 해요
+    if (!presenceWarned && /presence/.test(e.message)) { presenceWarned = true; toast('친구들이 보이려면 선생님이 Apps Script(Code.gs)를 새 버전으로 바꿔야 해요', 6000); }
+  } finally { presenceBusy = false; }
+}
+function leavePresence() {
+  others.clear(); paintOnline();
+  if (!api.enabled || state.source !== 'server') return;
+  try { navigator.sendBeacon && navigator.sendBeacon(cfg.endpoint, new Blob([JSON.stringify({ action: 'presence', classCode: cfg.classCode, sid: SID, leave: true })], { type: 'text/plain' })); } catch { /* 괜찮아요 */ }
+}
+function stepOthers(dt) {
+  for (const o of others.values()) {
+    const dx = o.tx - o.x, dy = o.ty - o.y, d = Math.hypot(dx, dy);
+    if (d > 900) { o.x = o.tx; o.y = o.ty; o.moving = false; continue; }   // 순간 이동(부스 바로 가기 등)
+    const m = Math.min(d, SPEED * 1.1 * dt);
+    o.moving = d > 2;
+    if (d > 0) { o.x += (dx / d) * m; o.y += (dy / d) * m; }
+  }
+}
+function othersDraw() {
+  return [...others.values()].map((o) => ({ y: o.y + PLAYER_R, fn: () => drawChar(o.avatar, o.x, o.y + PLAYER_R, o.moving ? Math.floor(walkT / 0.16) % 2 : 0) }));
+}
+function othersLabels(up, size) {
+  for (const o of others.values()) label(o.nick || '친구', o.x, o.y - up, { size, maxW: 120, color: '#3E9B6B' });
+}
+function paintOnline() {
+  const el = $('#onlineCount');
+  if (el) { el.textContent = others.size ? `🟢 ${others.size + 1}명 함께` : ''; el.hidden = !others.size; }
+}
+setInterval(syncPresence, 3000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) syncPresence(); });
+window.addEventListener('pagehide', leavePresence);
 
 // ---------- 시작 ----------
 renderLobby();

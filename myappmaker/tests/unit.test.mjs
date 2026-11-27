@@ -228,6 +228,15 @@ test('지도 속 구역 찾기: 낱말 첫머리만, 장소 글이 먼저', asyn
   assert.equal(worldSpot('눈 내리는 마을', '', S), '눈 덮인 산과 얼음집');
 });
 
+test('실행이 안 될 때: 끊긴 코드 찾기 · 설명 속 </html> · <header> 앞에 상자 보완을 넣지 않음', async () => {
+  const sb = await import('../shared/sandbox.js');
+  assert.deepEqual(sb.codeProblems('<!DOCTYPE html><html><body><script>let a = 1;'), ['cut']);
+  assert.deepEqual(sb.codeProblems('<!DOCTYPE html><html><body><script>let a = 1;</script></body></html>'), []);
+  assert.equal(sb.extractHtml('여기\n<!DOCTYPE html><html><body>x</body></html>\n끝은 </html> 이에요').endsWith('</body></html>'), true);
+  const doc = sb.srcdocFor('<html><header>h</header><body>x</body></html>');
+  assert.ok(doc.indexOf('<script>') < doc.indexOf('<header>'), '보완 스크립트는 <header> 안이 아니라 <head> 에');
+});
+
 test('앱 실행: HTML·CSS·JS 블록이 나뉘어 와도 하나로 합치고, 코드 속 ``` 에서 잘리지 않음', () => {
   const ai = '게임이에요\n```html\n<!DOCTYPE html>\n<html><head><link rel="stylesheet" href="style.css"></head><body><canvas id=c></canvas><script src="script.js"></script></body></html>\n```\n```css\nbody{margin:0}\n```\n```javascript\nconst a = "$&"; go();\n```';
   const html = extractHtml(ai);

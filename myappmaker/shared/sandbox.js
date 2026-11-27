@@ -5,9 +5,10 @@
 // allow-forms: 정답 입력 칸(<form>)을 쓰는 퀴즈 게임이 「확인」을 눌러도 멈추지 않게 (allow-same-origin 은 여전히 주지 않음)
 export const SANDBOX = 'allow-scripts allow-forms allow-modals allow-pointer-lock allow-downloads';
 
-const SHIM = `<script>(function(){try{window.localStorage.getItem('x');}catch(e){
-var mk=function(){var d={};return{getItem:function(k){k=String(k);return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[String(k)]=String(v)},removeItem:function(k){delete d[String(k)]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}};
-try{Object.defineProperty(window,'localStorage',{value:mk(),configurable:true});Object.defineProperty(window,'sessionStorage',{value:mk(),configurable:true});}catch(e2){}}})();<\/script>`;
+// 한 줄로만 씁니다(줄 수가 바뀌지 않아야 오류 줄 번호가 학생 코드와 같아요).
+// ① localStorage·sessionStorage·document.cookie 가 막혀도 게임이 멈추지 않게 메모리로 바꿔 끼움
+// ② 학생 앱에서 난 오류를 부모 화면(학생·교사 앱)에 알려 줌 → 「오류가 있어요」 안내
+const SHIM = `<script>(function(){var send=function(m,l){try{parent.postMessage({myappmaker:'app-error',message:String(m||'').slice(0,300),line:l||0},'*')}catch(e){}};window.addEventListener('error',function(e){if(e&&e.message)send(e.message,e.lineno)});window.addEventListener('unhandledrejection',function(e){send(e&&e.reason&&e.reason.message||e&&e.reason,0)});var mk=function(){var d={};return{getItem:function(k){k=String(k);return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[String(k)]=String(v)},removeItem:function(k){delete d[String(k)]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}};try{window.localStorage.getItem('x');}catch(e){try{Object.defineProperty(window,'localStorage',{value:mk(),configurable:true});Object.defineProperty(window,'sessionStorage',{value:mk(),configurable:true});}catch(e2){}}try{document.cookie;}catch(e){var c='';try{Object.defineProperty(document,'cookie',{get:function(){return c},set:function(v){var p=String(v).split(';')[0];c=c?c+'; '+p:p},configurable:true});}catch(e3){}}})();<\/script>`;
 
 export const MAX_APP_BYTES = 500_000;
 
@@ -48,7 +49,8 @@ export function extractHtml(text) {
   }
   const start = s.search(/<!doctype html|<html[\s>]/i);
   if (start >= 0) {
-    const end = s.toLowerCase().lastIndexOf('</html>');
+    // 코드 다음 설명에 「</html>」이 또 나와도 코드 끝에서 자르기
+    const end = s.toLowerCase().indexOf('</html>', start);
     return (end > start ? s.slice(start, end + 7) : s.slice(start)).trim();
   }
   return s;
@@ -64,9 +66,22 @@ export function looksLikeApp(html) {
   return /<(script|canvas|button|body|div)[\s>]/i.test(html || '');
 }
 
+// AI 답이 중간에 끊긴 코드인지 확인 (무료 AI는 긴 코드를 자주 끝까지 못 써요) → 고칠 말
+export function codeProblems(html) {
+  const s = String(html || '');
+  const low = s.toLowerCase();
+  const out = [];
+  const opens = (low.match(/<script\b/g) || []).length;
+  const closes = (low.match(/<\/script>/g) || []).length;
+  if (opens > closes || (/<html[\s>]/.test(low) && !low.includes('</html>')) || (/<body[\s>]/.test(low) && !low.includes('</body>'))) {
+    out.push('cut');
+  }
+  return out;
+}
+
 export function srcdocFor(html) {
   const s = String(html || '');
-  const m = s.match(/<head[^>]*>/i);
+  const m = s.match(/<head(?:\s[^>]*)?>/i);   // <header> 는 빼고
   if (m) return s.slice(0, m.index + m[0].length) + SHIM + s.slice(m.index + m[0].length);
   const h = s.match(/<html[^>]*>/i);
   if (h) return s.slice(0, h.index + h[0].length) + '<head>' + SHIM + '</head>' + s.slice(h.index + h[0].length);
@@ -87,6 +102,17 @@ export function mountApp(iframe, { html, url }) {
     else iframe.setAttribute('sandbox', SANDBOX + ' allow-same-origin allow-forms allow-popups');
     iframe.src = new URL(url, location.href).toString();
   }
+}
+
+// 상자 안 학생 앱에서 난 오류 듣기 (그 상자에서 온 것만) → 멈추는 함수
+export function onAppError(iframe, fn) {
+  const on = (e) => {
+    const d = e.data;
+    if (!d || d.myappmaker !== 'app-error' || e.source !== iframe.contentWindow) return;
+    fn({ message: String(d.message || '').slice(0, 300), line: Number(d.line) || 0 });
+  };
+  window.addEventListener('message', on);
+  return () => window.removeEventListener('message', on);
 }
 
 export function isHttpUrl(u) {

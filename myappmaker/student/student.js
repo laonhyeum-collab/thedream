@@ -11,7 +11,7 @@ import { createStore } from './store.js';
 import { download, readFileText, safeName } from '../shared/files.js';
 import { loadConfig, createApi } from '../shared/api.js';
 import { connectGate } from '../shared/connect.js';
-import { extractHtml, looksLikeApp, looksLikePrompt, mountApp, isHttpUrl, MAX_APP_BYTES } from '../shared/sandbox.js';
+import { extractHtml, looksLikeApp, looksLikePrompt, mountApp, isHttpUrl, codeProblems, onAppError, MAX_APP_BYTES } from '../shared/sandbox.js';
 import { applyImages, findImagesBlock, imagesSize } from '../shared/images.js';
 import { processPicture } from '../shared/picture.js';
 import { avatarBuilder, avatarFromText } from '../shared/avatar.js';
@@ -676,9 +676,39 @@ function setAppHtml(raw) {
 // 앱 코드(원본) + 내 그림 = 실제로 실행·제출되는 앱
 const appliedHtml = () => applyImages(plan.app.html || '', plan.app.images);
 function runApp() {
+  showAppAlert();
   if (plan.app.html) mountApp($('#appFrame'), { html: appliedHtml() });
   else if (plan.app.url) mountApp($('#appFrame'), { url: plan.app.url });
 }
+
+// 실행이 안 될 때 이유를 알려 주기: ① 코드가 중간에 끊김 ② 실행 중 오류
+const CUT_PROMPT = '코드가 중간에 끊겨서 실행이 안 돼. 앞에서 만든 게임 그대로, 처음 <!DOCTYPE html> 부터 마지막 </html> 까지 HTML 코드 전체를 코드 블록 하나로 다시 보여 줘. 중간을 줄이거나 "…"로 빼지 마.';
+let appErrors = [];
+function showAppAlert(err) {
+  if (err) { if (appErrors.length < 3 && !appErrors.some((x) => x.message === err.message)) appErrors.push(err); }
+  else appErrors = [];
+  const box = $('#appAlert');
+  const cut = plan.app.html && codeProblems(plan.app.html).includes('cut');
+  const parts = [];
+  if (cut) parts.push(h('div', { class: 'warn-box small' },
+    h('b', {}, '✂️ 코드가 끝까지 안 들어왔어요. '), 'AI 답이 중간에 끊긴 것 같아요(맨 끝 </html> 이 없어요). AI에게 코드 전체를 다시 달라고 해요. ',
+    h('button', { class: 'chip small', type: 'button', onclick: () => copyText(CUT_PROMPT, '📋 복사했어요. AI에게 붙여 넣고, 새 코드를 통째로 다시 붙여 넣어요') }, '📋 「끝까지 다시 써 줘」 복사')));
+  if (appErrors.length) {
+    const e = appErrors[0];
+    parts.push(h('div', { class: 'warn-box small' },
+      h('b', {}, '⚠ 앱 코드에 오류가 있어요. '), `${e.line ? `${e.line}번째 줄: ` : ''}${e.message} `,
+      h('button', { class: 'chip small', type: 'button', onclick: () => askFixError(e) }, '🔧 이 오류 고쳐 달라고 하기')));
+  }
+  box.replaceChildren(...parts);
+}
+function askFixError(e) {
+  const msg = String(e.message || '').replace(/[.!?]+/g, ' ').replace(/\s+/g, ' ').trim();
+  $('#fixProblem').value = `실행하면 오류가 나요: ${msg}`.slice(0, 80);
+  $('#fixWant').value = '오류 없이 시작 화면부터 끝까지 잘 실행되면 좋겠어요';
+  renderFix();
+  $('#fixProblem').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+onAppError($('#appFrame'), (e) => showAppAlert(e));
 
 function renderPictures() {
   renderRefTips();
@@ -745,7 +775,10 @@ function askForImageSlots() {
   $('#fixProblem').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-$('#runApp').onclick = () => { if (setAppHtml($('#appCode').value)) toast('▶ 실행했어요! 버튼과 규칙이 잘 되는지 시험해 봐요'); };
+$('#runApp').onclick = () => {
+  if (!setAppHtml($('#appCode').value)) return;
+  toast(codeProblems(plan.app.html).includes('cut') ? '✂️ 코드가 중간에 끊겼어요. 아래 안내를 봐요' : '▶ 실행했어요! 버튼과 규칙이 잘 되는지 시험해 봐요', 4000);
+};
 $('#appFile').onchange = async (e) => {
   const f = e.target.files[0]; e.target.value = '';
   if (!f) return;
