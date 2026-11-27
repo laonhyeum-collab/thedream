@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TOPICS, CATEGORIES, topicById } from '../shared/topics.js';
 import { SECTIONS, emptyPlan, normalizePlan, missingRequired, progress, buildAppPrompt, buildImagePrompts, buildFixPrompt, planRows, fixCheck, fixSentence, cleanFixes, FIX_EXAMPLES, FIX_KEEP } from '../shared/plan.js';
-import { extractHtml, srcdocFor, looksLikeApp } from '../shared/sandbox.js';
+import { extractHtml, srcdocFor, looksLikeApp, looksLikePrompt } from '../shared/sandbox.js';
 import { createStore } from '../student/store.js';
 import { createApi, isValidEndpoint } from '../shared/api.js';
 import { layoutWorld, moveWithin, nearestDoor, sortItems, isLand, blocked, PLAYER_R } from '../world/worldmap.js';
@@ -226,4 +226,14 @@ test('지도 속 구역 찾기: 낱말 첫머리만, 장소 글이 먼저', asyn
   assert.equal(worldSpot('우주 정거장', '행성 순서', R), '', '「행성」 속 「성」은 성터가 아님');
   assert.equal(worldSpot('', '바다 생물 도감', R), '야자수와 파라솔이 있는 모래 해변', '「생물」 속 「물」은 폭포가 아님');
   assert.equal(worldSpot('눈 내리는 마을', '', S), '눈 덮인 산과 얼음집');
+});
+
+test('프롬프트를 코드 칸에 붙여 넣으면 알아봄', async () => {
+  const { buildAppPrompt, buildFixPrompt, emptyPlan } = await import('../shared/plan.js');
+  const plan = emptyPlan();
+  plan.f.appName = '행성 순서 탐험대';
+  assert.equal(looksLikePrompt(buildAppPrompt(plan)), true);
+  assert.equal(looksLikePrompt(buildFixPrompt(plan, '버튼이 안 눌려요', '누르면 시작돼요')), true);
+  assert.equal(looksLikePrompt('```html\n<!DOCTYPE html><html><body><script>1</script></body></html>\n```'), false);
+  assert.equal(looksLikePrompt('<!doctype html><html><body>앱 기획서 게임</body></html>'), false);
 });

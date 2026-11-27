@@ -26,6 +26,14 @@ export function extractHtml(text) {
   return s;
 }
 
+// 학생이 AI 답(코드) 대신 우리가 만든 프롬프트(AI에게 보낼 글)를 붙여 넣었는지 알아봐요.
+// 프롬프트에는 진짜 HTML 문서(<!doctype html> · <html> · <body>)가 없고, 우리 프롬프트 문구가 들어 있어요.
+export function looksLikePrompt(text) {
+  const s = String(text || '');
+  if (/<!doctype html|<html[\s>]|<body[\s>]/i.test(s)) return false;
+  return /너는 초등학생과 함께|## 꼭 지켜 줘|앱 기획서|딱 한 가지만 고쳐 줘|고친 HTML 코드 전체|코드 블록 하나로/.test(s);
+}
+
 export function looksLikeApp(html) {
   return /<(script|canvas|button|body|div)[\s>]/i.test(html || '');
 }
