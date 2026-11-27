@@ -1239,6 +1239,12 @@ document.addEventListener("click", async e=>{
     const later = "다음 정기 점검(10·14·18·22·02시)에 처리돼요.";
     if(act==="approve"){ $("#orderMsg").textContent="승인했어요. 한결이 오늘 배분표의 알맞은 시간에 넣어요(대시보드 '오늘 업무 배분표')."; }
     if(act==="approveNow"){ $("#orderMsg").textContent="승인했어요. 담당 팀을 부르는 중…"; const r=await wakeOffice("order-"+b.dataset.id, true); if(r==="ok"){ try{ await dbRef.doc("tasks/"+b.dataset.id).update({calledAt:new Date().toISOString()}); }catch(_){} } $("#orderMsg").textContent = r==="ok" ? "승인했어요. 담당 팀이 지금 바로 만들기 시작했어요." : "승인했어요. 다음 정기 점검(10·14·18·22·02시)에 바로 시작해요."; }
+    // 기획서·구성안을 컨펌하면 제작 업무가 자동으로 생겨요(컨펌 뒤 일이 멈추지 않게).
+    if(act==="confirm" && t0 && !t0.branch && !t0.choice && (t0.stage==="plan" || /구성안|기획안|기획서/.test(t0.title||"")) && !tasks.some(x=>x.followUpOf===b.dataset.id)){
+      try{ const fid="o-"+Date.now().toString(36)+"f"; const n2=new Date().toISOString();
+        await dbRef.doc("tasks/"+fid).set({title:"[제작] "+String(t0.title||"").replace(/\s*(구성안|기획안|기획서)\s*/g," ").trim(), detail:"대표님이 컨펌한 기획("+b.dataset.id+") 그대로 만들기. 기획 내용과 대표님 코멘트·회의 지시를 모두 다시 읽고 체크리스트로 적은 뒤 시작해요.", dept:t0.dept, owner:t0.owner||"", status:"approved", by:"대표", followUpOf:b.dataset.id, docId:t0.docId||"", urgent:!!t0.urgent, order:1, queue:"plan", createdAt:n2, updatedAt:n2});
+        $("#orderMsg").textContent="컨펌했어요. 제작 업무를 바로 만들어 담당 목록 맨 앞에 넣었어요."; }catch(_){}
+    }
     if(act==="confirm" && t && t.branch){ const r = await wakeOffice("merge-"+b.dataset.id, true); $("#orderMsg").textContent = r==="ok" ? "컨펌했어요. 앱개발부서가 지금 병합을 시작해요." : "컨펌했어요. "+later; }
     if(act==="revise"){ $("#orderMsg").textContent="수정 요청을 보냈어요. 담당 팀을 부르는 중…"; const r = await wakeOffice("revise-"+b.dataset.id, true); $("#orderMsg").textContent = r==="ok" ? "담당 팀이 바로 고치기 시작했어요. 다 고치면 검수를 거쳐 다시 컨펌 대기로 올라와요." : "수정 요청을 남겼어요. "+later; }
     if(act==="reject"){ $("#orderMsg").textContent="반려했어요. 담당 팀을 부르는 중…"; const r = (rejResult || !patch.followUp) ? await wakeOffice("reject-"+b.dataset.id, true) : "later"; $("#orderMsg").textContent = rejResult ? (patch.rewrite ? "반려했어요. '처음부터'라고 적어 주셔서 새로 작성해요." : "반려했어요. 반려 메모에 적은 부분만 고쳐서 다시 올려요(전부 새로 만들지 않아요). 처음부터 다시 원하시면 메모에 '처음부터'라고 적어 주세요.") : (patch.followUp==="skipped" ? "반려했어요. 이 기획은 여기서 끝내요(대체안이 필요하면 메모에 '대체안'이라고 적어 주세요)." : "반려했어요. 메모대로 대체안 1개를 만들어요."); } }
