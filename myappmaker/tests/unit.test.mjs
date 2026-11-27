@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TOPICS, CATEGORIES, topicById } from '../shared/topics.js';
 import { SECTIONS, emptyPlan, normalizePlan, missingRequired, progress, buildAppPrompt, buildImagePrompts, buildFixPrompt, planRows, fixCheck, fixSentence, cleanFixes, FIX_EXAMPLES, FIX_KEEP } from '../shared/plan.js';
-import { extractHtml, srcdocFor, looksLikeApp } from '../shared/sandbox.js';
+import { extractHtml, srcdocFor, looksLikeApp, looksLikePrompt, SANDBOX } from '../shared/sandbox.js';
 import { createStore } from '../student/store.js';
 import { createApi, isValidEndpoint } from '../shared/api.js';
 import { layoutWorld, moveWithin, nearestDoor, sortItems, isLand, blocked, PLAYER_R } from '../world/worldmap.js';
@@ -235,4 +235,20 @@ test('실행이 안 될 때: 끊긴 코드 찾기 · 설명 속 </html> · <head
   assert.equal(sb.extractHtml('여기\n<!DOCTYPE html><html><body>x</body></html>\n끝은 </html> 이에요').endsWith('</body></html>'), true);
   const doc = sb.srcdocFor('<html><header>h</header><body>x</body></html>');
   assert.ok(doc.indexOf('<script>') < doc.indexOf('<header>'), '보완 스크립트는 <header> 안이 아니라 <head> 에');
+});
+
+test('앱 실행: HTML·CSS·JS 블록이 나뉘어 와도 하나로 합치고, 코드 속 ``` 에서 잘리지 않음', () => {
+  const ai = '게임이에요\n```html\n<!DOCTYPE html>\n<html><head><link rel="stylesheet" href="style.css"></head><body><canvas id=c></canvas><script src="script.js"></script></body></html>\n```\n```css\nbody{margin:0}\n```\n```javascript\nconst a = "$&"; go();\n```';
+  const html = extractHtml(ai);
+  assert.match(html, /<style>\nbody\{margin:0\}\n<\/style>\n<\/head>/);
+  assert.match(html, /<script>\nconst a = "\$&"; go\(\);\n<\/script>\n<\/body>/);
+  assert.doesNotMatch(html, /style\.css|script\.js/);
+  assert.match(extractHtml("```html\n<html><body><script>\nconsole.log('```')\n</script></body></html>\n```"), /<\/html>$/);
+});
+
+test('앱 실행: 정답 입력(form) 게임이 막히지 않고, 프롬프트를 잘못 붙여 넣으면 알아챔', () => {
+  assert.match(SANDBOX, /allow-forms/);
+  assert.doesNotMatch(SANDBOX, /allow-same-origin/);
+  assert.equal(looksLikePrompt('1. HTML·CSS·JavaScript가 모두 들어 있는 **HTML 파일 하나**로 만들어 줘. <script> 맨 위에'), true);
+  assert.equal(looksLikePrompt('<!DOCTYPE html><html><body><script>x()</script></body></html>'), false);
 });
