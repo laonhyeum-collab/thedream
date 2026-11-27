@@ -1073,6 +1073,7 @@ function reqState(t){
   if(t.status==="done") return kids.length ? {g:2, txt:`끝남 · 후속 ${kids.length}건 진행 중`} : {g:1, txt:"끝남 · 결과 보고 확인해 주세요", cls:"ok", ack:true};
   if(t.status==="confirm") return {g:1, txt:"결과 나옴 · 결재 탭에서 컨펌해 주세요", cls:"ok", go:"approve"};
   if(t.status==="proposed") return {g:1, txt:"기획안 결재 기다림", go:"approve"};
+  if(/^⛔/.test(String(t.note||""))) return {g:1, txt:"⛔ 막힘 · 대표님이 해 주실 것이 있어요(보고 펼쳐 보기)", cls:"bad"};
   let bad=lateWhy(t);
   if(!bad && t.ceoCommentNew && hrs(t.ceoCommentAt)>1.5) bad=`💬 코멘트를 ${Math.floor(hrs(t.ceoCommentAt))}시간째 확인 안 함`;
   if(!bad && t.status==="approved" && !t.slot && !t.startedAt && !t.waitFor){
