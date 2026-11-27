@@ -73,3 +73,4 @@
 - 예전 배분 메모(오전 회의·s1~s5 구간) 10건 정리, `o-myapp-20261127` owner '앱 하늘'로 맞춤, office/state의 briefing·morningAgenda 비움.
 - 기획 단계 업무 4건을 윤슬로 옮김(stage plan): 마곡초 겨울방학 특강(o-mwxqi45w), 1~2학년(fu-mg1), 3~4학년(mg2f), 5~6학년(fu12).
 - '규칙 한눈에 보기'(fu7)는 ⛔ 막힘: 대표님이 계속할지 정해 주실 것.
+- 📩 새 답 표시: 직원 답(ceoCommentReply.at)이 대표님의 마지막 코멘트와 `replyReadAt`보다 새것이면 대표 요청 목록 맨 위 '📩 직원이 새로 답했어요'에 올라가고 대시보드 탭에 숫자가 떠요. '✓ 읽음'이나 💬 창을 열면 replyReadAt이 찍혀 제자리로 가요(코드 `newReply`). 세션은 지금처럼 ceoCommentReply만 쓰면 돼요.

@@ -374,6 +374,8 @@ form.order input[type=checkbox]{flex:none}
 .rq{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
 .rq.bad{border-color:var(--bad);border-left:4px solid var(--bad)}
 .rq.ask{border-left:4px solid var(--ok)}
+.rq.new{border-color:#3f7fb8;border-left:4px solid #3f7fb8;background:color-mix(in srgb,#3f7fb8 9%,var(--panel))}
+.rq .rs.new{color:#3f7fb8}
 .rq .rt{flex:1 1 240px;min-width:0;overflow-wrap:anywhere}
 .rq .sub{flex-basis:100%;font-size:12.5px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
 .rq .sub.open{display:block;overflow:visible}
@@ -404,7 +406,7 @@ form.order input[type=checkbox]{flex:none}
 
 
   <nav class="tabs" role="tablist" id="tabs">
-    <button role="tab" data-tab="dash" aria-selected="true">대시보드</button>
+    <button role="tab" data-tab="dash" aria-selected="true">대시보드<span class="n" id="nNew" hidden title="직원이 새로 답한 것">0</span></button>
     <button role="tab" data-tab="meet">회의실<span class="n" id="nMeet" hidden>0</span></button>
     <button role="tab" data-tab="approve">대표 결재<span class="n" id="nApprove" hidden>0</span></button>
     <button role="tab" data-tab="images">이미지 요청함<span class="n" id="nImages" hidden>0</span></button>
@@ -426,7 +428,7 @@ form.order input[type=checkbox]{flex:none}
       </section>
       <section class="gen plan-w" aria-labelledby="reqH" style="border-left-color:var(--ink)">
         <div class="uh"><h2 id="reqH">📋 대표 요청 목록</h2><span class="note" id="reqSum"></span></div>
-        <p class="note" style="margin:0">대표님이 어디서 시키든(업무 지시·총괄 지시·회의·💬 코멘트·직원에게 묻기·긴급공지) 여기에 모여요. 대표님이 '✓ 확인'을 눌러야 목록에서 빠져요. 빨간 줄은 지금 빠지고 있는 일이에요.</p>
+        <p class="note" style="margin:0">대표님이 어디서 시키든(업무 지시·총괄 지시·회의·💬 코멘트·직원에게 묻기·긴급공지) 여기에 모여요. 직원이 답하면 📩 표시로 맨 위에 올라와요(✓ 읽음을 누르면 제자리로). 대표님이 '✓ 확인'을 눌러야 목록에서 빠져요. 빨간 줄은 지금 빠지고 있는 일이에요.</p>
         <div id="reqList" class="reql"></div>
       </section>
       <section class="urgent" style="margin:0" aria-labelledby="urgH">
@@ -1040,9 +1042,12 @@ function renderStaff(){
 let showReqHold=false, showReqRun=false;
 const hrs=at=>at?(Date.now()-new Date(at))/36e5:0;
 const ceoSaw=t=>t.status==="done" && (t.confirmedAt||t.choice?.picked||t.decidedBy==="대표") && !reqKids(t).length;
-function isReq(t){ return !t.mergedInto && !t.ceoTodo && !t.ceoAck && t.status!=="rejected" && !ceoSaw(t) && (t.by==="대표"||t.general||t.fromMeeting||t.from==="qna"||t.followUpOf||t.approvedAt||cmtList(t).length); }
+// 직원 답(ceoCommentReply)이 대표님이 마지막으로 읽은 때(replyReadAt)와 마지막 코멘트보다 새것이면 📩 새 답이에요.
+const newReply=t=>{ const r=t.ceoCommentReply; if(!r||!r.at) return false; const c=cmtList(t), lastC=c.length?c[c.length-1].at:""; const seen=[t.replyReadAt,lastC].filter(Boolean).map(x=>+new Date(x)); return +new Date(r.at) > Math.max(0,...seen); };
+function isReq(t){ if(!t.mergedInto && newReply(t)) return true; return !t.mergedInto && !t.ceoTodo && !t.ceoAck && t.status!=="rejected" && !ceoSaw(t) && (t.by==="대표"||t.general||t.fromMeeting||t.from==="qna"||t.followUpOf||t.approvedAt||cmtList(t).length); }
 function reqKids(t){ return tasks.filter(x=>(x.followUpOf===t._id||x.waitFor===t._id) && !["done","rejected"].includes(x.status) && !x.mergedInto); }
-function reqState(t){
+function reqState(t){ const st=reqState0(t); return newReply(t) ? {...st, g:-1, txt:"📩 새 답 · "+st.txt, cls:"new", read:true} : st; }
+function reqState0(t){
   const kids=reqKids(t);
   if(t.status==="hold") return {g:3, txt:"⏸ 보류 · 대표님이 다시 진행을 누를 때까지 멈춤"};
   if(t.status==="done") return kids.length ? {g:2, txt:`끝남 · 후속 ${kids.length}건 진행 중`} : {g:1, txt:"끝남 · 결과 보고 확인해 주세요", cls:"ok", ack:true};
@@ -1061,12 +1066,12 @@ function renderReqs(){
   const el=$("#reqList"); if(!el) return;
   const items=tasks.filter(isReq).map(t=>{ const m=ownerOf(t); return {kind:"t", t, id:t._id, title:t.title, at:t.createdAt, origin:(t.from==="qna"?"질문 중 지시":t.from==="staff"?"직원에게 지시":originLabel(t))||"대표 지시", who:m?m.name:"담당 없음", report:t.ceoCommentReply?.text||t.result||t.note||t.fix||t.reviseNote||"", st:reqState(t)}; }).concat(reqNotices());
   items.sort((a,b)=>a.st.g-b.st.g || String(b.at||"").localeCompare(String(a.at||"")));
-  const G=[[0,"⚠ 빠지고 있는 일"],[1,"대표님 확인·결정 차례"],[2,"진행 중"],[3,"보류"]];
-  const row=x=>`<div class="rq ${x.st.bad?"bad":x.st.ack||x.st.go?"ask":""}"><span class="rt"><span class="note">${esc(fmtMD(kstParts(new Date(x.at||Date.now())).date))} · ${esc(x.origin)}${x.who?" · "+esc(x.who):""}</span><br><b>${esc(cut(x.title,90))}</b> ${x.t?cmtBadge(x.t):""}</span><span class="rs ${x.st.cls||""}">${esc(x.st.txt)}</span>${x.st.ack&&canWrite!==false?`<button class="btn pri" type="button" data-reqack="${esc(x.kind+":"+x.id)}" title="결과를 확인했으면 목록에서 빼요">✓ 확인</button>`:""}${x.st.go?`<button class="btn ghost" type="button" data-gotab="${x.st.go}">결재 탭 →</button>`:""}${x.t&&x.t.docId?`<button class="btn ghost" type="button" data-doc="${esc(x.t.docId)}">자료</button>`:""}${x.t&&canWrite!==false?`<button class="btn ghost" type="button" data-cmt="${esc(x.id)}">💬 ${x.st.ack?"다시 지시":"지시"}</button>`:""}${(()=>{ const c=x.t?cmtList(x.t):[]; const last=c[c.length-1]; const rp=x.t&&x.t.ceoCommentReply;
+  const G=[[-1,"📩 직원이 새로 답했어요"],[0,"⚠ 빠지고 있는 일"],[1,"대표님 확인·결정 차례"],[2,"진행 중"],[3,"보류"]];
+  const row=x=>`<div class="rq ${x.st.read?"new":x.st.bad?"bad":x.st.ack||x.st.go?"ask":""}"><span class="rt"><span class="note">${esc(fmtMD(kstParts(new Date(x.at||Date.now())).date))} · ${esc(x.origin)}${x.who?" · "+esc(x.who):""}</span><br><b>${esc(cut(x.title,90))}</b> ${x.t?cmtBadge(x.t):""}</span><span class="rs ${x.st.cls||""}">${esc(x.st.txt)}</span>${x.st.read&&canWrite!==false?`<button class="btn pri" type="button" data-reqread="${esc(x.id)}" title="답을 읽었으면 눌러요. 원래 자리로 돌아가요">✓ 읽음</button>`:""}${x.st.ack&&canWrite!==false?`<button class="btn pri" type="button" data-reqack="${esc(x.kind+":"+x.id)}" title="결과를 확인했으면 목록에서 빼요">✓ 확인</button>`:""}${x.st.go?`<button class="btn ghost" type="button" data-gotab="${x.st.go}">결재 탭 →</button>`:""}${x.t&&x.t.docId?`<button class="btn ghost" type="button" data-doc="${esc(x.t.docId)}">자료</button>`:""}${x.t&&canWrite!==false?`<button class="btn ghost" type="button" data-cmt="${esc(x.id)}">💬 ${x.st.ack?"다시 지시":"지시"}</button>`:""}${(()=>{ const c=x.t?cmtList(x.t):[]; const last=c[c.length-1]; const rp=x.t&&x.t.ceoCommentReply;
       const parts=[]; if(last) parts.push(`<b>대표님 코멘트(${esc(fmtDay(last.at))} ${esc(fmtTime(last.at))})</b>\n${esc(last.text)}`);
       if(rp&&rp.text) parts.push(`<b>${esc(rp.by||"담당")} 답</b>\n${esc(rp.text)}`); else if(last&&x.t.fix) parts.push(`<b>담당 답</b> 아직 없음 (다음 점검에서 먼저 답해요)`);
       if(x.report && !(rp&&rp.text===x.report)) parts.push(`<b>보고</b>\n${esc(x.report)}`);
-      return parts.length?`<div class="sub" data-subx title="눌러서 전체 보기">${parts.join("\n")}</div><div class="subm" data-subx-more>전체 보기 ▾</div>`:""; })()}</div>`;
+      return parts.length?`<div class="sub${x.st.read?" open":""}" data-subx title="눌러서 전체 보기">${parts.join("\n")}</div><div class="subm" data-subx-more>${x.st.read?"접기 ▴":"전체 보기 ▾"}</div>`:""; })()}</div>`;
   let h="";
   G.forEach(([g,label])=>{ const arr=items.filter(x=>x.st.g===g); if(!arr.length) return;
     const fold=(g===3&&!showReqHold)||(g===2&&!showReqRun&&arr.length>6);
@@ -1076,11 +1081,13 @@ function renderReqs(){
     if(g===2&&arr.length>6) h+=`<button class="more" type="button" data-reqfold="run">${showReqRun?"접기":`진행 중 ${arr.length-6}건 더 보기`}</button>`; });
   el.innerHTML = h || `<div class="empty">대표님이 시킨 일 중 남은 것이 없어요.</div>`;
   const n=g=>items.filter(x=>x.st.g===g).length;
-  $("#reqSum").innerHTML = `<span style="color:var(--bad);font-weight:700">빠지는 일 ${n(0)}</span> · 확인 차례 ${n(1)} · 진행 ${n(2)} · 보류 ${n(3)}`;
+  { const nn=$("#nNew"); if(nn){ nn.hidden=!n(-1); nn.textContent=n(-1); } }
+  $("#reqSum").innerHTML = (n(-1)?`<span style="color:#3f7fb8;font-weight:700">📩 새 답 ${n(-1)}</span> · `:"")+`<span style="color:var(--bad);font-weight:700">빠지는 일 ${n(0)}</span> · 확인 차례 ${n(1)} · 진행 ${n(2)} · 보류 ${n(3)}`;
 }
 document.addEventListener("click", async e=>{
   const sx=e.target.closest("[data-subx],[data-subx-more]"); if(sx){ const row=sx.closest(".rq"); const sub=row&&row.querySelector("[data-subx]"); if(sub){ const o=sub.classList.toggle("open"); const m=row.querySelector("[data-subx-more]"); if(m) m.textContent=o?"접기 ▴":"전체 보기 ▾"; } return; }
   const f=e.target.closest("[data-reqfold]"); if(f){ if(f.dataset.reqfold==="hold") showReqHold=!showReqHold; else showReqRun=!showReqRun; safeRun(renderReqs); return; }
+  const rr=e.target.closest("[data-reqread]"); if(rr&&dbRef){ rr.disabled=true; try{ await dbRef.doc("tasks/"+rr.dataset.reqread).update({replyReadAt:new Date().toISOString()}); }catch(_){ rr.disabled=false; rr.textContent="다시 눌러 주세요"; } return; }
   const b=e.target.closest("[data-reqack]"); if(!b||!dbRef) return;
   const [k,id]=b.dataset.reqack.split(":"); b.disabled=true;
   try{ await dbRef.doc((k==="n"?"notices/":"tasks/")+id).update({ceoAck:true, ceoAckAt:new Date().toISOString()}); }catch(_){ b.disabled=false; b.textContent="다시 눌러 주세요"; }
@@ -2017,7 +2024,8 @@ function openCmt(id){ const t=tasks.find(x=>x._id===id); if(!t) return; cmtId=id
   const h=cmtList(t).map(c=>`<div class="cmh"><b>대표님 · ${esc(fmtDay(c.at))} ${esc(fmtTime(c.at))}${c.urgent?" · 🔥":""}</b>\n${esc(c.text)}</div>`).join("") + (t.ceoCommentReply?`<div class="cmh rp"><b>${esc(t.ceoCommentReply.by||"담당")} 답 · ${esc(fmtDay(t.ceoCommentReply.at))} ${esc(fmtTime(t.ceoCommentReply.at))}</b>\n${esc(t.ceoCommentReply.text||"")}</div>`:"") + (t.fix?`<div class="note">담당 직원이 아직 반영하지 않았어요. 다음 정기 세션에서 가장 먼저 반영해요.</div>`:"");
   $("#cmtHist").innerHTML=h||`<div class="note">아직 남긴 코멘트가 없어요.</div>`;
   $("#cmtText").value=""; $("#cmtUrgent").checked=false; $("#cmtMsg").textContent="";
-  $("#cmtView").hidden=false; document.body.style.overflow="hidden"; setTimeout(()=>$("#cmtText").focus(),30); }
+  $("#cmtView").hidden=false; document.body.style.overflow="hidden"; setTimeout(()=>$("#cmtText").focus(),30);
+  if(newReply(t) && dbRef && canWrite!==false) dbRef.doc("tasks/"+id).update({replyReadAt:new Date().toISOString()}).catch(()=>{}); }
 const closeCmt=()=>{ $("#cmtView").hidden=true; cmtId=""; document.body.style.overflow=""; };
 $("#cmtClose").addEventListener("click",closeCmt);
 $("#cmtView").addEventListener("click",e=>{ if(e.target.id==="cmtView") closeCmt(); });
