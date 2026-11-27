@@ -72,7 +72,9 @@ jobs:
           mkdir -p _site/daeun/comfort-food && cp daeun/comfort-food/index.html daeun/comfort-food/qr.png daeun/comfort-food/qr-card.png _site/daeun/comfort-food/
           mkdir -p _site/games/snow-match && cp -r games/snow-match/index.html games/snow-match/style.css games/snow-match/js games/snow-match/data _site/games/snow-match/
           mkdir -p _site/games/robot-maze && cp -r games/robot-maze/index.html games/robot-maze/style.css games/robot-maze/js games/robot-maze/data _site/games/robot-maze/
-          mkdir -p _site/math-drill && cp -r math-drill/index.html math-drill/style.css math-drill/js _site/math-drill/
+          mkdir -p _site/math-drill && cp -r math-drill/*.html math-drill/style.css math-drill/js _site/math-drill/
+          # 사이트 안 링크로 가는 페이지가 빠지지 않았는지 확인 (개념 화면 concept.html 누락 재발 방지)
+          for f in index.html concept.html; do test -f _site/math-drill/$f || { echo "math-drill/$f 누락"; exit 1; }; done
           touch _site/.nojekyll
 
       - uses: actions/configure-pages@v5
