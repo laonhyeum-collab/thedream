@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TOPICS, CATEGORIES, topicById } from '../shared/topics.js';
 import { SECTIONS, emptyPlan, normalizePlan, missingRequired, progress, buildAppPrompt, buildImagePrompts, buildFixPrompt, planRows, fixCheck, fixSentence, cleanFixes, FIX_EXAMPLES, FIX_KEEP } from '../shared/plan.js';
-import { extractHtml, srcdocFor, looksLikeApp } from '../shared/sandbox.js';
+import { extractHtml, srcdocFor, looksLikeApp, looksLikePrompt, SANDBOX } from '../shared/sandbox.js';
 import { createStore } from '../student/store.js';
 import { createApi, isValidEndpoint } from '../shared/api.js';
 import { layoutWorld, moveWithin, nearestDoor, sortItems, isLand, blocked, PLAYER_R } from '../world/worldmap.js';
@@ -226,4 +226,20 @@ test('지도 속 구역 찾기: 낱말 첫머리만, 장소 글이 먼저', asyn
   assert.equal(worldSpot('우주 정거장', '행성 순서', R), '', '「행성」 속 「성」은 성터가 아님');
   assert.equal(worldSpot('', '바다 생물 도감', R), '야자수와 파라솔이 있는 모래 해변', '「생물」 속 「물」은 폭포가 아님');
   assert.equal(worldSpot('눈 내리는 마을', '', S), '눈 덮인 산과 얼음집');
+});
+
+test('앱 실행: HTML·CSS·JS 블록이 나뉘어 와도 하나로 합치고, 코드 속 ``` 에서 잘리지 않음', () => {
+  const ai = '게임이에요\n```html\n<!DOCTYPE html>\n<html><head><link rel="stylesheet" href="style.css"></head><body><canvas id=c></canvas><script src="script.js"></script></body></html>\n```\n```css\nbody{margin:0}\n```\n```javascript\nconst a = "$&"; go();\n```';
+  const html = extractHtml(ai);
+  assert.match(html, /<style>\nbody\{margin:0\}\n<\/style>\n<\/head>/);
+  assert.match(html, /<script>\nconst a = "\$&"; go\(\);\n<\/script>\n<\/body>/);
+  assert.doesNotMatch(html, /style\.css|script\.js/);
+  assert.match(extractHtml("```html\n<html><body><script>\nconsole.log('```')\n</script></body></html>\n```"), /<\/html>$/);
+});
+
+test('앱 실행: 정답 입력(form) 게임이 막히지 않고, 프롬프트를 잘못 붙여 넣으면 알아챔', () => {
+  assert.match(SANDBOX, /allow-forms/);
+  assert.doesNotMatch(SANDBOX, /allow-same-origin/);
+  assert.equal(looksLikePrompt('1. HTML·CSS·JavaScript가 모두 들어 있는 **HTML 파일 하나**로 만들어 줘. <script> 맨 위에'), true);
+  assert.equal(looksLikePrompt('<!DOCTYPE html><html><body><script>x()</script></body></html>'), false);
 });

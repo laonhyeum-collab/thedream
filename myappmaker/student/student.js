@@ -11,7 +11,7 @@ import { createStore } from './store.js';
 import { download, readFileText, safeName } from '../shared/files.js';
 import { loadConfig, createApi } from '../shared/api.js';
 import { connectGate } from '../shared/connect.js';
-import { extractHtml, looksLikeApp, mountApp, isHttpUrl, MAX_APP_BYTES } from '../shared/sandbox.js';
+import { extractHtml, looksLikeApp, looksLikePrompt, mountApp, isHttpUrl, MAX_APP_BYTES } from '../shared/sandbox.js';
 import { applyImages, findImagesBlock, imagesSize } from '../shared/images.js';
 import { processPicture } from '../shared/picture.js';
 import { avatarBuilder, avatarFromText } from '../shared/avatar.js';
@@ -661,6 +661,7 @@ function useTeacherFeedback() {
 function setAppHtml(raw) {
   const html = extractHtml(raw);
   if (!html) { toast('붙여 넣은 코드가 없어요'); return false; }
+  if (looksLikePrompt(html)) { toast('이건 AI에게 보낼 프롬프트예요. AI 채팅에 붙여 넣고, AI가 만들어 준 코드(<!DOCTYPE html>로 시작)를 여기에 넣어요', 6000); return false; }
   if (html.length > MAX_APP_BYTES) { toast(`코드가 너무 길어요 (${MAX_APP_BYTES.toLocaleString()}자까지)`, 4000); return false; }
   if (!looksLikeApp(html)) { toast('HTML 코드가 아닌 것 같아요. AI가 준 코드 블록 전체를 복사했는지 확인해요', 4500); return false; }
   plan.app.html = html;
