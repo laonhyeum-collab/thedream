@@ -74,3 +74,4 @@
 - 기획 단계 업무 4건을 윤슬로 옮김(stage plan): 마곡초 겨울방학 특강(o-mwxqi45w), 1~2학년(fu-mg1), 3~4학년(mg2f), 5~6학년(fu12).
 - '규칙 한눈에 보기'(fu7)는 ⛔ 막힘: 대표님이 계속할지 정해 주실 것.
 - 📩 새 답 표시: 직원 답(ceoCommentReply.at)이 대표님의 마지막 코멘트와 `replyReadAt`보다 새것이면 대표 요청 목록 맨 위 '📩 직원이 새로 답했어요'에 올라가고 대시보드 탭에 숫자가 떠요. '✓ 읽음'이나 💬 창을 열면 replyReadAt이 찍혀 제자리로 가요(코드 `newReply`). 세션은 지금처럼 ceoCommentReply만 쓰면 돼요.
+- 📎 캡처 첨부: 총괄 지시·💬 코멘트·직원에게 묻기(질문/업무로 지시)에도 파일·캡처 첨부와 붙여넣기(Ctrl+V)를 넣었어요(attPending 키 gen·cmt·ask). 코멘트 첨부는 ceoComments 항목과 task.attachments 둘 다에 들어가요. 질문하기는 sample에 images를 넘기지만, 페이지 선언에 `sample: {images: true}`가 없으면 그림 없이 파일 이름만 전해요(선언 확인 못 함: db 규칙 1개 내용을 몰라 capabilities를 다시 쓰지 않았어요).
