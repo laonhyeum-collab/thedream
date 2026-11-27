@@ -1071,7 +1071,7 @@ function renderReqs(){
   const items=tasks.filter(isReq).map(t=>{ const m=ownerOf(t); return {kind:"t", t, id:t._id, title:t.title, at:t.createdAt, origin:(t.from==="qna"?"질문 중 지시":t.from==="staff"?"직원에게 지시":originLabel(t))||"대표 지시", who:m?m.name:"담당 없음", report:t.ceoCommentReply?.text||t.result||t.note||t.fix||t.reviseNote||"", st:reqState(t)}; }).concat(reqNotices());
   items.sort((a,b)=>a.st.g-b.st.g || String(b.at||"").localeCompare(String(a.at||"")));
   const G=[[-1,"📩 직원이 새로 답했어요"],[0,"⚠ 빠지고 있는 일"],[1,"대표님 확인·결정 차례"],[2,"진행 중"],[3,"보류"]];
-  const row=x=>`<div class="rq ${x.st.read?"new":x.st.bad?"bad":x.st.ack||x.st.go?"ask":""}"><span class="rt"><span class="note">${esc(fmtMD(kstParts(new Date(x.at||Date.now())).date))} · ${esc(x.origin)}${x.who?" · "+esc(x.who):""}</span><br><b>${esc(cut(x.title,90))}</b> ${x.t?cmtBadge(x.t):""}</span><span class="rs ${x.st.cls||""}">${esc(x.st.txt)}</span>${x.st.read&&canWrite!==false?`<button class="btn pri" type="button" data-reqread="${esc(x.id)}" title="답을 읽었으면 눌러요. 원래 자리로 돌아가요">✓ 읽음</button>`:""}${x.st.ack&&canWrite!==false?`<button class="btn pri" type="button" data-reqack="${esc(x.kind+":"+x.id)}" title="결과를 확인했으면 목록에서 빼요">✓ 확인</button>`:""}${x.st.go?`<button class="btn ghost" type="button" data-gotab="${x.st.go}">결재 탭 →</button>`:""}${x.t&&x.t.docId?`<button class="btn ghost" type="button" data-doc="${esc(x.t.docId)}">자료</button>`:""}${x.t&&canWrite!==false?`<button class="btn ghost" type="button" data-cmt="${esc(x.id)}">💬 ${x.st.ack?"다시 지시":"지시"}</button>`:""}${(()=>{ const c=x.t?cmtList(x.t):[]; const last=c[c.length-1]; const rp=x.t&&x.t.ceoCommentReply;
+  const row=x=>`<div class="rq ${x.st.read?"new":x.st.bad?"bad":x.st.ack||x.st.go?"ask":""}"><span class="rt"><span class="note">${esc(fmtMD(kstParts(new Date(x.at||Date.now())).date))} · ${esc(x.origin)}${x.who?" · "+esc(x.who):""}</span><br><b>${esc(cut(x.title,90))}</b> ${x.t?cmtBadge(x.t):""}</span><span class="rs ${x.st.cls||""}">${esc(x.st.txt)}</span>${x.st.read&&canWrite!==false?`<button class="btn pri" type="button" data-reqread="${esc(x.id)}" title="답을 읽었으면 눌러요. 원래 자리로 돌아가요">✓ 읽음</button>`:""}${x.st.ack&&canWrite!==false?`<button class="btn pri" type="button" data-reqack="${esc(x.kind+":"+x.id)}" title="결과를 확인했으면 목록에서 빼요">✓ 확인</button>`:""}${x.st.go?`<button class="btn ghost" type="button" data-gotab="${x.st.go}">결재 탭 →</button>`:""}${x.t&&x.t.docId?`${docLinkBtn(x.t.docId,"자료")}`:""}${x.t&&canWrite!==false?`<button class="btn ghost" type="button" data-cmt="${esc(x.id)}">💬 ${x.st.ack?"다시 지시":"지시"}</button>`:""}${(()=>{ const c=x.t?cmtList(x.t):[]; const last=c[c.length-1]; const rp=x.t&&x.t.ceoCommentReply;
       const parts=[]; if(last) parts.push(`<b>대표님 코멘트(${esc(fmtDay(last.at))} ${esc(fmtTime(last.at))})</b>\n${esc(last.text)}`);
       if(rp&&rp.text) parts.push(`<b>${esc(rp.by||"담당")} 답</b>\n${esc(rp.text)}`); else if(last&&x.t.fix) parts.push(`<b>담당 답</b> 아직 없음 (다음 점검에서 먼저 답해요)`);
       if(x.report && !(rp&&rp.text===x.report)) parts.push(`<b>보고</b>\n${esc(x.report)}`);
@@ -1099,11 +1099,11 @@ document.addEventListener("click", async e=>{
 function renderGen(){
   const el=$("#genList"); if(!el) return;
   const gens=tasks.filter(t=>t.general && !["done","rejected"].includes(t.status)).slice(0,4);
-  el.innerHTML = gens.map(t=>`<div class="item"><div class="h">${stChipT(t)}${t.urgent?`<span class="st st-revise">🔥 급함</span>`:""}<span class="note">${t.general==="rule"?"운영·규칙":"업무"} 지시 · ${esc(fmtDay(t.createdAt))} ${esc(fmtTime(t.createdAt))}</span></div><div class="det" style="color:var(--ink)">${esc(cut(t.detail||t.title,200))}</div>${t.note?`<div class="det">${esc(cut(t.note,240))}</div>`:""}${t.docId?`<div class="acts"><button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button></div>`:""}</div>`).join("");
+  el.innerHTML = gens.map(t=>`<div class="item"><div class="h">${stChipT(t)}${t.urgent?`<span class="st st-revise">🔥 급함</span>`:""}<span class="note">${t.general==="rule"?"운영·규칙":"업무"} 지시 · ${esc(fmtDay(t.createdAt))} ${esc(fmtTime(t.createdAt))}</span></div><div class="det" style="color:var(--ink)">${esc(cut(t.detail||t.title,200))}</div>${t.note?`<div class="det">${esc(cut(t.note,240))}</div>`:""}${t.docId?`<div class="acts">${docLinkBtn(t.docId,"자료 보기")}</div>`:""}</div>`).join("");
 }
 function taskCard(t, withActs){
   const link = [safeUrl(t.link) ? `<a href="${esc(t.link)}" target="_blank" rel="noopener">${t.branch?"브랜치 보기":"드라이브에서 열기"}</a>` : "", safeUrl(t.prUrl) ? `<a href="${esc(t.prUrl)}" target="_blank" rel="noopener">PR 보기</a>` : ""].join(" ");
-  const docBtn = t.docId ? `<button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button>` : "";
+  const docBtn = t.docId ? `${docLinkBtn(t.docId,"자료 보기")}` : "";
   let acts = "";
   if(withActs==="approve" && canWrite!==false) acts = `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}" title="다음 정기 세션에서 순서대로 제작해요">승인</button><button class="btn ghost" data-act="approveNow" data-id="${esc(t._id)}" title="지금 바로 제작을 시작해요">🔥 승인 · 바로</button><input class="revnote" id="rej-${esc(t._id)}" placeholder="반려 이유·바라는 방향 (선택)" aria-label="반려 이유"><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button><button class="btn ghost" data-act="hold" data-id="${esc(t._id)}" title="당분간 멈춰요">⏸ 보류</button>`;
   if(t.status==="hold" && canWrite!==false) acts = `<span class="note">보류 사유: ${esc(t.holdNote||"대표님 보류")}</span><button class="btn pri" data-act="resume" data-id="${esc(t._id)}">▶ 다시 진행</button>`;
@@ -1162,13 +1162,17 @@ function render(){
   }).join("") : `<div class="empty">앱 목록을 불러오는 중이에요.</div>`;
   const nOpen = notices.filter(n=>n.status!=="done"), nOld = notices.filter(n=>n.status==="done");
   const nShow = showClosed.notices ? notices.slice(0,10) : nOpen.slice(0,5);
-  $("#urgList").innerHTML = nShow.map(n=>`<div class="item"><div class="h"><span class="st st-${esc(n.status)}">${esc(NSTATUS[n.status]||n.status)}</span><span class="note">${esc(fmtDay(n.createdAt))} ${esc(fmtTime(n.createdAt))}${n.processedAt?" → "+esc(fmtTime(n.processedAt))+" 완료":""}</span></div><div class="det" style="color:var(--ink)">${esc(n.text)}</div>${attList(n.attachments)}${n.result?`<div class="det">보고: ${esc(n.result)}</div>`:""}${n.docId?`<div class="acts"><button class="btn ghost" data-doc="${esc(n.docId)}">결과 자료 보기</button></div>`:""}</div>`).join("");
+  $("#urgList").innerHTML = nShow.map(n=>`<div class="item"><div class="h"><span class="st st-${esc(n.status)}">${esc(NSTATUS[n.status]||n.status)}</span><span class="note">${esc(fmtDay(n.createdAt))} ${esc(fmtTime(n.createdAt))}${n.processedAt?" → "+esc(fmtTime(n.processedAt))+" 완료":""}</span></div><div class="det" style="color:var(--ink)">${esc(n.text)}</div>${attList(n.attachments)}${n.result?`<div class="det">보고: ${esc(n.result)}</div>`:""}${n.docId?`<div class="acts">${docLinkBtn(n.docId,"결과 자료 보기")}</div>`:""}</div>`).join("");
   if(nOld.length) $("#urgList").insertAdjacentHTML("beforeend", `<button class="more" type="button" data-toggle="notices">${showClosed.notices?"처리 끝난 공지 숨기기":`처리 끝난 공지 ${nOld.length}건 보기`}</button>`);
 }
+// 자료 버튼: 자료실 문서면 사무실 안에서, 드라이브 파일 id면 드라이브 링크(새 탭)로 열어요.
+const isDriveId=id=>/^[\w-]{20,}$/.test(String(id||"")) && !docs.some(x=>x._id===id);
+const driveHref=id=>"https://drive.google.com/open?id="+encodeURIComponent(id);
+function docLinkBtn(id,label){ return isDriveId(id) ? `<a class="btn ghost" href="${esc(driveHref(id))}" target="_blank" rel="noopener">${esc(label)}</a>` : `<button class="btn ghost" type="button" data-doc="${esc(id)}">${esc(label)}</button>`; }
 function openDoc(id){
   const d = docs.find(x=>x._id===id);
   // 직원이 자료실 id 대신 드라이브 파일 id를 적은 경우: 드라이브에서 열어요.
-  if(!d){ if(/^[\w-]{20,}$/.test(String(id||""))) window.open("https://drive.google.com/open?id="+encodeURIComponent(id),"_blank","noopener"); else alert("이 자료를 자료실에서 찾지 못했어요."); return; }
+  if(!d){ if(/^[\w-]{20,}$/.test(String(id||""))){ const a=document.createElement("a"); a.href=driveHref(id); a.target="_blank"; a.rel="noopener"; document.body.append(a); a.click(); a.remove(); } else alert("이 자료를 자료실에서 찾지 못했어요."); return; }
   docLinkedOpen=id;
   $("#docTitle").textContent=d.title; $("#docBody").innerHTML=esc(d.body||"(내용 없음)").replace(/^(■[^\n]*)$/gm,"<b>$1</b>"); $("#docFiles").innerHTML=fileLinks(d); $("#docRel").innerHTML=relatedHtml(d); $("#docView").hidden=false; document.body.style.overflow="hidden"; $("#docBody").scrollTop=0;
 }
@@ -1383,7 +1387,7 @@ document.addEventListener("click", async e=>{
 });
 function miniTask(t, kind){
   const acts = canWrite===false ? "" : (kind==="confirm"&&t.choice) ? `<button class="btn pri" type="button" data-gotab="approve">들어 보고 고르기</button>` : kind==="confirm" ? `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button><button class="btn ghost danger" data-act="reject" data-id="${esc(t._id)}" title="반려 메모에 적은 부분만 고쳐요. 처음부터 원하면 메모에 &#39;처음부터&#39;라고 적어요">반려</button>` : kind==="approve" ? `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}" title="다음 정기 세션에서 제작">승인</button><button class="btn ghost" data-act="approveNow" data-id="${esc(t._id)}" title="지금 바로 제작">🔥 바로</button><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>` : "";
-  const doc = t.docId ? `<button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button>` : "";
+  const doc = t.docId ? `${docLinkBtn(t.docId,"자료 보기")}` : "";
   return `<div class="mini"><div class="m">${deptChip(t.dept)}${kind==="order"?stChipT(t):""}${kind==="order"&&t.urgent?`<span class="st st-revise">🔥</span>`:""}<span>${esc(fmtDay(t.updatedAt||t.createdAt))}</span></div><div class="t">${t.plan&&t.plan.type?`<span class="ptype">${esc(t.plan.type)}</span> `:""}${esc(t.title)}</div>${kind==="order"&&t.note?`<div class="note" style="overflow-wrap:anywhere">${esc(cut(t.note,70))}</div>`:""}${kind==="approve"&&t.plan&&t.plan.why?`<div class="note" style="overflow-wrap:anywhere">이유: ${esc(String(t.plan.why).slice(0,80))}</div>`:""}${(acts||doc)?`<div class="acts">${acts}${doc}</div>`:""}</div>`;
 }
 function renderTodo(){
