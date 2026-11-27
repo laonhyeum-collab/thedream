@@ -160,6 +160,21 @@ try {
   const frame = st.frameLocator('#appFrame');
   await frame.locator('body[data-v="v"]').waitFor({ state: 'attached', timeout: 5000 });
   assert.equal(await frame.locator('body').getAttribute('data-parent'), 'blocked', '학생 앱은 부모 화면에 접근 못 함');
+  step('학생: 실행이 안 될 때 — 끊긴 코드 · 오류 줄 알려 주기 · 쿠키 막힘 보완 · 설명 속 </html>');
+  await st.fill('#appCode', '```html\n<!DOCTYPE html>\n<html><head><title>t</title></head><body><div id="a">x</div>\n<script>\nfunction go(){\n  if (true) {');
+  await st.click('#runApp');
+  await st.waitForSelector('#appAlert >> text=코드가 끝까지 안 들어왔어요');
+  await st.fill('#appCode', '<!DOCTYPE html>\n<html><head></head><body>\n<script>\ndocument.cookie="best=3";document.body.dataset.c=document.cookie;\ndocument.getElementById("nope").addEventListener("click", () => {});\n</script>\n</body></html>\n설명: 파일 끝은 </html> 이에요.');
+  await st.click('#runApp');
+  await st.waitForSelector('#appAlert >> text=앱 코드에 오류가 있어요');
+  assert.equal(await st.isVisible('#appAlert >> text=끝까지 안 들어왔어요'), false, '다시 붙여 넣으면 끊김 안내는 사라짐');
+  assert.match(await st.textContent('#appAlert'), /5번째 줄/, '오류 줄 번호가 학생 코드와 같음');
+  assert.equal(await frame.locator('body').getAttribute('data-c'), 'best=3', '쿠키가 막혀도 게임이 멈추지 않음');
+  assert.ok(!(await st.inputValue('#appCode')).includes('설명'), '코드 다음 설명은 빼고 넣음');
+  await st.click('#appAlert >> text=이 오류 고쳐 달라고 하기');
+  assert.match(await st.inputValue('#fixProblem'), /^실행하면 오류가 나요/);
+  await st.fill('#fixProblem', ''); await st.fill('#fixWant', '');
+  { const i = errors.findIndex((x) => x.includes("reading 'addEventListener'")); if (i >= 0) errors.splice(i, 1); }   // 일부러 낸 학생 앱 오류
   await st.fill('#appCode', fruit);
   await st.click('#runApp');
   await frame.locator('#go').click();

@@ -227,3 +227,12 @@ test('지도 속 구역 찾기: 낱말 첫머리만, 장소 글이 먼저', asyn
   assert.equal(worldSpot('', '바다 생물 도감', R), '야자수와 파라솔이 있는 모래 해변', '「생물」 속 「물」은 폭포가 아님');
   assert.equal(worldSpot('눈 내리는 마을', '', S), '눈 덮인 산과 얼음집');
 });
+
+test('실행이 안 될 때: 끊긴 코드 찾기 · 설명 속 </html> · <header> 앞에 상자 보완을 넣지 않음', async () => {
+  const sb = await import('../shared/sandbox.js');
+  assert.deepEqual(sb.codeProblems('<!DOCTYPE html><html><body><script>let a = 1;'), ['cut']);
+  assert.deepEqual(sb.codeProblems('<!DOCTYPE html><html><body><script>let a = 1;</script></body></html>'), []);
+  assert.equal(sb.extractHtml('여기\n<!DOCTYPE html><html><body>x</body></html>\n끝은 </html> 이에요').endsWith('</body></html>'), true);
+  const doc = sb.srcdocFor('<html><header>h</header><body>x</body></html>');
+  assert.ok(doc.indexOf('<script>') < doc.indexOf('<header>'), '보완 스크립트는 <header> 안이 아니라 <head> 에');
+});
