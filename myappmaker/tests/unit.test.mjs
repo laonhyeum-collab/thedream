@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TOPICS, CATEGORIES, topicById } from '../shared/topics.js';
 import { SECTIONS, emptyPlan, normalizePlan, missingRequired, progress, buildAppPrompt, buildImagePrompts, buildFixPrompt, planRows, fixCheck, fixSentence, cleanFixes, FIX_EXAMPLES, FIX_KEEP } from '../shared/plan.js';
-import { extractHtml, srcdocFor, looksLikeApp } from '../shared/sandbox.js';
+import { extractHtml, srcdocFor, looksLikeApp, SANDBOX } from '../shared/sandbox.js';
 import { createStore } from '../student/store.js';
 import { createApi, isValidEndpoint } from '../shared/api.js';
 import { layoutWorld, moveWithin, nearestDoor, sortItems, isLand, blocked, PLAYER_R } from '../world/worldmap.js';
@@ -226,4 +226,21 @@ test('지도 속 구역 찾기: 낱말 첫머리만, 장소 글이 먼저', asyn
   assert.equal(worldSpot('우주 정거장', '행성 순서', R), '', '「행성」 속 「성」은 성터가 아님');
   assert.equal(worldSpot('', '바다 생물 도감', R), '야자수와 파라솔이 있는 모래 해변', '「생물」 속 「물」은 폭포가 아님');
   assert.equal(worldSpot('눈 내리는 마을', '', S), '눈 덮인 산과 얼음집');
+});
+
+test('AI가 HTML·CSS·JS 를 코드 블록 여러 개로 나눠 줘도 하나로 합침 (2026-11-27 실행 안 됨 수정)', () => {
+  const ai = '파일 3개예요\n```html\n<!DOCTYPE html><html><head><link rel="stylesheet" href="style.css"></head><body><div id="o"></div><script src="script.js"></script></body></html>\n```\n```css\nbody{color:red}\n```\n```javascript\ndocument.getElementById("o").textContent = "$& OK";\n```';
+  const out = extractHtml(ai);
+  assert.match(out, /<style>\nbody\{color:red\}\n<\/style>\n<\/head>/);
+  assert.match(out, /<script>\ndocument\.getElementById\("o"\)\.textContent = "\$& OK";\n<\/script>\n<\/body>/);
+  assert.doesNotMatch(out, /style\.css|script\.js/);
+  // 이미 들어 있는 코드를 설명용으로 다시 보여 준 블록은 합치지 않음
+  const one = '```html\n<html><head><style>a{}</style></head><body><script>let x=1;</script></body></html>\n```\n이 부분이 점수예요\n```javascript\nlet x=1;\n```';
+  assert.equal(extractHtml(one), '<html><head><style>a{}</style></head><body><script>let x=1;</script></body></html>');
+});
+
+test('앱 상자: <form> 버튼이 동작하도록 allow-forms, 막힌 쿠키는 메모리로', () => {
+  assert.match(SANDBOX, /allow-forms/);
+  assert.doesNotMatch(SANDBOX, /allow-same-origin/);
+  assert.match(srcdocFor('<div></div>'), /document,'cookie'/);
 });
