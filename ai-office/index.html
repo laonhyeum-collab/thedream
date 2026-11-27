@@ -389,7 +389,7 @@ form.order input[type=checkbox]{flex:none}
     <h1><span class="logo">Block <i>&amp;</i> Bit</span><small>블록앤비트 AI 사무실 · 레고 과학·코딩·AI 교육 · 대표 1명, AI 직원 5명</small></h1>
     <div class="clock" aria-live="polite">
       <div class="t" id="clk">--:--</div>
-      <div class="s"><b id="officeStatus">출근 대기</b><span id="nextRun">매일 08:30 오전 회의</span></div>
+      <div class="s"><b id="officeStatus">출근 대기</b><span id="nextRun">정기 세션 14·22·02시</span></div>
     </div>
   </header>
 
@@ -419,8 +419,8 @@ form.order input[type=checkbox]{flex:none}
       <div id="classAlert"></div>
       <div class="todo" id="todo"></div>
       <section class="gen plan-w" aria-labelledby="staffH" style="border-left-color:var(--bad)">
-        <div class="uh"><h2 id="staffH" style="color:var(--bad)">부서별 할 일 · 오늘 할 일 먼저</h2><span class="note" id="staffSum"></span></div>
-        <p class="note" style="margin:0">부서장이 매일 아침 순서를 정해요. 위에서부터 차례로 스스로 처리하고, 수정 지시가 오면 하던 일을 멈추고 그것부터 해요. 🔥 오늘 = 오늘 하는 일, 빨간 줄 = 늦은 일.</p>
+        <div class="uh"><h2 id="staffH" style="color:var(--bad)">부서별 할 일 · 위에서부터 차례로</h2><span class="note" id="staffSum"></span></div>
+        <p class="note" style="margin:0">순서는 자동이에요: 🔥 지금 바로 → ✏️ 고칠 것 → ▶ 하는 중 → 대표 지시 → 나머지(오래된 순). 정기 세션(14·22·02시)이 위에서부터 처리해요. 빨간 줄 = 하루 넘게 그대로인 일.</p>
         <div id="lateList"></div>
         <div class="staffg" id="staffBoard"></div>
       </section>
@@ -439,20 +439,20 @@ form.order input[type=checkbox]{flex:none}
         <div class="list" id="urgList"></div>
       </section>
       <section class="gen" aria-labelledby="genH">
-        <div class="uh"><h2 id="genH">총괄 지시 · 한결</h2><span class="note">부서를 몰라도 돼요. 한결이 오전 회의(08:30)에서 맡을 부서와 처리 시간을 정해요.</span></div>
+        <div class="uh"><h2 id="genH">총괄 지시 · 한결</h2><span class="note">부서를 몰라도 돼요. 다음 정기 세션에서 한결이 담당을 정해요.</span></div>
         <form id="genForm" class="uform">
           <textarea id="genText" placeholder="예: 겨울방학 캠프 준비 전체 챙겨줘 / 앞으로 교안 파일 이름은 날짜부터 쓰게 해줘" aria-label="총괄 지시 내용" required></textarea>
           <div class="r" role="radiogroup" aria-label="지시 종류">
             <label class="ck"><input type="radio" name="genKind" value="work" checked> 업무 지시 (부서 나눠 처리)</label>
             <label class="ck"><input type="radio" name="genKind" value="rule"> 운영·규칙 지시 (일하는 방식 바꾸기)</label>
-            <label class="ck"><input type="checkbox" id="genNow"> 🔥 급함 · 회의 기다리지 말고 지금</label>
+            <label class="ck"><input type="checkbox" id="genNow"> 🔥 지금 바로</label>
           </div>
           <div class="r"><button class="btn gen-b" type="submit" id="genBtn">한결에게 지시하기</button><span class="note" id="genMsg" aria-live="polite"></span></div>
         </form>
       </section>
       <span hidden><span id="kP"></span><span id="kD"></span><span id="kC"></span><span id="kS"></span></span>
       <div class="two">
-        <div class="min0"><h2>오늘의 브리핑</h2><div class="brief" id="brief"><span class="note">오전 회의와 비서실 도담의 브리핑이 여기에 올라와요.</span></div></div>
+        <div class="min0"><h2>오늘의 브리핑</h2><div class="brief" id="brief"></div></div>
         <div class="min0"><h2>방금 들어온 소식</h2><div class="feed" id="miniFeed"></div></div>
       </div>
       <div class="status-line" id="dbStatus">사무실 데이터를 불러오는 중…</div>
@@ -476,7 +476,7 @@ form.order input[type=checkbox]{flex:none}
   </section>
   <section class="panel" data-pane="approve" hidden>
     <h2>대표 결재함</h2>
-    <p class="note" style="margin-top:-4px">AI 직원이 올린 기획안을 승인하면 한결이 오늘 배분표의 알맞은 시간에 넣어 제작해요. 직접 지시를 내릴 수도 있어요.</p>
+    <p class="note" style="margin-top:-4px">AI 직원이 올린 기획안을 승인하면 다음 정기 세션(14·22·02시)에 순서대로 제작해요. 🔥를 고르면 바로 시작해요. 직접 지시를 내릴 수도 있어요.</p>
     <form class="order" id="orderForm">
       <div class="r">
         <select id="orderDept" aria-label="담당 부서">
@@ -490,14 +490,13 @@ form.order input[type=checkbox]{flex:none}
       <textarea id="orderDetail" placeholder="대상, 차시 수, 꼭 들어갈 내용, 마감일 등을 적어주세요 (선택)" aria-label="지시 내용"></textarea>
       <div class="att" id="orderAtt"><label class="btn ghost" for="orderFile">📎 파일·캡처 첨부</label><input type="file" id="orderFile" multiple accept="image/*,application/pdf,.txt,.md,.csv,.json"><span class="note" id="orderAttHint">이미지·PDF·텍스트, 한 파일 20MB까지. 캡처는 글 칸에 붙여넣기(Ctrl+V)해도 돼요. 엔트리 작품(.ent)은 <a href="https://drive.google.com/drive/folders/1J46xsdSc4JQHtVM9C3jrpatR3q2HASr2" target="_blank" rel="noopener">드라이브 '엔트리 작품 점검' 폴더</a>에 올리고 지시를 보내 주세요.</span><div class="chips" id="orderChips"></div></div>
       <div class="r" role="radiogroup" aria-label="처리 시간">
-        <label class="ck"><input type="radio" name="orderWhen" value="auto" checked> 한결이 배분 (오늘 배분표의 알맞은 시간에)</label>
+        <label class="ck"><input type="radio" name="orderWhen" value="auto" checked> 다음 정기 세션(14·22·02시)에 순서대로</label>
         <label class="ck"><input type="radio" name="orderWhen" value="now"> 🔥 급함 · 지금 바로</label>
-        <label class="ck"><input type="radio" name="orderWhen" value="night"> 🌙 밤에 처리 (00~08시)</label>
       </div>
       <div class="r"><button class="btn pri" type="submit" id="orderBtn">지시 내리기</button><span class="note" id="orderMsg"></span></div>
     </form>
     <h2 style="margin-top:16px">최종 컨펌 대기</h2>
-    <p class="note" style="margin-top:-4px">검수(가람)를 통과한 결과물이에요. 컨펌하면 완료, 수정 요청하면 담당 부서가 다음 정기 점검(10·14·18·22·02시)에 가장 먼저 고쳐요.</p>
+    <p class="note" style="margin-top:-4px">검수(가람)를 통과한 결과물이에요. 컨펌하면 완료, 수정 요청하면 담당이 다음 정기 세션(14·22·02시)에 가장 먼저 고쳐요. 🔥 지금 바로를 켜면 바로 고쳐요.</p>
     <div class="list" id="confirmList"></div>
     <h2 style="margin-top:16px">기획안 결재 대기</h2>
     <div class="list" id="approveList"></div>
@@ -536,7 +535,7 @@ form.order input[type=checkbox]{flex:none}
 
   <section class="panel" data-pane="sched" hidden>
     <h2>내 수업 일정</h2>
-    <p class="note" style="margin-top:-4px">수업을 적어 두면 일정관리팀 다온이 수업마다 필요한 자료(교안, 활동지, 영상 등)를 점검하고, <b>수업 3일 전까지 최종 컨펌</b>이 나도록 각 부서를 챙겨요. 2주 뒤 수업이 비어 있으면 다온이 입력을 요청해요.</p>
+    <p class="note" style="margin-top:-4px">수업을 넣으면 교육 새봄에게 <b>수업 준비 업무</b>가 바로 올라가요(컨펌 마감 3일 안이면 🔥로 바로 시작). <b>수업 3일 전까지 최종 컨펌</b>이 목표예요.</p>
     <div class="cal" id="cal">
       <div class="calh"><button type="button" class="btn ghost" id="calPrev" aria-label="이전 달">‹</button><b id="calTitle"></b><button type="button" class="btn ghost" id="calNext" aria-label="다음 달">›</button><button type="button" class="more" id="calToday">오늘</button><span class="note calleg"><i class="lg c"></i>내 수업 <i class="lg d"></i>자료·컨펌 마감</span></div>
       <div class="calg" id="calGrid"></div>
@@ -693,7 +692,7 @@ const DEPTS = {
 };
 // hair, shirt colors for each member sprite
 const MEMBERS = [
-  {id:"hangyeol", name:"한결", dept:"strategy", team:"전략부서장", role:"대표 지시 접수·담당 배정·하루 배분, 대표 요청 대조(하루 3번)·보고, 수업 일정", hair:"#3a2a22", shirt:"#3f7fb8", desk:[2.5,4]},
+  {id:"hangyeol", name:"한결", dept:"strategy", team:"전략부서장", role:"총괄 지시·담당 없는 지시의 담당 정하기, 회의 결정 나누기", hair:"#3a2a22", shirt:"#3f7fb8", desk:[2.5,4]},
   {id:"daon", name:"다온", dept:"strategy", team:"일정관리팀", role:"수업·제작 일정, 마감 관리", hair:"#7a4a2a", shirt:"#5b9bd5", desk:[6.5,4]},
   {id:"nuri", name:"누리", dept:"strategy", team:"성과분석팀", role:"완료 현황 집계, 개선점 정리", hair:"#1f1f2a", shirt:"#2f6a9a", desk:[2.5,8]},
   {id:"roa", name:"로아", dept:"strategy", team:"검토팀", role:"일정 충돌, 수치, 대표 보고서 사실 확인", hair:"#5a3a2a", shirt:"#4a8cc8", desk:[6.5,8]},
@@ -746,7 +745,7 @@ function fmtTime(iso){ if(!iso) return ""; const d=new Date(iso); if(isNaN(d)) r
 function fmtDay(iso){ const d=new Date(iso); if(isNaN(d)) return ""; return new Intl.DateTimeFormat("ko-KR",{timeZone:KST,month:"long",day:"numeric",weekday:"short"}).format(d); }
 function kstDateOf(iso){ const d=new Date(iso); return isNaN(d)?"":kstParts(d).date; }
 const deptChip = k => `<span class="chip d-${DEPTS[k]?k:"ceo"}">${esc(DEPTS[k]?.name||"대표실")}</span>`;
-const STATUS = {hold:"⏸ 보류",proposed:"결재 대기",approved:"제작 대기",doing:"제작 중",final:"총괄 검수 중",confirm:"대표 컨펌 대기",revise:"수정 요청",done:"완료",rejected:"반려",handoff:"부서 전달"};
+const STATUS = {approved:"할 일",doing:"하는 중",confirm:"대표님 확인",proposed:"대표님 확인(기획안)",done:"끝",rejected:"끝(반려)",hold:"⏸ 보류",revise:"할 일",final:"하는 중",handoff:"할 일"};
 const stChip = s => `<span class="st st-${esc(s)}">${esc(STATUS[s]||s)}</span>`;
 const stChipT = t => (t.status==="approved" && t.calledAt && Date.now()-new Date(t.calledAt)<6*3600e3) ? `<span class="st st-doing" title="담당 팀을 불렀고 작업 중이에요. 끝나면 컨펌 대기로 올라와요">🔔 담당 팀 작업 시작</span>` : stChip(t.status);
 const safeUrl = u => /^(https:\/\/|\/_blob\/)/.test(u||"") ? u : "";
@@ -776,8 +775,7 @@ document.addEventListener("click", async e=>{
 });
 
 // ---------- State ----------
-let tasks=[], feed=[], schedule=[], docs=[], apps=[], notices=[], office={}, classes=[], plan=null;
-const SLOT_DEF=[["s1","10시 점검","08:30","12:00"],["s2","14시 점검","12:00","16:00"],["s3","18시 점검","16:00","20:00"],["s4","22시 점검","20:00","00:00"],["s5","02시 점검","00:00","08:30"]];
+let tasks=[], feed=[], schedule=[], docs=[], apps=[], notices=[], office={}, classes=[];
 const URGENT_TRIGGER = "trig_01F2xPSizJ7HiWEFXm3YWp9y";
 const NSTATUS = {new:"접수됨",processing:"처리 중",done:"처리 완료",failed:"처리 못 함"};
 let canWrite = null;
@@ -944,9 +942,8 @@ $("#whoX").addEventListener("click",()=>{ $("#who").hidden=true; actors.forEach(
 
 // ---------- Clock ----------
 function nextRunText(){
-  const k=kstParts(); const wk=d=>!["Sat","Sun"].includes(d);
-  const m=k.h*60+k.m, left=(510-m+1440)%1440;
-  return left===0 ? "지금 오전 회의 중" : `오전 회의(08:30)까지 ${Math.floor(left/60)}시간 ${left%60}분`;
+  const k=kstParts(), m=k.h*60+k.m, at=[127,847,1327].map(x=>(x-m+1440)%1440), left=Math.min(...at);
+  return `다음 정기 세션(${nextSession()})까지 ${Math.floor(left/60)}시간 ${left%60}분`;
 }
 function tickClock(){
   const k=kstParts(); $("#clk").textContent=`${String(k.h).padStart(2,"0")}:${String(k.m).padStart(2,"0")}`;
@@ -1000,28 +997,8 @@ function originLabel(t){
   return "";
 }
 const cmtList=t=>Array.isArray(t.ceoComments)?t.ceoComments:[];
-function cmtBadge(t){ const c=cmtList(t); if(!c.length) return ""; return t.ceoCommentNew?`<span class="st st-proposed" role="button" style="cursor:pointer" data-cmt="${esc(t._id)}" title="${esc(cut(c[c.length-1].text,80))}">💬 직원 확인 대기</span>`:`<span class="st st-done" role="button" style="cursor:pointer" data-cmt="${esc(t._id)}" title="${esc(cut(t.ceoCommentReply?.text||"",120))}">💬 반영됨</span>`; }
+function cmtBadge(t){ const c=cmtList(t); if(!c.length) return ""; return t.fix?`<span class="st st-proposed" role="button" style="cursor:pointer" data-cmt="${esc(t._id)}" title="${esc(cut(c[c.length-1].text,80))}">💬 직원 확인 대기</span>`:`<span class="st st-done" role="button" style="cursor:pointer" data-cmt="${esc(t._id)}" title="${esc(cut(t.ceoCommentReply?.text||"",120))}">💬 반영됨</span>`; }
 const cmtBtn=t=>canWrite===false?"":`<button type="button" class="cmtb" data-cmt="${esc(t._id)}" title="이 업무에 지시·코멘트 남기기" aria-label="${esc(cut(t.title,30))} 코멘트">💬</button>`;
-function slotChip(t){
-  if(["done","confirm","rejected","hold"].includes(t.status)) return "";
-  if(t.slot){ const d=SLOT_DEF.find(x=>x[0]===t.slot); return `<span class="st st-approved" title="오전 회의에서 정한 처리 시간">🗓 ${esc(t.slotLabel||(d?`${d[1]} ${d[2]}~${d[3]}`:t.slot))}</span>`; }
-  if(t.queue==="night") return `<span class="st st-proposed" title="밤에 처리해요">🌙 야간 처리 예정</span>`;
-  if(t.queue==="plan") return `<span class="st st-proposed" title="한결이 오늘 배분표에 넣어요">🗓 배분 대기</span>`;
-  return "";
-}
-function planKey(){ const k=kstParts(); return (k.h*60+k.m)>=510 ? k.date : addDays(k.date,-1); }
-function curSlot(){ const k=kstParts(), m=k.h*60+k.m, at=s=>{ const [h,mm]=s.split(":").map(Number); return h*60+mm; };
-  for(const [key,,f,t] of SLOT_DEF){ const a=at(f), b=at(t); if(b<=a ? (m>=a||m<b) : (m>=a&&m<b)) return key; } return ""; }
-function renderPlan(){
-  const el=$("#planBoard"); if(!el) return;
-  if(!plan||!Array.isArray(plan.slots)||!plan.slots.length){ el.innerHTML=`<div class="empty">아직 오늘 회의 전이에요. 08:30 오전 회의가 끝나면 배분표가 여기에 올라와요.</div>`; $("#planSum").textContent=""; return; }
-  const now=curSlot();
-  el.innerHTML = plan.slots.map(s=>{ const items=Array.isArray(s.items)?s.items:[];
-    return `<div class="slot ${s.key===now?"now":""}"><div class="sh"><b>${esc(s.label||s.key)}</b><span class="note">${esc(s.from||"")}~${esc(s.to||"")}${s.key===now?" · 지금":""}</span></div>${items.length?items.map(it=>{ const t=tasks.find(x=>x._id===it.taskId); return `<div class="it"><span class="t">${DEPTS[it.dept||t?.dept]?deptChip(it.dept||t.dept)+" ":""}${esc(cut(t?.title||it.title||"",60))}</span>${t?stChip(t.status):""}</div>`; }).join(""):`<div class="note">배정된 일 없음</div>`}${s.reserve?`<div class="rs">여유: ${esc(s.reserve)}</div>`:""}</div>`; }).join("")
-    + ((Array.isArray(plan.later)&&plan.later.length)?`<div class="slot"><div class="sh"><b>내일 이후로</b></div>${plan.later.map(it=>`<div class="it"><span class="t">${esc(cut(it.title||"",60))}</span></div>`).join("")}</div>`:"");
-  $("#planSum").textContent = `${plan.date||""} 오전 회의${plan.at?" · "+fmtTime(plan.at):""}${plan.summary?" · "+cut(plan.summary,60):""}`;
-}
-function slotEnd(t){ const d=SLOT_DEF.find(x=>x[0]===t.slot); if(!d||!t.planDate) return null; const day=(t.slot==="s4"||t.slot==="s5")?addDays(t.planDate,1):t.planDate; return new Date(`${day}T${d[3]}:00+09:00`); }
 function ownerOf(t){
   const txt=[t.owner,(Array.isArray(t.support)?"":""),t.team].filter(Boolean).join(" ");
   const byName=MEMBERS.find(m=>String(t.owner||"").includes(m.name)); if(byName) return byName;
@@ -1029,33 +1006,30 @@ function ownerOf(t){
   const anyName=MEMBERS.find(m=>txt.includes(m.name)); if(anyName) return anyName;
   const lead={edu:"saebom",app:"haneul",media:"harang",strategy:"hangyeol"}[t.dept]; return MEMBERS.find(m=>m.id===lead)||null;
 }
+// 2026-11-27 재설계: 늦은 일 판정은 하나(하루 넘게 그대로), 순서는 코드 한 곳(prioRank)에서만 정해요.
+const OPEN_ST=["approved","doing","revise","final","handoff"];
 function lateWhy(t){
-  const now=Date.now(), h=ms=>(now-new Date(ms))/36e5;
+  if(!OPEN_ST.includes(t.status)) return "";
   if(t.waitFor){ const w=tasks.find(x=>x._id===t.waitFor); if(w && w.status!=="done") return ""; }
-  const end=slotEnd(t);
-  if(end && now>end && ["approved","doing","handoff"].includes(t.status)) return `배분 시간(${t.slotLabel||t.slot}) 지남`;
-  if(t.status==="revise" && t.revisedAt && h(t.revisedAt)>3) return `수정 요청 ${Math.floor(h(t.revisedAt))}시간째 그대로`;
-  if(t.status==="doing" && t.updatedAt && h(t.updatedAt)>1.5 && !(end && now<end)) return `작업 중인데 ${Math.floor(h(t.updatedAt))}시간째 소식 없음`;
-  const ap=t.planResetAt||t.approvedAt||(t.by==="대표"?t.createdAt:null);
-  if(t.status==="approved" && !t.startedAt && ap && h(ap)>24 && !(end && now<end)) return `승인 뒤 ${Math.floor(h(ap))}시간째 시작 안 함`;
-  return "";
+  const h=(Date.now()-new Date(t.updatedAt||t.createdAt))/36e5;
+  return h>24 ? `${Math.floor(h)}시간째 그대로` : "";
 }
+const hasFix=t=>!!t.fix||t.status==="revise";
+function prioRank(t){ return t.urgent?0 : hasFix(t)?1 : t.status==="doing"?2 : t.by==="대표"?3 : 4; }
+const byPrio=(a,b)=>prioRank(a)-prioRank(b)||String(a.createdAt||"").localeCompare(String(b.createdAt||""));
 let showAllStaff=false;
 document.addEventListener("click",e=>{ if(e.target.closest("[data-staffall]")){ showAllStaff=true; safeRun(renderStaff); } });
 function renderStaff(){
   const el=$("#staffBoard"); if(!el) return;
-  const open=tasks.filter(t=>["approved","doing","handoff","revise","final"].includes(t.status) && !t.ceoTodo && !t.mergedInto);
+  const open=tasks.filter(t=>OPEN_ST.includes(t.status) && !t.ceoTodo && !t.mergedInto);
   const by={}; open.forEach(t=>{ const m=ownerOf(t); const k=m?m.id:"none"; (by[k]=by[k]||[]).push(t); });
   const late=open.map(t=>({t,why:lateWhy(t)})).filter(x=>x.why);
   $("#lateList").innerHTML = late.length ? `<div class="item" style="border-color:var(--bad)">${late.map(({t,why})=>{ const m=ownerOf(t); return `<div class="latei">${deptChip(t.dept)}<b>${esc(m?m.name:"담당 없음")}</b><span style="flex:1;min-width:160px">${esc(cut(t.title,60))} ${cmtBadge(t)}</span><span class="why">⚠ ${esc(why)}</span>${cmtBtn(t)}</div>`; }).join("")}</div>` : `<div class="note" style="color:var(--ok);font-weight:600">✅ 지금 늦은 일 없음</div>`;
   const lastAct=m=>(by[m.id]||[]).map(t=>t.updatedAt||t.createdAt||"").sort().pop()||"";
   const askBtn=m=>canWrite===false?"":`<button type="button" class="btn ghost" style="padding:2px 8px;font-size:12px" data-askm="${esc(m.id)}">💬 지시·질문</button>`;
   const cards=MEMBERS.filter(m=>by[m.id]).map(m=>{ const list=by[m.id]; const nLate=list.filter(t=>lateWhy(t)).length; const la=lastAct(m);
-    const today=planKey(), isToday=t=>t.planDate===today||t.urgent||t.status==="revise"||t.status==="doing";
-    const rank=t=>t.status==="revise"?0:t.status==="doing"?1:isToday(t)?2:3;
-    list.sort((a,b)=>rank(a)-rank(b)||(a.order??99)-(b.order??99)||String(a.createdAt||"").localeCompare(String(b.createdAt||"")));
-    const nToday=list.filter(isToday).length;
-    return `<div class="stf ${nLate?"late":""}"><div class="nm"><span><b>${esc(m.name)}</b> <span class="note">${esc(m.team)} · 오늘 ${nToday} / 전체 ${list.length}</span></span><span>${deptChip(m.dept)} ${askBtn(m)}</span></div>${list.slice(0,showAllStaff?99:6).map((t,i)=>{ const w=lateWhy(t); return `<div class="ln ${w?"bad":""}">${i+1}. ${t.status==="revise"?"✏️ ":t.status==="doing"?"▶ ":isToday(t)?"🔥 ":""}${esc(cut(t.title,44))} <span class="note">${esc(STATUS[t.status]||t.status)}${originLabel(t)?" · "+esc(originLabel(t)):""}${t.slotLabel?" · "+esc(t.slotLabel):""}</span> ${cmtBadge(t)}${cmtBtn(t)}</div>`; }).join("")}${list.length>6&&!showAllStaff?`<button class="more" type="button" data-staffall>외 ${list.length-6}건 더 보기</button>`:""}<div class="note">마지막 갱신: ${la?esc(fmtDay(la))+" "+esc(fmtTime(la)):"기록 없음"}</div></div>`; });
+    list.sort(byPrio);
+    return `<div class="stf ${nLate?"late":""}"><div class="nm"><span><b>${esc(m.name)}</b> <span class="note">${esc(m.team)} · ${list.length}건</span></span><span>${deptChip(m.dept)} ${askBtn(m)}</span></div>${list.slice(0,showAllStaff?99:6).map((t,i)=>{ const w=lateWhy(t); return `<div class="ln ${w?"bad":""}">${i+1}. ${t.urgent?"🔥 ":hasFix(t)?"✏️ ":t.status==="doing"?"▶ ":""}${esc(cut(t.title,44))} <span class="note">${esc(STATUS[t.status]||t.status)}${originLabel(t)?" · "+esc(originLabel(t)):""}</span> ${cmtBadge(t)}${cmtBtn(t)}</div>`; }).join("")}${list.length>6&&!showAllStaff?`<button class="more" type="button" data-staffall>외 ${list.length-6}건 더 보기</button>`:""}<div class="note">마지막 갱신: ${la?esc(fmtDay(la))+" "+esc(fmtTime(la)):"기록 없음"}</div></div>`; });
   const idle=MEMBERS.filter(m=>!by[m.id]).length;
   const idleM=MEMBERS.filter(m=>!by[m.id] && m.dept!=="ceo");
   el.innerHTML = (cards.join("") || `<div class="empty">지금 맡은 일이 있는 직원이 없어요.</div>`) + (idleM.length&&canWrite!==false?`<div class="stf" style="grid-column:1/-1"><div class="note" style="margin-bottom:4px">맡은 일 없는 직원 · 눌러서 지시·질문</div><div style="display:flex;flex-wrap:wrap;gap:6px">${idleM.map(m=>`<button type="button" class="btn ghost" style="padding:2px 8px;font-size:12px" data-askm="${esc(m.id)}">${esc(m.name)} <span class="note">${esc(m.team)}</span></button>`).join("")}</div></div>`:"");
@@ -1075,13 +1049,7 @@ function reqState(t){
   if(t.status==="proposed") return {g:1, txt:"기획안 결재 기다림", go:"approve"};
   if(/^⛔/.test(String(t.note||""))) return {g:1, txt:"⛔ 막힘 · 대표님이 해 주실 것이 있어요(보고 펼쳐 보기)", cls:"bad"};
   let bad=lateWhy(t);
-  if(!bad && t.ceoCommentNew && hrs(t.ceoCommentAt)>1.5) bad=`💬 코멘트를 ${Math.floor(hrs(t.ceoCommentAt))}시간째 확인 안 함`;
-  if(!bad && t.status==="approved" && !t.slot && !t.startedAt && !t.waitFor){
-    const h=hrs(t.planResetAt||t.approvedAt||t.createdAt);
-    if(t.queue!=="plan" && t.queue!=="night" && h>2) bad=`${Math.floor(h)}시간째 처리 시간이 안 정해짐`;
-    else if(h>26) bad=`${Math.floor(h)}시간째 배분표에 안 들어감`;
-  }
-  const where = t.waitFor ? "앞 업무 컨펌 뒤 시작" : t.slot==="later" ? "내일 이후로 미룸" : t.slotLabel ? "🗓 "+t.slotLabel : t.queue==="plan" ? "배분 기다림" : t.queue==="night" ? "밤 처리 예정" : "";
+  const where = t.waitFor ? "앞 업무 컨펌 뒤 시작" : t.urgent ? "🔥 지금 바로" : hasFix(t) ? "✏️ 고칠 것 먼저" : "";
   const txt=[STATUS[t.status]||t.status, where].filter(Boolean).join(" · ");
   return bad ? {g:0, txt:"⚠ "+bad, cls:"bad", bad:true} : {g:2, txt};
 }
@@ -1090,12 +1058,12 @@ function reqNotices(){ return (typeof notices!=="undefined"?notices:[]).filter(n
   return {kind:"n", id:n._id, title:n.text, at:n.createdAt, origin:"긴급공지", who:"", report:n.result||"", st}; }); }
 function renderReqs(){
   const el=$("#reqList"); if(!el) return;
-  const items=tasks.filter(isReq).map(t=>{ const m=ownerOf(t); return {kind:"t", t, id:t._id, title:t.title, at:t.createdAt, origin:(t.from==="qna"?"질문 중 지시":t.from==="staff"?"직원에게 지시":originLabel(t))||"대표 지시", who:m?m.name:"담당 없음", report:t.ceoCommentReply?.text||t.result||t.note||t.reviseNote||"", st:reqState(t)}; }).concat(reqNotices());
+  const items=tasks.filter(isReq).map(t=>{ const m=ownerOf(t); return {kind:"t", t, id:t._id, title:t.title, at:t.createdAt, origin:(t.from==="qna"?"질문 중 지시":t.from==="staff"?"직원에게 지시":originLabel(t))||"대표 지시", who:m?m.name:"담당 없음", report:t.ceoCommentReply?.text||t.result||t.note||t.fix||t.reviseNote||"", st:reqState(t)}; }).concat(reqNotices());
   items.sort((a,b)=>a.st.g-b.st.g || String(b.at||"").localeCompare(String(a.at||"")));
   const G=[[0,"⚠ 빠지고 있는 일"],[1,"대표님 확인·결정 차례"],[2,"진행 중"],[3,"보류"]];
   const row=x=>`<div class="rq ${x.st.bad?"bad":x.st.ack||x.st.go?"ask":""}"><span class="rt"><span class="note">${esc(fmtMD(kstParts(new Date(x.at||Date.now())).date))} · ${esc(x.origin)}${x.who?" · "+esc(x.who):""}</span><br><b>${esc(cut(x.title,90))}</b> ${x.t?cmtBadge(x.t):""}</span><span class="rs ${x.st.cls||""}">${esc(x.st.txt)}</span>${x.st.ack&&canWrite!==false?`<button class="btn pri" type="button" data-reqack="${esc(x.kind+":"+x.id)}" title="결과를 확인했으면 목록에서 빼요">✓ 확인</button>`:""}${x.st.go?`<button class="btn ghost" type="button" data-gotab="${x.st.go}">결재 탭 →</button>`:""}${x.t&&x.t.docId?`<button class="btn ghost" type="button" data-doc="${esc(x.t.docId)}">자료</button>`:""}${x.t&&canWrite!==false?`<button class="btn ghost" type="button" data-cmt="${esc(x.id)}">💬 ${x.st.ack?"다시 지시":"지시"}</button>`:""}${(()=>{ const c=x.t?cmtList(x.t):[]; const last=c[c.length-1]; const rp=x.t&&x.t.ceoCommentReply;
       const parts=[]; if(last) parts.push(`<b>대표님 코멘트(${esc(fmtDay(last.at))} ${esc(fmtTime(last.at))})</b>\n${esc(last.text)}`);
-      if(rp&&rp.text) parts.push(`<b>${esc(rp.by||"담당")} 답</b>\n${esc(rp.text)}`); else if(last&&x.t.ceoCommentNew) parts.push(`<b>담당 답</b> 아직 없음 (다음 점검에서 먼저 답해요)`);
+      if(rp&&rp.text) parts.push(`<b>${esc(rp.by||"담당")} 답</b>\n${esc(rp.text)}`); else if(last&&x.t.fix) parts.push(`<b>담당 답</b> 아직 없음 (다음 점검에서 먼저 답해요)`);
       if(x.report && !(rp&&rp.text===x.report)) parts.push(`<b>보고</b>\n${esc(x.report)}`);
       return parts.length?`<div class="sub" data-subx title="눌러서 전체 보기">${parts.join("\n")}</div><div class="subm" data-subx-more>전체 보기 ▾</div>`:""; })()}</div>`;
   let h="";
@@ -1125,12 +1093,25 @@ function taskCard(t, withActs){
   const link = [safeUrl(t.link) ? `<a href="${esc(t.link)}" target="_blank" rel="noopener">${t.branch?"브랜치 보기":"드라이브에서 열기"}</a>` : "", safeUrl(t.prUrl) ? `<a href="${esc(t.prUrl)}" target="_blank" rel="noopener">PR 보기</a>` : ""].join(" ");
   const docBtn = t.docId ? `<button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button>` : "";
   let acts = "";
-  if(withActs==="approve" && canWrite!==false) acts = `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}" title="한결이 오늘 배분표의 알맞은 시간에 넣어 제작해요">승인</button><button class="btn ghost" data-act="approveNow" data-id="${esc(t._id)}" title="지금 바로 제작을 시작해요">🔥 승인 · 바로</button><input class="revnote" id="rej-${esc(t._id)}" placeholder="반려 이유·바라는 방향 (선택)" aria-label="반려 이유"><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button><button class="btn ghost" data-act="hold" data-id="${esc(t._id)}" title="당분간 멈춰요">⏸ 보류</button>`;
+  if(withActs==="approve" && canWrite!==false) acts = `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}" title="다음 정기 세션에서 순서대로 제작해요">승인</button><button class="btn ghost" data-act="approveNow" data-id="${esc(t._id)}" title="지금 바로 제작을 시작해요">🔥 승인 · 바로</button><input class="revnote" id="rej-${esc(t._id)}" placeholder="반려 이유·바라는 방향 (선택)" aria-label="반려 이유"><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button><button class="btn ghost" data-act="hold" data-id="${esc(t._id)}" title="당분간 멈춰요">⏸ 보류</button>`;
   if(t.status==="hold" && canWrite!==false) acts = `<span class="note">보류 사유: ${esc(t.holdNote||"대표님 보류")}</span><button class="btn pri" data-act="resume" data-id="${esc(t._id)}">▶ 다시 진행</button>`;
-  if(withActs==="confirm" && canWrite!==false) acts = (t.choice?`<span class="note">위에서 들어 보고 하나를 골라 주세요.</span>`:`<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button>`)+`<input class="revnote" id="rev-${esc(t._id)}" placeholder="수정할 점 · 반려 이유 (선택)" aria-label="수정할 점 또는 반려 이유"><button class="btn ghost" data-act="revise" data-id="${esc(t._id)}">수정 요청</button><button class="btn ghost" data-act="hold" data-id="${esc(t._id)}" title="당분간 멈춰요. 다시 진행을 누를 때까지 직원이 손대지 않아요">⏸ 보류</button><button class="btn ghost danger" data-act="reject" data-id="${esc(t._id)}" title="반려 메모에 적은 부분만 고쳐요. 처음부터 원하면 메모에 title="처음부터 새로 작성해요"#39;처음부터title="처음부터 새로 작성해요"#39;라고 적어요">반려 · 새로 작성</button>`;
-  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChipT(t)}${t.review?`<span class="st ${t.review.result==="보류"?"st-failed":"st-done"}" title="${esc(t.review.notes||"")}">부서 검수 ${esc(t.review.result||"")} · ${esc(t.review.by||"")}</span>`:""}${t.mergeStatus?`<span class="st ${t.mergeStatus==="merged"?"st-done":"st-failed"}">${t.mergeStatus==="merged"?"병합 완료":"병합 보류"}</span>`:""}${t.finalReview?`<span class="st ${t.finalReview.result==="통과"?"st-done":"st-failed"}" title="${esc(t.finalReview.notes||"")}">총괄 검수 ${esc(t.finalReview.result||"")} · ${esc(t.finalReview.by||"")}</span>`:""}${((t.reviseCount||0)+(t.rejectCount||0))>=1?`<span class="st ${((t.reviseCount||0)+(t.rejectCount||0))>=2?"st-revise":"st-proposed"}" title="2번 이상이면 부서 전체가 의논해서 고쳐요">수정·반려 ${(t.reviseCount||0)+(t.rejectCount||0)}회${((t.reviseCount||0)+(t.rejectCount||0))>=2?" · 부서 회의":""}</span>`:""}${t.urgent?`<span class="st st-revise">🔥 급함</span>`:""}${slotChip(t)}${cmtBadge(t)}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${originLabel(t)?" · "+esc(originLabel(t)):""}</span></div>
+  if(withActs==="confirm" && canWrite!==false) acts = (t.choice?`<span class="note">위에서 들어 보고 하나를 골라 주세요.</span>`:`<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button>`)+`<input class="revnote" id="rev-${esc(t._id)}" placeholder="수정할 점 · 반려 이유 (선택)" aria-label="수정할 점 또는 반려 이유"><label class="ck"><input type="checkbox" id="now-${esc(t._id)}"> 🔥 지금 바로</label><button class="btn ghost" data-act="revise" data-id="${esc(t._id)}">수정 요청</button><button class="btn ghost" data-act="hold" data-id="${esc(t._id)}" title="당분간 멈춰요. 다시 진행을 누를 때까지 직원이 손대지 않아요">⏸ 보류</button><button class="btn ghost danger" data-act="reject" data-id="${esc(t._id)}" title="반려 메모에 적은 부분만 고쳐요. 처음부터 원하면 메모에 &#39;처음부터&#39;라고 적어요">반려 · 새로 작성</button>`;
+  return `<div class="item"><div class="h">${deptChip(t.dept)}${stChipT(t)}${t.review?`<span class="st ${t.review.result==="보류"?"st-failed":"st-done"}" title="${esc(t.review.notes||"")}">부서 검수 ${esc(t.review.result||"")} · ${esc(t.review.by||"")}</span>`:""}${t.mergeStatus?`<span class="st ${t.mergeStatus==="merged"?"st-done":"st-failed"}">${t.mergeStatus==="merged"?"병합 완료":"병합 보류"}</span>`:""}${t.finalReview?`<span class="st ${t.finalReview.result==="통과"?"st-done":"st-failed"}" title="${esc(t.finalReview.notes||"")}">총괄 검수 ${esc(t.finalReview.result||"")} · ${esc(t.finalReview.by||"")}</span>`:""}${t.fix?`<span class="st st-revise" title="${esc(cut(t.fix,200))}">✏️ 고칠 것 있음</span>`:""}${t.urgent?`<span class="st st-revise">🔥 급함</span>`:""}${cmtBadge(t)}<span class="note">${t.from&&DEPTS[t.from]?esc(DEPTS[t.from].name)+" → ":""}${esc(t.team||"")}${originLabel(t)?" · "+esc(originLabel(t)):""}</span></div>
     <div class="title">${t.plan&&t.plan.type?`<span class="ptype">${esc(t.plan.type)}</span> `:""}${esc(t.title)}</div>${t.plan?planTable(t.plan):(t.detail?`<div class="det">${esc(t.detail)}</div>`:"")}${attList(t.attachments)}${choiceHtml(t)}
     ${(acts||link||docBtn||!["done","rejected"].includes(t.status))?`<div class="acts">${acts}${docBtn}${link}${!["done","rejected"].includes(t.status)&&canWrite!==false?`<button class="btn ghost" type="button" data-cmt="${esc(t._id)}">💬 코멘트·지시</button>`:""}</div>`:""}</div>`;
+}
+function nextSession(){ const h=kstParts().h; return h<2?"02시":h<14?"14시":h<22?"22시":"02시"; }
+function renderBrief(){
+  const open=tasks.filter(t=>OPEN_ST.includes(t.status)&&!t.mergedInto&&!t.ceoTodo);
+  const fresh=tasks.filter(t=>t.status==="confirm"&&hrs(t.updatedAt)<24);
+  const blocked=open.filter(t=>/^⛔/.test(String(t.note||"")));
+  const late=open.filter(t=>lateWhy(t));
+  const ask=tasks.filter(t=>["confirm","proposed"].includes(t.status)).length;
+  const L=[`다음 정기 세션: ${nextSession()} · 남은 할 일 ${open.length}건(🔥 ${open.filter(t=>t.urgent).length} · 고칠 것 ${open.filter(hasFix).length})`,
+    `대표님 확인 차례 ${ask}건`+(fresh.length?` · 최근 하루 올라온 결과: ${fresh.slice(0,3).map(t=>cut(t.title,30)).join(", ")}`:""),
+    blocked.length?`⛔ 막힘 ${blocked.length}건: ${blocked.slice(0,3).map(t=>cut(t.title,30)).join(", ")}`:"막힌 일 없음",
+    late.length?`⚠ 하루 넘게 그대로 ${late.length}건`:"하루 넘게 멈춘 일 없음"];
+  $("#brief").textContent=L.join("\n");
 }
 function safeRun(fn){ try{ fn(); }catch(err){ console.error(err); const el=$("#dbStatus"); if(el) el.textContent="화면 일부를 그리지 못했어요("+(fn.name||"")+"). 나머지는 정상이에요. 대화창에 알려 주세요."; } }
 function render(){
@@ -1142,8 +1123,8 @@ function render(){
   const today=kstParts().date; const in7=new Date(Date.now()+7*864e5); const end=kstParts(in7).date;
   $("#kS").textContent=schedule.filter(s=>s.date>=today && s.date<=end).length;
   const n=$("#nApprove"); n.hidden=!(pending.length+confirms.length); n.textContent=pending.length+confirms.length;
-  safeRun(renderTodo); safeRun(renderClasses); safeRun(renderPlan); safeRun(renderStaff); safeRun(renderGen); safeRun(renderReqs);
-  $("#brief").innerHTML = office.briefing ? esc(office.briefing) : `<span class="note">오전 회의와 비서실 도담의 브리핑이 여기에 올라와요.</span>`;
+  safeRun(renderTodo); safeRun(renderClasses); safeRun(renderStaff); safeRun(renderGen); safeRun(renderReqs);
+  safeRun(renderBrief);
   $("#miniFeed").innerHTML = feedRows(feed.slice(0,6));
   $("#feedList").innerHTML = feedRows(feed);
   $("#confirmList").innerHTML = confirms.length ? confirms.map(t=>taskCard(t,"confirm")).join("") : `<div class="empty">컨펌할 결과물이 없어요. 부서 검수와 총괄 검수를 통과한 결과물이 여기로 와요.</div>`;
@@ -1204,7 +1185,7 @@ document.addEventListener("click", async e=>{
   const pk=e.target.closest("[data-pick]");
   if(pk && dbRef){ pk.disabled=true; const t=tasks.find(x=>x._id===pk.dataset.pick); if(!t||!t.choice) return; const now=new Date().toISOString(); const o=(t.choice.options||[]).find(x=>x.key===pk.dataset.key)||{};
     try{ await dbRef.doc("tasks/"+t._id).update({status:"done", confirmedAt:now, decidedBy:"대표", updatedAt:now, choice:{...t.choice, picked:o.key, pickedAt:now}, note:`선택: ${o.key} ${o.label||""}\n대표님이 골랐어요. 담당 직원이 이어서 진행해요.`});
-      const w=await wakeOffice("pick-"+t._id); $("#orderMsg").textContent=`${o.key}로 골랐어요. `+(w==="ok"?"담당 직원이 바로 이어서 진행해요.":"다음 정기 점검(10·14·18·22·02시)에 이어서 진행해요."); }
+      const w=await wakeOffice("pick-"+t._id); $("#orderMsg").textContent=`${o.key}로 골랐어요. `+(w==="ok"?"담당 직원이 바로 이어서 진행해요.":"다음 정기 점검(14·22·02시)에 이어서 진행해요."); }
     catch(_){ pk.disabled=false; $("#orderMsg").textContent="저장하지 못했어요."; }
     return; }
   const b=e.target.closest("[data-act]"); if(!b || !dbRef) return;
@@ -1212,42 +1193,44 @@ document.addEventListener("click", async e=>{
   const act=b.dataset.act; const now=new Date().toISOString();
   const t00 = tasks.find(x=>x._id===b.dataset.id)||{};
   const typed = (document.getElementById("rev-"+b.dataset.id)?.value||document.getElementById("rej-"+b.dataset.id)?.value||"").trim();
-  const HOLD_RE=/보류/;
+  const HOLD_RE=/보류/; const nowCk=!!document.getElementById("now-"+b.dataset.id)?.checked;
   let act0=act; if((act==="revise"||act==="reject") && HOLD_RE.test(typed)) act0="hold";
   if(act0==="hold"||act0==="resume"){
     const now2=new Date().toISOString(); let p;
     if(act0==="hold") p={status:"hold", prevStatus:t00.status, holdNote:typed||"대표님 보류", heldAt:now2, decidedBy:"대표", updatedAt:now2, note:"⏸ 대표님 보류 · 다시 진행을 누를 때까지 손대지 않아요"};
-    else { const back = t00.prevStatus==="confirm"||t00.prevStatus==="final" ? "confirm" : "approved"; p={status:back, resumedAt:now2, updatedAt:now2, decidedBy:"대표", note: back==="approved"?"보류 해제 · 한결이 배분표에 다시 넣어요":"보류 해제 · 컨펌 대기"}; if(back==="approved") p.queue="plan"; }
+    else { const back = t00.prevStatus==="confirm"||t00.prevStatus==="final" ? "confirm" : "approved"; p={status:back, resumedAt:now2, updatedAt:now2, decidedBy:"대표", note: back==="approved"?"보류 해제 · 다음 정기 세션에서 이어서 해요":"보류 해제 · 대표님 확인 대기"}; }
     try{ await dbRef.doc("tasks/"+b.dataset.id).update(p); $("#orderMsg").textContent = act0==="hold" ? "보류했어요. '다시 진행'을 누를 때까지 직원들이 손대지 않아요." : "다시 진행해요."; }catch(_){ b.disabled=false; $("#orderMsg").textContent="저장하지 못했어요."; }
     return;
   }
-  const status = {approve:"approved", approveNow:"approved", reject:"rejected", confirm:"done", revise:"revise"}[act];
+  const status = {approve:"approved", approveNow:"approved", reject:"rejected", confirm:"done", revise:"approved"}[act];
   const patch = {status, updatedAt:now, decidedBy:"대표"};
   if(act==="confirm") patch.confirmedAt = now;
+  // 앱 컨펌 = 병합할 일 하나(fix). 따로 찾는 절차 없이 다른 일과 같은 목록에서 먼저 처리돼요.
+  if(act==="confirm" && t00.branch && t00.mergeStatus!=="merged"){ patch.status="approved"; patch.fix="병합: 대표님이 컨펌했어요. PR을 만들어 병합하고 배포를 확인한 뒤 done으로 바꿔요."; patch.fixAt=now; if(nowCk) patch.urgent=true; }
   const t0 = tasks.find(x=>x._id===b.dataset.id)||{};
-  if(act==="approve"){ patch.approvedAt=now; patch.queue="plan"; patch.note="승인됨 · 한결이 오늘 배분표의 알맞은 시간에 넣어 제작해요"; }
-  if(act==="approveNow"){ patch.approvedAt=now; patch.urgent=true; patch.proposedBy=t0.by||"AI"; patch.by="대표"; patch.queue=""; patch.note="승인됨 · 바로 제작 시작"; }
-  if(act==="revise"){ const v=(document.getElementById("rev-"+b.dataset.id)?.value||"").trim(); patch.reviseNote = v || "대표님이 수정을 요청했어요"; patch.revisedAt = now; patch.reviseCount=(t0.reviseCount||0)+1; patch.reviseHistory=[...(Array.isArray(t0.reviseHistory)?t0.reviseHistory:[]), {at:now, note:patch.reviseNote}].slice(-10); }
+  if(act==="approve"){ patch.approvedAt=now; patch.note="승인됨 · 다음 정기 세션에서 순서대로 제작해요"; }
+  if(act==="approveNow"){ patch.approvedAt=now; patch.urgent=true; patch.proposedBy=t0.by||"AI"; patch.by="대표"; patch.note="승인됨 · 바로 제작 시작"; }
+  if(act==="revise"){ const v=(document.getElementById("rev-"+b.dataset.id)?.value||"").trim(); patch.fix=[t0.fix,v||"대표님이 수정을 요청했어요"].filter(Boolean).join("\n"); patch.fixAt=now; if(nowCk) patch.urgent=true; }
   const rejResult = act==="reject" && ["confirm","final","done"].includes(t0.status);
-  if(act==="reject"){ const v=(document.getElementById("rej-"+b.dataset.id)?.value||document.getElementById("rev-"+b.dataset.id)?.value||"").trim(); if(v) patch.rejectNote = v; patch.rejectedAt = now; patch.rejectCount=(t0.rejectCount||0)+1; patch.rejectStage = rejResult ? "result" : "proposal"; if(rejResult){ patch.rejectHistory=[...(Array.isArray(t0.rejectHistory)?t0.rejectHistory:[]), {at:now, note:v||"대표님이 반려했어요"}].slice(-10);
-      // Usage saver: a rejected result is fixed only where the note points, unless the CEO asks to start over.
-      if(/처음부터|새로\s*(만들|작성|해)|전부\s*다시|다시\s*만들/.test(v)) patch.rewrite = "requested";
-      else { patch.status="revise"; patch.reviseNote = v || "대표님이 반려했어요"; patch.revisedAt = now; patch.reviseScope = "반려 메모가 가리킨 부분만 고치기"; patch.reviseHistory=[...(Array.isArray(t0.reviseHistory)?t0.reviseHistory:[]), {at:now, note:"(반려) "+(v||"")}].slice(-10); } }
-    else if(!/대체|다른\s*안|다시\s*기획|새\s*기획/.test(v)) patch.followUp = "skipped"; }
+  if(act==="reject"){ const v=(document.getElementById("rej-"+b.dataset.id)?.value||document.getElementById("rev-"+b.dataset.id)?.value||"").trim(); patch.rejectedAt=now;
+    // 결과물 반려 = 메모가 가리킨 부분만 고칠 일(fix). 기획안 반려 = 끝, 메모에 '대체안'이 있을 때만 대체안 1개를 할 일로.
+    if(rejResult){ patch.status="approved"; patch.fix=[t0.fix,"(반려) "+(v||"대표님이 반려했어요")].filter(Boolean).join("\n"); patch.fixAt=now; if(nowCk) patch.urgent=true; }
+    else if(/대체|다른\s*안|다시\s*기획|새\s*기획/.test(v)){ patch.status="approved"; patch.fix="(기획안 반려 · 대체안 1개만) "+v; patch.fixAt=now; }
+    else { if(v) patch.rejectNote=v; } }
   try{ await dbRef.doc("tasks/"+b.dataset.id).update(patch);
     const t = tasks.find(x=>x._id===b.dataset.id);
-    const later = "다음 정기 점검(10·14·18·22·02시)에 처리돼요.";
-    if(act==="approve"){ $("#orderMsg").textContent="승인했어요. 한결이 오늘 배분표의 알맞은 시간에 넣어요(대시보드 '오늘 업무 배분표')."; }
-    if(act==="approveNow"){ $("#orderMsg").textContent="승인했어요. 담당 팀을 부르는 중…"; const r=await wakeOffice("order-"+b.dataset.id, true); if(r==="ok"){ try{ await dbRef.doc("tasks/"+b.dataset.id).update({calledAt:new Date().toISOString()}); }catch(_){} } $("#orderMsg").textContent = r==="ok" ? "승인했어요. 담당 팀이 지금 바로 만들기 시작했어요." : "승인했어요. 다음 정기 점검(10·14·18·22·02시)에 바로 시작해요."; }
+    const later = "다음 정기 세션(14·22·02시)에 처리돼요.";
+    if(act==="approve"){ $("#orderMsg").textContent="승인했어요. "+later; }
+    if(act==="approveNow"){ $("#orderMsg").textContent="승인했어요. 담당 팀을 부르는 중…"; const r=await wakeOffice("order-"+b.dataset.id, true); if(r==="ok"){ try{ await dbRef.doc("tasks/"+b.dataset.id).update({calledAt:new Date().toISOString()}); }catch(_){} } $("#orderMsg").textContent = r==="ok" ? "승인했어요. 담당 팀이 지금 바로 만들기 시작했어요." : "승인했어요. 다음 정기 점검(14·22·02시)에 바로 시작해요."; }
     // 기획서·구성안을 컨펌하면 제작 업무가 자동으로 생겨요(컨펌 뒤 일이 멈추지 않게).
     if(act==="confirm" && t0 && !t0.branch && !t0.choice && (t0.stage==="plan" || /구성안|기획안|기획서/.test(t0.title||"")) && !tasks.some(x=>x.followUpOf===b.dataset.id)){
       try{ const fid="o-"+Date.now().toString(36)+"f"; const n2=new Date().toISOString();
-        await dbRef.doc("tasks/"+fid).set({title:"[제작] "+String(t0.title||"").replace(/\s*(구성안|기획안|기획서)\s*/g," ").trim(), detail:"대표님이 컨펌한 기획("+b.dataset.id+") 그대로 만들기. 기획 내용과 대표님 코멘트·회의 지시를 모두 다시 읽고 체크리스트로 적은 뒤 시작해요.", dept:t0.dept, owner:t0.owner||"", status:"approved", by:"대표", followUpOf:b.dataset.id, docId:t0.docId||"", urgent:!!t0.urgent, order:1, queue:"plan", createdAt:n2, updatedAt:n2});
-        $("#orderMsg").textContent="컨펌했어요. 제작 업무를 바로 만들어 담당 목록 맨 앞에 넣었어요."; }catch(_){}
+        await dbRef.doc("tasks/"+fid).set({title:"[제작] "+String(t0.title||"").replace(/\s*(구성안|기획안|기획서)\s*/g," ").trim(), detail:"대표님이 컨펌한 기획("+b.dataset.id+") 그대로 만들기. 기획 내용과 대표님 코멘트·회의 지시를 모두 다시 읽고 체크리스트로 적은 뒤 시작해요.", dept:t0.dept, owner:t0.owner||"", status:"approved", by:"대표", followUpOf:b.dataset.id, docId:t0.docId||"", urgent:!!t0.urgent, createdAt:n2, updatedAt:n2});
+        $("#orderMsg").textContent="컨펌했어요. 제작 업무를 바로 만들어 담당 목록에 넣었어요."; }catch(_){}
     }
-    if(act==="confirm" && t && t.branch){ const r = await wakeOffice("merge-"+b.dataset.id, true); $("#orderMsg").textContent = r==="ok" ? "컨펌했어요. 앱개발부서가 지금 병합을 시작해요." : "컨펌했어요. "+later; }
-    if(act==="revise"){ $("#orderMsg").textContent="수정 요청을 보냈어요. 담당 팀을 부르는 중…"; const r = await wakeOffice("revise-"+b.dataset.id, true); $("#orderMsg").textContent = r==="ok" ? "담당 팀이 바로 고치기 시작했어요. 다 고치면 검수를 거쳐 다시 컨펌 대기로 올라와요." : "수정 요청을 남겼어요. "+later; }
-    if(act==="reject"){ $("#orderMsg").textContent="반려했어요. 담당 팀을 부르는 중…"; const r = (rejResult || !patch.followUp) ? await wakeOffice("reject-"+b.dataset.id, true) : "later"; $("#orderMsg").textContent = rejResult ? (patch.rewrite ? "반려했어요. '처음부터'라고 적어 주셔서 새로 작성해요." : "반려했어요. 반려 메모에 적은 부분만 고쳐서 다시 올려요(전부 새로 만들지 않아요). 처음부터 다시 원하시면 메모에 '처음부터'라고 적어 주세요.") : (patch.followUp==="skipped" ? "반려했어요. 이 기획은 여기서 끝내요(대체안이 필요하면 메모에 '대체안'이라고 적어 주세요)." : "반려했어요. 메모대로 대체안 1개를 만들어요."); } }
+    if(act==="confirm" && t && t.branch){ const r = nowCk ? await wakeOffice("merge-"+b.dataset.id, true) : "later"; $("#orderMsg").textContent = r==="ok" ? "컨펌했어요. 하늘이 지금 병합을 시작해요." : "컨펌했어요. 병합은 "+later; }
+    if(act==="revise"){ const r = nowCk ? await wakeOffice("revise-"+b.dataset.id, true) : "later"; $("#orderMsg").textContent = r==="ok" ? "담당이 지금 바로 고치기 시작했어요. 고친 파일만 다시 확인에 올라와요." : "수정 요청을 남겼어요. "+later; }
+    if(act==="reject"){ const r = (nowCk && patch.status==="approved") ? await wakeOffice("reject-"+b.dataset.id, true) : "later"; $("#orderMsg").textContent = patch.status==="rejected" ? "반려했어요. 이 기획은 여기서 끝내요(대체안이 필요하면 메모에 '대체안'이라고 적어 주세요)." : (r==="ok" ? "반려했어요. 담당이 지금 메모에 적은 부분만 고쳐요." : "반려했어요. 메모에 적은 부분만 "+later+" 처음부터 다시 원하시면 메모에 '처음부터'라고 적어 주세요."); } }
   catch(err){ b.disabled=false; $("#orderMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; }
 });
 // ---------- Classes (내 수업 일정) & today board ----------
@@ -1361,21 +1344,23 @@ $("#classForm").addEventListener("submit", async e=>{
   const btn=$("#clsBtn"); btn.disabled=true; msg("저장하는 중…");
   let attachments=[];
   try{ attachments = await uploadAtt("cls", msg); }catch(err){ btn.disabled=false; msg(attErr(err?.code)); return; }
-  const now=new Date().toISOString(); let ok=0, lastErr="";
+  const now=new Date().toISOString(); let ok=0, lastErr="", urgentCls=false;
   for(const [i,c] of items.entries()){
     const id="c-"+c.date.replace(/-/g,"")+"-"+Date.now().toString(36)+i;
     const sessions=makeSessions(c.date,c.endDate,c.repeat||"once");
     const doc={...c, sessions, where, note, needs, prep:{}, confirmDue:addDays(c.date,-3), materialsDue:addDays(c.date,-5), status:"planned", by:"대표", createdAt:now, updatedAt:now};
     if(attachments.length) doc.attachments=attachments;
     try{ await dbRef.doc("classes/"+id).set(doc); ok++; }catch(err){ lastErr=err?.message||String(err); break; }
+    // 수업을 넣으면 준비 업무가 바로 생겨요(회의나 점검이 찾아내기를 기다리지 않게). 컨펌 마감이 3일 안이면 🔥.
+    try{ const need=PREP_KEYS.filter(([k])=>needs[k]).map(([,l])=>l).join("·")||"교안·지도안"; const hot=dayDiff(doc.confirmDue,kstParts().date)<=3; if(hot) urgentCls=true;
+      await dbRef.doc("tasks/o-"+id).set({title:`[수업 준비] ${cut(c.title,50)} (${fmtMD(c.date)})`, detail:`대표님이 넣은 수업이에요. 필요한 자료: ${need}.\n수업 ${c.date}${c.time?" "+c.time:""}${where?" · "+where:""} · 컨펌 마감 ${doc.confirmDue}\n\n대표님 코멘트: ${note||"없음"}`, dept:"edu", owner:"교육 새봄", status:"approved", by:"대표", classId:id, ...(hot?{urgent:true}:{}), ...(attachments.length?{attachments}:{}), createdAt:now, updatedAt:now}); }catch(_){}
   }
   btn.disabled=false;
   if(!ok){ msg("저장하지 못했어요. "+(lastErr?`(${lastErr}) `:"")+"이 페이지를 편집할 권한이 있는 계정인지 확인해 주세요."); return; }
   ["clsDate","clsEnd","clsTime","clsTimeEnd","clsTitle","clsNote","clsBulk"].forEach(k=>$("#"+k).value=""); clearAtt("cls"); updSpan();
   calMonth=items[0].date.slice(0,7); calSel=items[0].date; renderCal();
-  msg(`수업 ${ok}개를 넣었어요${attachments.length?` (참고 파일 ${attachments.length}개)`:""}. 다온을 부르는 중…`);
-  const r=await wakeOffice("class-"+ok);
-  msg(r==="ok" ? `수업 ${ok}개를 넣었어요. 다온이 지금 코멘트와 참고 파일을 확인하고 자료를 준비해요.` : `수업 ${ok}개를 넣었어요. 다음 정기 점검 때 다온이 자료를 점검해요.`);
+  const r=await wakeOffice("class-"+ok, urgentCls);
+  msg(`수업 ${ok}개를 넣고 새봄에게 수업 준비 업무를 올렸어요${attachments.length?` (참고 파일 ${attachments.length}개)`:""}. `+(r==="ok"?"마감이 가까워 지금 바로 시작해요.":"다음 정기 세션(14·22·02시)에 처리해요."));
 });
 document.addEventListener("click", async e=>{
   const b=e.target.closest("[data-clsdel]"); if(!b||!dbRef) return;
@@ -1383,9 +1368,9 @@ document.addEventListener("click", async e=>{
   b.disabled=true; try{ await dbRef.doc("classes/"+b.dataset.clsdel).update({status:"canceled", updatedAt:new Date().toISOString()}); }catch(_){ b.disabled=false; }
 });
 function miniTask(t, kind){
-  const acts = canWrite===false ? "" : (kind==="confirm"&&t.choice) ? `<button class="btn pri" type="button" data-gotab="approve">들어 보고 고르기</button>` : kind==="confirm" ? `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button><button class="btn ghost danger" data-act="reject" data-id="${esc(t._id)}" title="반려 메모에 적은 부분만 고쳐요. 처음부터 원하면 메모에 title="처음부터 새로 작성해요"#39;처음부터title="처음부터 새로 작성해요"#39;라고 적어요">반려</button>` : kind==="approve" ? `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}" title="배분표에 넣어 제작">승인</button><button class="btn ghost" data-act="approveNow" data-id="${esc(t._id)}" title="지금 바로 제작">🔥 바로</button><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>` : "";
+  const acts = canWrite===false ? "" : (kind==="confirm"&&t.choice) ? `<button class="btn pri" type="button" data-gotab="approve">들어 보고 고르기</button>` : kind==="confirm" ? `<button class="btn pri" data-act="confirm" data-id="${esc(t._id)}">컨펌</button><button class="btn ghost danger" data-act="reject" data-id="${esc(t._id)}" title="반려 메모에 적은 부분만 고쳐요. 처음부터 원하면 메모에 &#39;처음부터&#39;라고 적어요">반려</button>` : kind==="approve" ? `<button class="btn pri" data-act="approve" data-id="${esc(t._id)}" title="다음 정기 세션에서 제작">승인</button><button class="btn ghost" data-act="approveNow" data-id="${esc(t._id)}" title="지금 바로 제작">🔥 바로</button><button class="btn ghost" data-act="reject" data-id="${esc(t._id)}">반려</button>` : "";
   const doc = t.docId ? `<button class="btn ghost" data-doc="${esc(t.docId)}">자료 보기</button>` : "";
-  return `<div class="mini"><div class="m">${deptChip(t.dept)}${kind==="order"?stChipT(t):""}${kind==="order"&&t.urgent?`<span class="st st-revise">🔥</span>`:""}${kind==="order"?slotChip(t):""}<span>${esc(fmtDay(t.updatedAt||t.createdAt))}</span></div><div class="t">${t.plan&&t.plan.type?`<span class="ptype">${esc(t.plan.type)}</span> `:""}${esc(t.title)}</div>${kind==="order"&&t.note?`<div class="note" style="overflow-wrap:anywhere">${esc(cut(t.note,70))}</div>`:""}${kind==="approve"&&t.plan&&t.plan.why?`<div class="note" style="overflow-wrap:anywhere">이유: ${esc(String(t.plan.why).slice(0,80))}</div>`:""}${(acts||doc)?`<div class="acts">${acts}${doc}</div>`:""}</div>`;
+  return `<div class="mini"><div class="m">${deptChip(t.dept)}${kind==="order"?stChipT(t):""}${kind==="order"&&t.urgent?`<span class="st st-revise">🔥</span>`:""}<span>${esc(fmtDay(t.updatedAt||t.createdAt))}</span></div><div class="t">${t.plan&&t.plan.type?`<span class="ptype">${esc(t.plan.type)}</span> `:""}${esc(t.title)}</div>${kind==="order"&&t.note?`<div class="note" style="overflow-wrap:anywhere">${esc(cut(t.note,70))}</div>`:""}${kind==="approve"&&t.plan&&t.plan.why?`<div class="note" style="overflow-wrap:anywhere">이유: ${esc(String(t.plan.why).slice(0,80))}</div>`:""}${(acts||doc)?`<div class="acts">${acts}${doc}</div>`:""}</div>`;
 }
 function renderTodo(){
   if(!$("#todo")) return;
@@ -1406,7 +1391,7 @@ function renderTodo(){
   ].join("");
   $("#todoSum").textContent = `컨펌 ${confirms.length} · 결재 ${pending.length}`;
   const lastClass = classes.filter(c=>c.status!=="canceled").map(c=>c.date).sort().pop()||"";
-  $("#classAlert").innerHTML = (!lastClass || lastClass<in14) ? `<div class="alert">📅 <b>다온</b>: ${lastClass?`입력된 수업이 ${esc(lastClass.slice(5).replace("-","/"))}까지예요.`:"아직 입력된 수업이 없어요."} 2주 뒤(${esc(in14.slice(5).replace("-","/"))})까지 수업 일정을 넣어 주시면 자료를 미리 준비할게요. <button class="more" type="button" data-gotab="sched">수업 넣으러 가기 →</button></div>` : "";
+  $("#classAlert").innerHTML = (!lastClass || lastClass<in14) ? `<div class="alert">📅 ${lastClass?`입력된 수업이 ${esc(lastClass.slice(5).replace("-","/"))}까지예요.`:"아직 입력된 수업이 없어요."} 2주 뒤(${esc(in14.slice(5).replace("-","/"))})까지 수업 일정을 넣어 주시면 자료를 미리 준비할게요. <button class="more" type="button" data-gotab="sched">수업 넣으러 가기 →</button></div>` : "";
 }
 document.addEventListener("click", e=>{ const b=e.target.closest("[data-gotab]"); if(!b) return; document.querySelector(`#tabs button[data-tab="${b.dataset.gotab}"]`)?.click(); window.scrollTo({top:document.getElementById("tabs").offsetTop-8, behavior:"smooth"}); });
 
@@ -1490,7 +1475,7 @@ async function uploadImageFor(id){
   catch(e){ msg("저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."); imStep(id,"그림은 올렸지만 요청 카드에 기록하지 못했어요"+(e?.code?` (${e.code})`:"")+". 다시 보내 주세요."); return; }
   imStep(id,""); URL.revokeObjectURL(g.url); delete stage[id]; renderImages();
   const w = await wakeOffice("image-"+id);
-  $("#imgMsg").textContent = (bad.length?"요청과 다른 곳이 있다고 표시해서 보냈어요. 담당 직원이 다시 확인해요. ":"")+(w==="ok" ? "그림을 받았어요! 담당 직원이 바로 자리에 넣고 있어요." : "그림을 받았어요. 다음 정기 점검(10·14·18·22·02시)에 자리에 넣어요.");
+  $("#imgMsg").textContent = (bad.length?"요청과 다른 곳이 있다고 표시해서 보냈어요. 담당 직원이 다시 확인해요. ":"")+(w==="ok" ? "그림을 받았어요! 담당 직원이 바로 자리에 넣고 있어요." : "그림을 받았어요. 다음 정기 점검(14·22·02시)에 자리에 넣어요.");
 }
 document.addEventListener("click", e=>{
   const sd=e.target.closest("[data-stgsend]"); if(sd){ sd.disabled=true; uploadImageFor(sd.dataset.stgsend); return; }
@@ -1580,7 +1565,7 @@ ${q}`;
   const tools=[{name:"make_order", description:"대표님 말이 일을 시키는 것이면 업무로 올려요. 한 질문에 한 번만.", inputSchema:{type:"object",properties:{title:{type:"string",description:"업무 제목 60자 이내"},detail:{type:"string",description:"대표님 말 그대로 + 무엇을 해야 하는지"},dept:{type:"string",enum:["edu","app","media","strategy"]},urgent:{type:"boolean"}},required:["title","detail"]},
     execute: async ({title,detail,dept,urgent})=>{ if(orderId) return {이미올림:orderId}; if(!dbRef||canWrite===false) throw new Error("데이터에 쓸 수 없어요");
       const d=DEPTS[dept]&&dept!=="ceo"?dept:(m.dept==="ceo"?"strategy":m.dept); const same=d===m.dept; const now=new Date().toISOString(); const id="o-"+Date.now().toString(36);
-      await dbRef.doc("tasks/"+id).set({title:cut(title,80), detail:`[대표님이 직원에게 묻기에서 ${m.name}에게 한 지시]\n${q}\n\n${cut(detail,1500)}`, dept:d, ...(same?{owner:m.name, team:m.team}:{}), status:"approved", by:"대표", from:"qna", queue:"plan", urgent:!!urgent, createdAt:now, updatedAt:now});
+      await dbRef.doc("tasks/"+id).set({title:cut(title,80), detail:`[대표님이 직원에게 묻기에서 ${m.name}에게 한 지시]\n${q}\n\n${cut(detail,1500)}`, dept:d, ...(same?{owner:m.name, team:m.team}:{}), status:"approved", by:"대표", from:"qna", urgent:!!urgent, createdAt:now, updatedAt:now});
       orderId=id; orderUrgent=!!urgent; return {업무id:id}; }},
     {name:"read_doc", description:"사무실 자료실 문서 본문을 id로 읽어요(앞부분 6000자).", inputSchema:{type:"object",properties:{id:{type:"string"}},required:["id"]},
     execute: async ({id})=>{ const d=docs.find(x=>x._id===id); if(!d) throw new Error("그 id의 문서가 없어요"); return {제목:d.title, 본문:cut(d.body,6000), 파일:(d.files||[]).map(f=>f.name)}; }}];
@@ -1616,11 +1601,11 @@ $("#askOrderBtn").addEventListener("click", async ()=>{
   const text=$("#askQ").value.trim(); if(!text){ $("#askQ").focus(); return; } if(!dbRef||canWrite===false){ $("#askMsg").textContent="사무실 데이터에 쓸 수 없어요."; return; }
   const m=MEMBERS.find(x=>x.id===$("#askWho").value); if(!m) return; const urgent=$("#askUrg").checked; const now=new Date().toISOString(); const id="o-"+Date.now().toString(36);
   const btn=$("#askOrderBtn"); btn.disabled=true;
-  try{ await dbRef.doc("tasks/"+id).set({title:cut(text.split("\n")[0],60), detail:text, dept:m.dept==="ceo"?"strategy":m.dept, owner:m.name, team:m.team, status:"approved", by:"대표", from:"staff", queue:"plan", urgent, createdAt:now, updatedAt:now}); }
+  try{ await dbRef.doc("tasks/"+id).set({title:cut(text.split("\n")[0],60), detail:text, dept:m.dept==="ceo"?"strategy":m.dept, owner:m.name, team:m.team, status:"approved", by:"대표", from:"staff", urgent, createdAt:now, updatedAt:now}); }
   catch(_){ btn.disabled=false; $("#askMsg").textContent="저장하지 못했어요. 다시 눌러 주세요."; return; }
   btn.disabled=false; $("#askQ").value="";
   const r=await wakeOffice("order-"+id, urgent);
-  $("#askMsg").textContent = `${m.name}에게 업무로 올렸어요. ` + (r==="paused" ? "지금은 업무 정지 중이라 다시 시작하면 처리해요." : r==="ok" ? "지금 바로 시작해요." : "한결이 배분표에 넣어 처리해요.");
+  $("#askMsg").textContent = `${m.name}에게 업무로 올렸어요. ` + (r==="paused" ? "지금은 업무 정지 중이라 다시 시작하면 처리해요." : r==="ok" ? "지금 바로 시작해요." : "다음 정기 세션(14·22·02시)에 순서대로 처리해요.");
 });
 function renderAsk(){
   const who=$("#askWho").value; const mine=qna.filter(x=>x.who===who).slice(0,5);
@@ -1812,24 +1797,21 @@ ${transcript}`,{modelTier:"default", signal:ctl.signal, cache:false});
     }catch(_){ /* 정리 실패해도 아래 한결 점검 업무가 대표님 말씀 전문을 넘겨요 */ }
   }
   const ids=[];
+  open.forEach(q=>actions.push({dept:"strategy", owner:"한결", title:"[답 못 한 질문] "+cut(q,60), detail:q}));
   for(const [i,a] of actions.slice(0,20).entries()){
     const id=`t-${day}-m${Date.now().toString(36)}${i}`;
-    try{ await dbRef.doc("tasks/"+id).set({title:a.title, detail:`${a.detail||""}\n\n[회의 '${cut(m.topic,50)}'에서 대표님이 시킨 일 · 담당 ${a.owner||""}]`, dept:a.dept, owner:`${DEPTS[a.dept]?.name||""} ${a.owner||""}`.trim(), status:"approved", by:"대표", queue:"plan", fromMeeting:m._id, note:"회의에서 정한 일 · 한결이 오늘 배분표에 넣어요", createdAt:now, updatedAt:now}); ids.push(id); }catch(_){}
+    try{ await dbRef.doc("tasks/"+id).set({title:a.title, detail:`${a.detail||""}\n\n[회의 '${cut(m.topic,50)}'에서 대표님이 시킨 일 · 담당 ${a.owner||""}]`, dept:a.dept, owner:`${DEPTS[a.dept]?.name||""} ${a.owner||""}`.trim(), status:"approved", by:"대표", fromMeeting:m._id, note:"회의에서 정한 일", createdAt:now, updatedAt:now}); ids.push(id); }catch(_){}
   }
-  const fid=`t-${day}-mf${Date.now().toString(36)}`;
-  const detail=`회의 '${m.topic||""}'(${fmtDay(m.at)})에서 대표님이 하신 말씀이 빠짐없이 업무·규칙으로 넘어갔는지 한결이 점검해요.\n\n■ 대표님 말씀 전문\n${ceoLines.map((t,i)=>`${i+1}. ${t}`).join("\n")}\n\n■ 업무로 올린 것(${ids.length}건): ${ids.join(", ")||"없음"}\n■ 규칙으로 넣을 것(대표님 확인 뒤 config/rules에 반영): ${rules.length?"\n- "+rules.join("\n- "):"없음(전문에서 다시 확인)"}\n■ 답하지 못한 질문: ${open.length?"\n- "+open.join("\n- "):"없음(전문에서 다시 확인)"}\n\n할 일: ① 전문을 한 줄씩 읽고 업무로 안 올라간 지시는 담당 부서 업무로 만들어 배분표에 넣기 ② 규칙은 config에 반영(12번)하고 feed로 알리기 ③ 답 못 한 질문은 담당자가 답을 docs에 남기고 이 업무 note에 요약 ④ 끝나면 대표님께 3줄 보고(confirm).`;
-  try{ await dbRef.doc("tasks/"+fid).set({title:`[회의 후속 점검] ${cut(m.topic||"회의",50)}`, detail, dept:"strategy", team:"운영기획팀", owner:"전략 한결", general:"work", status:"approved", by:"대표", urgent:true, queue:"plan", fromMeeting:m._id, note:"회의 지시가 빠짐없이 업무·규칙으로 넘어갔는지 한결이 바로 점검해요", createdAt:now, updatedAt:now}); }catch(_){}
-  try{ await dbRef.doc("meetings/"+m._id).update({status:"closed", closedAt:now, updatedAt:now, tasksCreated:ids, followupTaskId:fid, rules, open}); }catch(_){}
+  try{ await dbRef.doc("meetings/"+m._id).update({status:"closed", closedAt:now, updatedAt:now, tasksCreated:ids, rules, open}); }catch(_){}
   if(liveId===m._id) setLive("");
   try{ window.__o3endMeet&&window.__o3endMeet(); }catch(_){}
-  $("#meetMsg").textContent = `회의를 마쳤어요. 할 일 ${ids.length}건을 업무로 올렸고${rules.length?`, 규칙 ${rules.length}건`:""}, 한결이 빠진 것 없는지 바로 점검해요.`;
-  wakeOffice("meeting-"+m._id);
+  $("#meetMsg").textContent = `회의를 마쳤어요. 할 일 ${ids.length}건을 업무로 올렸어요${rules.length?`. 규칙으로 넣을 말씀 ${rules.length}건은 회의록에 남겼어요(규칙은 대표님이 대화창에서 정해요)`:""}.`;
 }
 async function decideItem(m, k, answer){
   if(!dbRef||!m||!answer) return; const now=new Date().toISOString(); const item=asList(m.decide)[k]; if(!item) return;
   const decisions=[...asList(m.decisions).filter(d=>d.k!==k), {k, item, answer, at:now}];
   const tid=`t-${kstParts().date.replace(/-/g,"")}-d${Date.now().toString(36)}`;
-  try{ await dbRef.doc("tasks/"+tid).set({title:`[회의 결정] ${cut(item,60)}`, detail:`대표님 결정: ${answer}\n\n회의 '${cut(m.topic,60)}'의 '대표님이 정할 것'에 대한 답이에요. 한결이 담당 부서에 나눠 반영해요.`, dept:"strategy", team:"운영기획팀", owner:"전략 한결", general:"work", status:"approved", by:"대표", queue:"plan", fromMeeting:m._id, note:"회의 결정 · 한결이 담당 부서에 나눠요", createdAt:now, updatedAt:now}); await dbRef.doc("meetings/"+m._id).update({decisions, updatedAt:now}); $("#meetMsg").textContent="결정을 남겼어요. 한결이 담당 부서에 나눠 반영해요."; }catch(_){ $("#meetMsg").textContent="저장하지 못했어요."; }
+  try{ await dbRef.doc("tasks/"+tid).set({title:`[회의 결정] ${cut(item,60)}`, detail:`대표님 결정: ${answer}\n\n회의 '${cut(m.topic,60)}'의 '대표님이 정할 것'에 대한 답이에요. 한결이 담당 부서에 나눠 반영해요.`, dept:"strategy", team:"운영기획팀", owner:"전략 한결", general:"work", status:"approved", by:"대표", fromMeeting:m._id, note:"회의 결정 · 한결이 담당 부서에 나눠요", createdAt:now, updatedAt:now}); await dbRef.doc("meetings/"+m._id).update({decisions, updatedAt:now}); $("#meetMsg").textContent="결정을 남겼어요. 한결이 담당 부서에 나눠 반영해요."; }catch(_){ $("#meetMsg").textContent="저장하지 못했어요."; }
 }
 function needDecision(m){ const d=asList(m.decide); return d.filter((_,k)=>!asList(m.decisions).some(x=>x&&x.k===k)).length; }
 const KIND={heads:"부서장 회의",dept:"부서 회의",free:"자유 회의",daily:"오전 회의"};
@@ -1976,24 +1958,22 @@ $("#orderForm").addEventListener("submit", async e=>{
     const now=new Date().toISOString();
     const when=document.querySelector('input[name="orderWhen"]:checked')?.value||"auto";
     const t={title, detail:$("#orderDetail").value.trim(), dept, team, status:"approved", by:"대표", createdAt:now, updatedAt:now};
-    if(when==="now") t.urgent=true; if(when==="night"){ t.queue="night"; t.note="대표님이 밤(00~08시) 처리로 지정했어요."; }
+    if(when==="now") t.urgent=true;
     if(attachments.length) t.attachments=attachments;
     const id="o-"+Date.now().toString(36);
     await dbRef.doc("tasks/"+id).set(t);
     $("#orderTitle").value=""; $("#orderDetail").value=""; clearAtt("order");
     const att = attachments.length?` (첨부 ${attachments.length}개)`:"";
     $("#orderMsg").textContent="지시를 남겼어요"+att+". 담당 팀을 부르는 중…";
-    if(when==="night"){ $("#orderMsg").textContent="지시를 남겼어요"+att+". 오늘 밤(00~08시) 야간 근무 때 처리하고 아침에 컨펌 대기로 올라와요."; btn.disabled=false; return; }
     const r = await wakeOffice("order-"+id, when==="now");
     if(r==="ok"){ try{ await dbRef.doc("tasks/"+id).update({calledAt:new Date().toISOString()}); }catch(_){} }
-    $("#orderMsg").textContent = r==="ok" ? "지시를 남겼어요"+att+". 담당 팀이 지금 바로 시작했어요. 끝나면 '최종 컨펌 대기'로 올라와요." : "지시를 남겼어요"+att+". 정기 점검(10·14·18·22·02시) 때 한결이 배분표에 넣어 처리해요.";
+    $("#orderMsg").textContent = r==="ok" ? "지시를 남겼어요"+att+". 담당 팀이 지금 바로 시작했어요. 끝나면 '최종 컨펌 대기'로 올라와요." : "지시를 남겼어요"+att+". 다음 정기 세션(14·22·02시)에 순서대로 처리해요.";
   }catch(err){ $("#orderMsg").textContent="저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."; }
   btn.disabled=false;
 });
 
 // ---------- Urgent notices ----------
-// Usage saver: only urgent things wake a worker session at once; everything else waits for the hourly check.
-// Repeated wakes within 5 minutes are merged into the session that is already running.
+// 바로 깨우기는 🔥(urgent)와 긴급공지뿐. 나머지는 정기 세션(14·22·02시)이 순서대로 처리해요.
 async function wakeOffice(id, urgent){
   if(office && office.paused) return "paused";
   if(!urgent) return "later";
@@ -2020,7 +2000,7 @@ $("#urgForm").addEventListener("submit", async e=>{
   $("#urgMsg").textContent="공지를 올렸어요. 담당 직원을 부르는 중…";
   const r = await wakeOffice("notice "+id, true);
   btn.disabled=false;
-  const later="정기 점검(10·14·18·22·02시) 때 처리돼요.";
+  const later="정기 점검(14·22·02시) 때 처리돼요.";
   $("#urgMsg").textContent =
     r==="ok" ? "담당 직원이 바로 출근했어요. 처리하면 아래에 보고가 올라와요." :
     r==="approval_required"||r==="not_in_manifest" ? "바로 부르려면 Claude Code Remote 연결을 허용해 주세요. 지금은 "+later :
@@ -2032,8 +2012,8 @@ $("#urgForm").addEventListener("submit", async e=>{
 let cmtId="";
 function openCmt(id){ const t=tasks.find(x=>x._id===id); if(!t) return; cmtId=id; const m=ownerOf(t);
   $("#cmtTitle").textContent="💬 "+cut(t.title,60);
-  $("#cmtInfo").textContent=`담당: ${m?m.name+" ("+m.team+")":"담당 없음"} · ${STATUS[t.status]||t.status}${originLabel(t)?" · "+originLabel(t):""}${t.slotLabel?" · "+t.slotLabel:""}`;
-  const h=cmtList(t).map(c=>`<div class="cmh"><b>대표님 · ${esc(fmtDay(c.at))} ${esc(fmtTime(c.at))}${c.urgent?" · 🔥":""}</b>\n${esc(c.text)}</div>`).join("") + (t.ceoCommentReply?`<div class="cmh rp"><b>${esc(t.ceoCommentReply.by||"담당")} 답 · ${esc(fmtDay(t.ceoCommentReply.at))} ${esc(fmtTime(t.ceoCommentReply.at))}</b>\n${esc(t.ceoCommentReply.text||"")}</div>`:"") + (t.ceoCommentNew?`<div class="note">담당 직원이 아직 확인하지 않았어요. 다음 정기 점검에서 가장 먼저 반영해요.</div>`:"");
+  $("#cmtInfo").textContent=`담당: ${m?m.name+" ("+m.team+")":"담당 없음"} · ${STATUS[t.status]||t.status}${originLabel(t)?" · "+originLabel(t):""}`;
+  const h=cmtList(t).map(c=>`<div class="cmh"><b>대표님 · ${esc(fmtDay(c.at))} ${esc(fmtTime(c.at))}${c.urgent?" · 🔥":""}</b>\n${esc(c.text)}</div>`).join("") + (t.ceoCommentReply?`<div class="cmh rp"><b>${esc(t.ceoCommentReply.by||"담당")} 답 · ${esc(fmtDay(t.ceoCommentReply.at))} ${esc(fmtTime(t.ceoCommentReply.at))}</b>\n${esc(t.ceoCommentReply.text||"")}</div>`:"") + (t.fix?`<div class="note">담당 직원이 아직 반영하지 않았어요. 다음 정기 세션에서 가장 먼저 반영해요.</div>`:"");
   $("#cmtHist").innerHTML=h||`<div class="note">아직 남긴 코멘트가 없어요.</div>`;
   $("#cmtText").value=""; $("#cmtUrgent").checked=false; $("#cmtMsg").textContent="";
   $("#cmtView").hidden=false; document.body.style.overflow="hidden"; setTimeout(()=>$("#cmtText").focus(),30); }
@@ -2045,14 +2025,14 @@ $("#cmtForm").addEventListener("submit", async e=>{ e.preventDefault();
   const text=$("#cmtText").value.trim(); if(!text||!cmtId) return; if(!dbRef){ $("#cmtMsg").textContent="사무실 데이터에 연결되지 않았어요."; return; }
   const t=tasks.find(x=>x._id===cmtId); if(!t) return; const urgent=$("#cmtUrgent").checked; const now=new Date().toISOString();
   const btn=$("#cmtBtn"); btn.disabled=true;
-  const patch={ceoComments:[...cmtList(t),{at:now,text:cut(text,2000),urgent}].slice(-20), ceoCommentNew:true, ceoCommentAt:now, updatedAt:now};
+  const patch={ceoComments:[...cmtList(t),{at:now,text:cut(text,2000),urgent}].slice(-20), fix:[t.fix,cut(text,2000)].filter(Boolean).join("\n"), fixAt:now, updatedAt:now};
   if(urgent) patch.urgent=true;
-  if(t.status==="done"){ patch.status="revise"; patch.reviseNote=cut(text,2000); patch.revisedAt=now; patch.ceoAck=false; }
+  if(["done","confirm","rejected"].includes(t.status)){ patch.status="approved"; patch.ceoAck=false; }
   try{ await dbRef.doc("tasks/"+cmtId).update(patch); }catch(_){ btn.disabled=false; $("#cmtMsg").textContent="저장하지 못했어요. 다시 보내 주세요."; return; }
   btn.disabled=false; $("#cmtText").value=""; $("#cmtMsg").textContent="보냈어요. 담당 직원을 부르는 중…";
   const r=await wakeOffice("comment-"+cmtId, urgent);
-  $("#cmtMsg").textContent = r==="ok" ? "보냈어요. 담당 직원이 지금 확인하고 이 창에 답을 남겨요." : "보냈어요. 다음 정기 점검(10·14·18·22·02시)에 가장 먼저 반영하고 답을 남겨요.";
-  const tt=tasks.find(x=>x._id===cmtId); if(tt){ Object.assign(tt,patch); openCmt(cmtId); $("#cmtMsg").textContent = r==="ok" ? "보냈어요. 담당 직원이 지금 확인하고 이 창에 답을 남겨요." : "보냈어요. 다음 정기 점검(10·14·18·22·02시)에 가장 먼저 반영하고 답을 남겨요."; }
+  $("#cmtMsg").textContent = r==="ok" ? "보냈어요. 담당 직원이 지금 확인하고 이 창에 답을 남겨요." : "보냈어요. 다음 정기 세션(14·22·02시)에 가장 먼저 반영하고 답을 남겨요.";
+  const tt=tasks.find(x=>x._id===cmtId); if(tt){ Object.assign(tt,patch); openCmt(cmtId); $("#cmtMsg").textContent = r==="ok" ? "보냈어요. 담당 직원이 지금 확인하고 이 창에 답을 남겨요." : "보냈어요. 다음 정기 세션(14·22·02시)에 가장 먼저 반영하고 답을 남겨요."; }
 });
 
 // ---------- General orders (총괄 지시) ----------
@@ -2064,13 +2044,13 @@ $("#genForm").addEventListener("submit", async e=>{
   const kind=document.querySelector('input[name="genKind"]:checked')?.value||"work"; const urgent=$("#genNow").checked;
   const btn=$("#genBtn"); btn.disabled=true;
   const at=new Date().toISOString(), id="g-"+Date.now().toString(36);
-  const t={title:"[총괄 지시] "+cut(text.split("\n")[0],50), detail:text, dept:"strategy", team:"운영기획팀", owner:"한결", general:kind, status:"approved", by:"대표", queue:"plan", createdAt:at, updatedAt:at,
-    note: urgent ? "급함 · 한결이 지금 바로 부서를 나눠요" : "다음 오전 회의(08:30)에서 한결이 부서와 처리 시간을 정해요"};
+  const t={title:"[총괄 지시] "+cut(text.split("\n")[0],50), detail:text, dept:"strategy", team:"운영기획팀", owner:"전략 한결", general:kind, status:"approved", by:"대표", createdAt:at, updatedAt:at,
+    note: urgent ? "🔥 한결이 지금 바로 담당을 정해요" : "다음 정기 세션에서 한결이 담당을 정해요"};
   if(urgent) t.urgent=true;
   try{ await dbRef.doc("tasks/"+id).set(t); }catch(_){ btn.disabled=false; msg("저장하지 못했어요. 이 페이지를 편집할 권한이 있는지 확인해 주세요."); return; }
   $("#genText").value=""; $("#genNow").checked=false;
-  if(urgent){ msg("지시를 남겼어요. 한결을 부르는 중…"); const r=await wakeOffice("general-"+id, true); msg(r==="ok" ? "한결이 지금 부서를 나누고 있어요." : "지시를 남겼어요. 다음 정기 점검(10·14·18·22·02시)에 한결이 바로 나눠요."); }
-  else msg("지시를 남겼어요. 오전 회의(08:30)에서 한결이 부서와 처리 시간을 정해요. 회의가 끝난 뒤에 들어온 지시는 정기 점검 때 오늘 배분표의 빈 칸에 넣어요.");
+  if(urgent){ msg("지시를 남겼어요. 한결을 부르는 중…"); const r=await wakeOffice("general-"+id, true); msg(r==="ok" ? "한결이 지금 담당을 정하고 있어요." : "지시를 남겼어요. 다음 정기 세션(14·22·02시)에 한결이 담당을 정해요."); }
+  else msg("지시를 남겼어요. 다음 정기 세션(14·22·02시)에 한결이 담당을 정해요.");
   btn.disabled=false;
 });
 
@@ -2098,10 +2078,6 @@ $("#genForm").addEventListener("submit", async e=>{
   db.collection("meetings").orderBy("updatedAt","desc").limit(20).onSnapshot(s=>{ meetings=rows(s); safeRun(renderMeetings); safeRun(renderTodo); try{ animateRecentMeeting(); }catch(_){} const nm=$("#nMeet"), c=meetings.filter(m=>needDecision(m)||m.status==="live").length; nm.hidden=!c; nm.textContent=c; }, err);
   db.collection("classes").orderBy("date","asc").limit(200).onSnapshot(s=>{ classes=rows(s); renderTodo(); renderClasses(); }, err);
   db.doc("config/ceoAvatar").onSnapshot(s=>{ ceoAvatar=s.exists?s.data():null; window.__ceoAvatar=ceoAvatar; if(ceoAvatar&&!avDraft&&window.__o3setCeo) window.__o3setCeo(ceoAvatar); }, ()=>{});
-  let planUnsub=null, planFor="";
-  const watchPlan=()=>{ const k=planKey(); if(k===planFor) return; planFor=k; try{ planUnsub&&planUnsub(); }catch(_){} plan=null; safeRun(renderPlan);
-    planUnsub = db.doc("plans/"+k).onSnapshot(s=>{ plan = s.exists? s.data() : null; safeRun(renderPlan); }, ()=>{}); };
-  watchPlan(); setInterval(()=>{ watchPlan(); safeRun(renderPlan); }, 60000);
 })();
 
 render();
