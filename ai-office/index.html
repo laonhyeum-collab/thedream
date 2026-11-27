@@ -375,7 +375,10 @@ form.order input[type=checkbox]{flex:none}
 .rq.bad{border-color:var(--bad);border-left:4px solid var(--bad)}
 .rq.ask{border-left:4px solid var(--ok)}
 .rq .rt{flex:1 1 240px;min-width:0;overflow-wrap:anywhere}
-.rq .sub{flex-basis:100%;font-size:12.5px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere}
+.rq .sub{flex-basis:100%;font-size:12.5px;color:var(--muted);white-space:pre-wrap;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer}
+.rq .sub.open{display:block;overflow:visible}
+.rq .sub b{color:var(--ink);font-weight:600}
+.rq .subm{flex-basis:100%;font-size:12px;color:var(--muted);text-align:right;cursor:pointer}
 .rq .rs{font-size:12.5px;font-weight:600;color:var(--muted)}
 .rq .rs.bad{color:var(--bad)} .rq .rs.ok{color:var(--ok)}
 .rqg{font-size:13px;font-weight:700;margin:6px 0 0}
@@ -997,7 +1000,7 @@ function originLabel(t){
   return "";
 }
 const cmtList=t=>Array.isArray(t.ceoComments)?t.ceoComments:[];
-function cmtBadge(t){ const c=cmtList(t); if(!c.length) return ""; return t.ceoCommentNew?`<span class="st st-proposed" title="${esc(cut(c[c.length-1].text,80))}">💬 직원 확인 대기</span>`:`<span class="st st-done" title="${esc(cut(t.ceoCommentReply?.text||"",120))}">💬 반영됨</span>`; }
+function cmtBadge(t){ const c=cmtList(t); if(!c.length) return ""; return t.ceoCommentNew?`<span class="st st-proposed" role="button" style="cursor:pointer" data-cmt="${esc(t._id)}" title="${esc(cut(c[c.length-1].text,80))}">💬 직원 확인 대기</span>`:`<span class="st st-done" role="button" style="cursor:pointer" data-cmt="${esc(t._id)}" title="${esc(cut(t.ceoCommentReply?.text||"",120))}">💬 반영됨</span>`; }
 const cmtBtn=t=>canWrite===false?"":`<button type="button" class="cmtb" data-cmt="${esc(t._id)}" title="이 업무에 지시·코멘트 남기기" aria-label="${esc(cut(t.title,30))} 코멘트">💬</button>`;
 function slotChip(t){
   if(["done","confirm","rejected","hold"].includes(t.status)) return "";
@@ -1089,7 +1092,11 @@ function renderReqs(){
   const items=tasks.filter(isReq).map(t=>{ const m=ownerOf(t); return {kind:"t", t, id:t._id, title:t.title, at:t.createdAt, origin:(t.from==="qna"?"질문 중 지시":t.from==="staff"?"직원에게 지시":originLabel(t))||"대표 지시", who:m?m.name:"담당 없음", report:t.ceoCommentReply?.text||t.result||t.note||t.reviseNote||"", st:reqState(t)}; }).concat(reqNotices());
   items.sort((a,b)=>a.st.g-b.st.g || String(b.at||"").localeCompare(String(a.at||"")));
   const G=[[0,"⚠ 빠지고 있는 일"],[1,"대표님 확인·결정 차례"],[2,"진행 중"],[3,"보류"]];
-  const row=x=>`<div class="rq ${x.st.bad?"bad":x.st.ack||x.st.go?"ask":""}"><span class="rt"><span class="note">${esc(fmtMD(kstParts(new Date(x.at||Date.now())).date))} · ${esc(x.origin)}${x.who?" · "+esc(x.who):""}</span><br><b>${esc(cut(x.title,90))}</b> ${x.t?cmtBadge(x.t):""}</span><span class="rs ${x.st.cls||""}">${esc(x.st.txt)}</span>${x.st.ack&&canWrite!==false?`<button class="btn pri" type="button" data-reqack="${esc(x.kind+":"+x.id)}" title="결과를 확인했으면 목록에서 빼요">✓ 확인</button>`:""}${x.st.go?`<button class="btn ghost" type="button" data-gotab="${x.st.go}">결재 탭 →</button>`:""}${x.t&&x.t.docId?`<button class="btn ghost" type="button" data-doc="${esc(x.t.docId)}">자료</button>`:""}${x.t&&canWrite!==false?`<button class="btn ghost" type="button" data-cmt="${esc(x.id)}">💬 ${x.st.ack?"다시 지시":"지시"}</button>`:""}${x.report?`<div class="sub">보고: ${esc(cut(x.report,160))}</div>`:""}</div>`;
+  const row=x=>`<div class="rq ${x.st.bad?"bad":x.st.ack||x.st.go?"ask":""}"><span class="rt"><span class="note">${esc(fmtMD(kstParts(new Date(x.at||Date.now())).date))} · ${esc(x.origin)}${x.who?" · "+esc(x.who):""}</span><br><b>${esc(cut(x.title,90))}</b> ${x.t?cmtBadge(x.t):""}</span><span class="rs ${x.st.cls||""}">${esc(x.st.txt)}</span>${x.st.ack&&canWrite!==false?`<button class="btn pri" type="button" data-reqack="${esc(x.kind+":"+x.id)}" title="결과를 확인했으면 목록에서 빼요">✓ 확인</button>`:""}${x.st.go?`<button class="btn ghost" type="button" data-gotab="${x.st.go}">결재 탭 →</button>`:""}${x.t&&x.t.docId?`<button class="btn ghost" type="button" data-doc="${esc(x.t.docId)}">자료</button>`:""}${x.t&&canWrite!==false?`<button class="btn ghost" type="button" data-cmt="${esc(x.id)}">💬 ${x.st.ack?"다시 지시":"지시"}</button>`:""}${(()=>{ const c=x.t?cmtList(x.t):[]; const last=c[c.length-1]; const rp=x.t&&x.t.ceoCommentReply;
+      const parts=[]; if(last) parts.push(`<b>대표님 코멘트(${esc(fmtDay(last.at))} ${esc(fmtTime(last.at))})</b>\n${esc(last.text)}`);
+      if(rp&&rp.text) parts.push(`<b>${esc(rp.by||"담당")} 답</b>\n${esc(rp.text)}`); else if(last&&x.t.ceoCommentNew) parts.push(`<b>담당 답</b> 아직 없음 (다음 점검에서 먼저 답해요)`);
+      if(x.report && !(rp&&rp.text===x.report)) parts.push(`<b>보고</b>\n${esc(x.report)}`);
+      return parts.length?`<div class="sub" data-subx title="눌러서 전체 보기">${parts.join("\n")}</div><div class="subm" data-subx-more>전체 보기 ▾</div>`:""; })()}</div>`;
   let h="";
   G.forEach(([g,label])=>{ const arr=items.filter(x=>x.st.g===g); if(!arr.length) return;
     const fold=(g===3&&!showReqHold)||(g===2&&!showReqRun&&arr.length>6);
@@ -1102,6 +1109,7 @@ function renderReqs(){
   $("#reqSum").innerHTML = `<span style="color:var(--bad);font-weight:700">빠지는 일 ${n(0)}</span> · 확인 차례 ${n(1)} · 진행 ${n(2)} · 보류 ${n(3)}`;
 }
 document.addEventListener("click", async e=>{
+  const sx=e.target.closest("[data-subx],[data-subx-more]"); if(sx){ const row=sx.closest(".rq"); const sub=row&&row.querySelector("[data-subx]"); if(sub){ const o=sub.classList.toggle("open"); const m=row.querySelector("[data-subx-more]"); if(m) m.textContent=o?"접기 ▴":"전체 보기 ▾"; } return; }
   const f=e.target.closest("[data-reqfold]"); if(f){ if(f.dataset.reqfold==="hold") showReqHold=!showReqHold; else showReqRun=!showReqRun; safeRun(renderReqs); return; }
   const b=e.target.closest("[data-reqack]"); if(!b||!dbRef) return;
   const [k,id]=b.dataset.reqack.split(":"); b.disabled=true;
