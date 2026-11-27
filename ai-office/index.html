@@ -386,7 +386,7 @@ form.order input[type=checkbox]{flex:none}
 
 <div class="wrap">
   <header class="top">
-    <h1><span class="logo">Block <i>&amp;</i> Bit</span><small>블록앤비트 AI 사무실 · 레고 과학·코딩·AI 교육 · 대표 1명, AI 직원 5명</small></h1>
+    <h1><span class="logo">Block <i>&amp;</i> Bit</span><small>블록앤비트 AI 사무실 · 레고 과학·코딩·AI 교육 · 대표 1명, AI 직원 6명</small></h1>
     <div class="clock" aria-live="polite">
       <div class="t" id="clk">--:--</div>
       <div class="s"><b id="officeStatus">출근 대기</b><span id="nextRun">정기 세션 14·22·02시</span></div>
@@ -651,7 +651,7 @@ form.order input[type=checkbox]{flex:none}
         <tr><td>캐릭터 목소리·효과음을 앱에 넣기</td><td>앱 도윤(적용)</td><td>소리 파일 제작과 출처 확인은 미디어 가온</td></tr>
         <tr><td>일정</td><td>전략 다온(유일한 일정표)</td><td>각 부서는 마감만 요청하고 일정표를 직접 고치지 않아요</td></tr>
         <tr><td>숫자 집계와 대표 브리핑</td><td>대표지원실 도담(브리핑)</td><td>숫자는 누리, 사실 확인은 로아, 최종 검수는 가람</td></tr>
-        <tr><td>새 아이디어 제안</td><td>각 부서 기획(새봄·하늘·하랑)</td><td>한결이 부서 간 중복을 보고 묶거나 하나만 남겨요</td></tr>
+        <tr><td>새 아이디어 제안·기획서</td><td>기획 윤슬</td><td>컨펌되면 [제작] 업무가 부서장(새봄·하늘·하랑)에게 넘어가요</td></tr>
         <tr><td>부서 검수와 총괄 검수</td><td>부서 검수 담당</td><td>부서 검수는 전문 내용, 가람은 대표 지시 반영·부서 간 내용 충돌·회사 기준 일관성을 봐요</td></tr>
       </tbody>
     </table></div>
@@ -693,23 +693,24 @@ const DEPTS = {
 // hair, shirt colors for each member sprite
 const MEMBERS = [
   {id:"hangyeol", name:"한결", dept:"strategy", team:"전략부서장", role:"총괄 지시·담당 없는 지시의 담당 정하기, 회의 결정 나누기", hair:"#3a2a22", shirt:"#3f7fb8", desk:[2.5,4]},
+  {id:"yunseul", name:"윤슬", dept:"strategy", team:"기획 전담", role:"모든 기획서·구성안·아이디어(교육·앱·영상). 창의적 아이디어와 인문학적 배경, 디자인 시안, 앱 구현 가능성·디자인 구현 가능성 판단까지", hair:"#2b2030", shirt:"#e2a93b", desk:[6.5,4]},
   {id:"daon", name:"다온", dept:"strategy", team:"일정관리팀", role:"수업·제작 일정, 마감 관리", hair:"#7a4a2a", shirt:"#5b9bd5", desk:[6.5,4]},
   {id:"nuri", name:"누리", dept:"strategy", team:"성과분석팀", role:"완료 현황 집계, 개선점 정리", hair:"#1f1f2a", shirt:"#2f6a9a", desk:[2.5,8]},
   {id:"roa", name:"로아", dept:"strategy", team:"검토팀", role:"일정 충돌, 수치, 대표 보고서 사실 확인", hair:"#5a3a2a", shirt:"#4a8cc8", desk:[6.5,8]},
   {id:"irum", name:"이룸", dept:"strategy", team:"마케팅·수익화팀", role:"앱·게임·유튜브·굿즈·수업의 수익화 가능성 점검과 제안, 홍보 전략", hair:"#8a4b2a", shirt:"#2f86c9", desk:[4.5,6]},
-  {id:"saebom", name:"새봄", dept:"edu", team:"교육부서장", role:"기획서·지도안·교안·활동지·디자인 전부", hair:"#a4532e", shirt:"#4f9e7a", desk:[11.5,4]},
+  {id:"saebom", name:"새봄", dept:"edu", team:"교육부서장", role:"지도안·교안·활동지·디자인 (기획서는 윤슬)", hair:"#a4532e", shirt:"#4f9e7a", desk:[11.5,4]},
   {id:"raon", name:"라온", dept:"edu", team:"교안제작팀", role:"슬라이드 원고, 강의 대본", hair:"#2c2c3a", shirt:"#68b48f", desk:[16,4]},
   {id:"boram", name:"보람", dept:"edu", team:"활동지·평가팀", role:"학생 활동지, 퀴즈, 평가 기준", hair:"#c9a14a", shirt:"#3d8a66", desk:[20.5,4]},
   {id:"ieum", name:"이음", dept:"edu", team:"품질검수팀", role:"학년 수준, 안전, 오류 검수", hair:"#5a3a5a", shirt:"#2f7a58", desk:[16,8]},
   {id:"dasom", name:"다솜", dept:"edu", team:"교안디자인팀", role:"교육 목적에 맞춘 PPT·지도안·활동지 디자인", hair:"#d9774a", shirt:"#86c9a5", desk:[11.5,8]},
-  {id:"harang", name:"하랑", dept:"media", team:"미디어부서장", role:"영상 기획·대본·그림·영상·채널 전부", hair:"#e0d6c8", shirt:"#7b6cc9", desk:[26.5,4]},
+  {id:"harang", name:"하랑", dept:"media", team:"미디어부서장", role:"대본·그림·영상·채널 (기획은 윤슬)", hair:"#e0d6c8", shirt:"#7b6cc9", desk:[26.5,4]},
   {id:"seoyun", name:"서윤", dept:"media", team:"대본팀", role:"한국어·영어 대본과 자막 (직역 아닌 현지화)", hair:"#4a2c2a", shirt:"#8d80d0", desk:[30.5,4]},
   {id:"chaea", name:"채아", dept:"media", team:"아트팀", role:"캐릭터, 장면 콘티, 썸네일", hair:"#e07aa0", shirt:"#9b8fd9", desk:[34.5,4]},
   {id:"gaon", name:"가온", dept:"media", team:"사운드팀", role:"징글, 효과음, 배경음, 캐릭터 목소리", hair:"#2c2c3a", shirt:"#6a5cc0", desk:[38,4]},
   {id:"ideun", name:"이든", dept:"media", team:"영상편집팀", role:"9:16 쇼츠 편집, 한·영 두 버전 렌더링", hair:"#7a4a2a", shirt:"#7b6cc9", desk:[26.5,8]},
   {id:"bareum", name:"바름", dept:"media", team:"검수팀", role:"사실 확인, 아동 안전, 저작권·플랫폼 정책", hair:"#3a3a3a", shirt:"#5e52a8", desk:[30.5,8]},
   {id:"narae", name:"나래", dept:"media", team:"채널운영팀", role:"제목·설명·태그, 아동용 설정, 업로드 준비", hair:"#b5652e", shirt:"#a597ef", desk:[34.5,8]},
-  {id:"haneul", name:"하늘", dept:"app", team:"앱개발부서장", role:"앱 기획·개발·배포 전부", hair:"#3b2b4a", shirt:"#d0703f", desk:[21,17]},
+  {id:"haneul", name:"하늘", dept:"app", team:"앱개발부서장", role:"앱 개발·배포 (기획은 윤슬)", hair:"#3b2b4a", shirt:"#d0703f", desk:[21,17]},
   {id:"doyun", name:"도윤", dept:"app", team:"앱개발팀", role:"승인된 기능 개발, 버그 수정", hair:"#1f1f24", shirt:"#e08a5a", desk:[26,17]},
   {id:"byeol", name:"별", dept:"app", team:"점검·배포팀", role:"배포 상태 점검, 업데이트 노트", hair:"#b5652e", shirt:"#b85c30", desk:[21,21]},
   {id:"siu", name:"시우", dept:"app", team:"품질검수팀", role:"기능·기기 테스트, 접근성, 아동 안전 검수", hair:"#2c2c3a", shirt:"#c86a3a", desk:[26,21]},
@@ -717,8 +718,8 @@ const MEMBERS = [
   {id:"dodam", name:"도담", dept:"ceo", team:"비서실", role:"하루 업무 마감, 대표 브리핑 작성", hair:"#6a3b2a", shirt:"#c98a2b", desk:[36,19]}
 ];
 
-// 2026-11-26 대표 지시: 직원 최소 인원(부서장 4명 + 검수 1명)만 남김
-const KEEP_STAFF=new Set(["hangyeol","saebom","haneul","harang","garam"]);
+// 2026-11-26 대표 지시: 직원 최소 인원(부서장 4명 + 검수 1명)만 남김 · 2026-11-27 기획 전담 윤슬 추가
+const KEEP_STAFF=new Set(["hangyeol","yunseul","saebom","haneul","harang","garam"]);
 for(let i=MEMBERS.length-1;i>=0;i--) if(!KEEP_STAFF.has(MEMBERS[i].id)) MEMBERS.splice(i,1);
 const MEDIA_GHOSTS = [];
 const ROOMS = [
@@ -1225,7 +1226,7 @@ document.addEventListener("click", async e=>{
     // 기획서·구성안을 컨펌하면 제작 업무가 자동으로 생겨요(컨펌 뒤 일이 멈추지 않게).
     if(act==="confirm" && t0 && !t0.branch && !t0.choice && (t0.stage==="plan" || /구성안|기획안|기획서/.test(t0.title||"")) && !tasks.some(x=>x.followUpOf===b.dataset.id)){
       try{ const fid="o-"+Date.now().toString(36)+"f"; const n2=new Date().toISOString();
-        await dbRef.doc("tasks/"+fid).set({title:"[제작] "+String(t0.title||"").replace(/\s*(구성안|기획안|기획서)\s*/g," ").trim(), detail:"대표님이 컨펌한 기획("+b.dataset.id+") 그대로 만들기. 기획 내용과 대표님 코멘트·회의 지시를 모두 다시 읽고 체크리스트로 적은 뒤 시작해요.", dept:t0.dept, owner:t0.owner||"", status:"approved", by:"대표", followUpOf:b.dataset.id, docId:t0.docId||"", urgent:!!t0.urgent, createdAt:n2, updatedAt:n2});
+        await dbRef.doc("tasks/"+fid).set({title:"[제작] "+String(t0.title||"").replace(/\s*(구성안|기획안|기획서)\s*/g," ").trim(), detail:"대표님이 컨펌한 기획("+b.dataset.id+") 그대로 만들기. 기획 내용과 대표님 코멘트·회의 지시를 모두 다시 읽고 체크리스트로 적은 뒤 시작해요.", dept:t0.dept, owner:({edu:"교육 새봄",app:"앱 하늘",media:"미디어 하랑"})[t0.dept]||"전략 한결", status:"approved", by:"대표", followUpOf:b.dataset.id, docId:t0.docId||"", urgent:!!t0.urgent, createdAt:n2, updatedAt:n2});
         $("#orderMsg").textContent="컨펌했어요. 제작 업무를 바로 만들어 담당 목록에 넣었어요."; }catch(_){}
     }
     if(act==="confirm" && t && t.branch){ const r = nowCk ? await wakeOffice("merge-"+b.dataset.id, true) : "later"; $("#orderMsg").textContent = r==="ok" ? "컨펌했어요. 하늘이 지금 병합을 시작해요." : "컨펌했어요. 병합은 "+later; }
@@ -1510,7 +1511,7 @@ document.addEventListener("dragleave", e=>{ const d=e.target.closest?.("[data-dr
 document.addEventListener("drop", e=>{ const d=e.target.closest?.("[data-drop]"); if(!d) return; e.preventDefault(); d.classList.remove("on"); const f=[...(e.dataTransfer?.files||[])][0]; if(f) stageImage(d.dataset.drop, f); });
 
 // ---------- Ask staff ----------
-let qna=[], company={}; const LEADS=["hangyeol","saebom","haneul","harang","garam"];
+let qna=[], company={}; const LEADS=["hangyeol","yunseul","saebom","haneul","harang","garam"];
 (function fillWho(){
   const sel=$("#askWho"); const by=id=>MEMBERS.find(m=>m.id===id);
   const lead = LEADS.map(by).filter(Boolean);
@@ -1655,7 +1656,7 @@ document.addEventListener("click", async e=>{
 // ---------- Meetings (회의실) ----------
 const asList=v=>Array.isArray(v)?v:(v==null||v===""?[]:[v]);
 let meetings=[]; const meetShown=new Set();
-const HEADS=["hangyeol","saebom","haneul","harang","garam"];
+const HEADS=["hangyeol","yunseul","saebom","haneul","harang","garam"];
 let meetKind="heads", liveId="", meetIds=[];
 try{ liveId=localStorage.getItem("office-live-meet")||""; }catch(_){ liveId=""; }
 const setLive=id=>{ liveId=id||""; try{ id?localStorage.setItem("office-live-meet",id):localStorage.removeItem("office-live-meet"); }catch(_){} renderRoom(); };
@@ -1815,7 +1816,7 @@ async function decideItem(m, k, answer){
 }
 function needDecision(m){ const d=asList(m.decide); return d.filter((_,k)=>!asList(m.decisions).some(x=>x&&x.k===k)).length; }
 const KIND={heads:"부서장 회의",dept:"부서 회의",free:"자유 회의",daily:"오전 회의"};
-function meetMeta(m){ const kind=m.kind||(String(m._id).endsWith("-am")?"daily":asList(m.attendees).length===6&&HEADS.every(h=>asList(m.attendees).includes(h))?"heads":"free"); const by=m.convenedBy||(String(m._id).endsWith("-am")||/한결 소집/.test(m.topic||"")?"한결":"대표"); return {kind:KIND[kind]||"회의", by, open:m.status==="live"}; }
+function meetMeta(m){ const kind=m.kind||(String(m._id).endsWith("-am")?"daily":asList(m.attendees).length>=6&&HEADS.filter(h=>h!=="yunseul").every(h=>asList(m.attendees).includes(h))?"heads":"free"); const by=m.convenedBy||(String(m._id).endsWith("-am")||/한결 소집/.test(m.topic||"")?"한결":"대표"); return {kind:KIND[kind]||"회의", by, open:m.status==="live"}; }
 function renderRoom(){
   const el=$("#mroom"); if(!el) return;
   const m=liveId && meetings.find(x=>x._id===liveId);
