@@ -1,0 +1,10 @@
+{
+  "name": "signal-tap",
+  "private": true,
+  "type": "module",
+  "description": "초록엔 탭·빨강엔 멈춤 + 교과 낱말 고르기 순발력 게임",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node --test tests/*.test.js"
+  }
+}

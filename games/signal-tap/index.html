@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="초록 불엔 탭, 빨간 불엔 멈춤! 교과 낱말을 골라 누르는 60초 순발력 게임" />
+    <meta name="theme-color" content="#1F2A44" />
+    <title>순발력 신호등</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9A%A6%3C/text%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <h1><span aria-hidden="true">🚦</span> 순발력 신호등</h1>
+    </header>
+
+    <main>
+      <!-- 시작 화면 -->
+      <section id="start" class="panel" aria-labelledby="start-h">
+        <h2 id="start-h">신호를 보고 누를까, 참을까?</h2>
+        <ol class="how">
+          <li><b class="g">초록 불</b>이면 큰 신호를 <b>탭!</b> <b class="r">빨간 불</b>이면 <b>멈춰요.</b></li>
+          <li>20초가 지나면 낱말이 나와요. 고른 종류(예: 과일)일 때만 탭!</li>
+          <li>한 판은 60초. 빨리 누르면 번개 점수 ⚡, 잘 참아도 1점이에요.</li>
+        </ol>
+        <p class="notice" id="notice" role="status" hidden></p>
+        <h3 class="pick-h">낱말 종류 고르기 <span id="set-title" class="muted"></span></h3>
+        <div class="sets" id="sets" role="group" aria-label="낱말 종류 고르기"></div>
+        <button type="button" class="btn big" id="go">시작하기</button>
+        <p class="muted small">키보드: 스페이스 키로도 탭할 수 있어요. 점수는 이 화면에만 보이고 어디에도 저장하지 않아요.</p>
+      </section>
+
+      <!-- 놀이 화면 -->
+      <section id="play" aria-label="놀이 화면" hidden>
+        <div class="hud">
+          <p class="stat">점수 <strong id="score">0</strong></p>
+          <p class="stat">남은 시간 <strong id="time">60</strong>초</p>
+          <button type="button" class="btn small ghost" id="stop">그만하기</button>
+        </div>
+        <div class="bar" aria-hidden="true"><div id="bar-fill"></div></div>
+        <p class="rule" id="rule" aria-live="polite"></p>
+        <button type="button" class="signal" id="signal" aria-label="신호 탭하기">
+          <span class="lamp" id="lamp" aria-hidden="true"></span>
+          <span class="word" id="word"></span>
+        </button>
+        <p class="feedback" id="feedback" aria-live="polite">&nbsp;</p>
+      </section>
+
+      <!-- 끝 화면 -->
+      <section id="end" class="panel" aria-labelledby="end-h" hidden>
+        <p class="big" aria-hidden="true">🏁</p>
+        <h2 id="end-h" tabindex="-1">끝! 내 점수는</h2>
+        <p class="final" id="final">0점</p>
+        <ul class="result" id="result"></ul>
+        <div class="row">
+          <button type="button" class="btn" id="again">한 판 더</button>
+          <button type="button" class="btn ghost" id="to-start">종류 바꾸기</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>Block &amp; Bit</footer>
+    <script type="module" src="./js/app.js"></script>
+  </body>
+</html>
