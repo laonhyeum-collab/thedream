@@ -4,13 +4,15 @@ import { getTheme, normalizeVoices } from './themes.js';
 import { normalizeCleared } from './levels.js';
 import { safeLyrics } from './lyrics.js';
 import './combos.js'; // 랜덤 조합 무대도 저장·복원할 수 있게 등록
+import { playerStore } from './profile.js';
 
 const WORKS_KEY = 'musicPlayFactory.works.v1';
 const DRAFT_KEY = 'musicPlayFactory.draft.v1';
 const MISSION_KEY = 'musicPlayFactory.missions.v1';
 
+// 지금 하는 친구의 저장 칸 (이름으로 하면 그 이름 칸, 처음부터 하기면 이번 창에만)
 function defaultStore() {
-  try { return globalThis.localStorage || null; } catch { return null; }
+  return playerStore();
 }
 
 function readJSON(store, key, fallback) {

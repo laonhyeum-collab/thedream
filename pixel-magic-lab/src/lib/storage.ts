@@ -1,13 +1,13 @@
 // 브라우저 로컬 저장소(localStorage) 도우미. 서버 없이 작품과 진행 상황을 보관합니다.
+// 저장 칸은 지금 하는 친구 것 (이름·별명으로 하면 그 이름 칸, 처음부터 하기면 이번 창에만) — lib/profile.ts
 import type { Block, Cell, ColorKey, Grid } from '../engine/types';
 import { sanitizeBlocks } from '../engine/tree';
 import { COLOR_MAP } from '../data/palette';
-
-const PREFIX = 'pixel-magic-lab:';
+import { playerStore } from './profile';
 
 export function load<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(PREFIX + key);
+    const raw = playerStore()?.getItem(key);
     if (raw == null) return fallback;
     return JSON.parse(raw) as T;
   } catch {
@@ -18,7 +18,9 @@ export function load<T>(key: string, fallback: T): T {
 /** 저장 성공 여부를 돌려줍니다 (저장 공간이 꽉 찬 경우 false) */
 export function save(key: string, value: unknown): boolean {
   try {
-    localStorage.setItem(PREFIX + key, JSON.stringify(value));
+    const st = playerStore();
+    if (!st) return false;
+    st.setItem(key, JSON.stringify(value));
     return true;
   } catch {
     return false;
@@ -27,7 +29,7 @@ export function save(key: string, value: unknown): boolean {
 
 export function remove(key: string) {
   try {
-    localStorage.removeItem(PREFIX + key);
+    playerStore()?.removeItem(key);
   } catch {
     /* 무시 */
   }

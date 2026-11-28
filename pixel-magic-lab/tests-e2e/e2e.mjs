@@ -39,11 +39,18 @@ async function fresh(viewport = { width: 1366, height: 768 }, settings = { seenG
   await page.goto(URL);
   await page.evaluate((s) => {
     localStorage.clear();
-    localStorage.setItem('pixel-magic-lab:settings', JSON.stringify(s));
+    // '시험'이라는 이름으로 저장하며 하는 친구
+    localStorage.setItem('pixel-magic-lab:players', JSON.stringify([{ name: '시험', lastAt: 1 }]));
+    localStorage.setItem('pixel-magic-lab:p:' + encodeURIComponent('시험') + ':settings', JSON.stringify(s));
   }, settings);
-  await page.reload();
-  await page.waitForSelector('.mode-grid');
+  await reloadAs(page);
   return { ctx, page, errors };
+}
+// 새로고침하면 '누가 할까요?'에서 저장한 '시험'으로 이어서 하기
+async function reloadAs(page) {
+  await page.reload();
+  await page.locator('.player-chip button', { hasText: '시험' }).first().click();
+  await page.waitForSelector('.mode-grid');
 }
 const shelf = (page, text) => page.locator(`${V} .shelf-blk`, { hasText: text }).first();
 const status = (page) => page.locator(`${V} .status-line b`).first().innerText();
@@ -119,7 +126,7 @@ console.log('\n[1] 미션 모드');
     assert(Number(t) >= 40, `별 개수 ${t}`);
   });
   await check('새로고침 후에도 미션 기록 유지', async () => {
-    await page.reload();
+    await reloadAs(page);
     await page.locator(`${V} .list-btn`).click();
     assert((await page.locator('.map-card.done').count()) === 20, '완료 20개');
     await page.keyboard.press('Escape');
@@ -208,7 +215,7 @@ console.log('\n[2] 자유 픽셀 공방');
     assert(dl.suggestedFilename() === '테스트 무지개.png', dl.suggestedFilename());
   });
   await check('새로고침 후 불러오기', async () => {
-    await page.reload();
+    await reloadAs(page);
     await page.getByRole('button', { name: /자유 픽셀 공방/ }).click();
     await page.locator(`${V} .side-actions`).getByRole('button', { name: '불러오기' }).click();
     await page.locator('.gal-card', { hasText: '테스트 무지개' }).getByRole('button', { name: '열기' }).click();
@@ -292,7 +299,7 @@ console.log('\n[3] 움직이는 픽셀 극장');
   });
   await check('저장 → 새로고침 → 불러오기', async () => {
     await page.locator(`${V} .side-actions`).getByRole('button', { name: '저장하기' }).click();
-    await page.reload();
+    await reloadAs(page);
     await page.getByRole('button', { name: /움직이는 픽셀 극장/ }).click();
     await page.locator(`${V} .side-actions`).getByRole('button', { name: '불러오기' }).click();
     await page.locator('.gal-card', { hasText: '통통 뛰는 토끼' }).getByRole('button', { name: '열기' }).click();
@@ -322,6 +329,67 @@ for (const vp of [
       assert(r.runBottom <= r.ih, '실행 버튼이 화면 밖');
     });
   }
+  await ctx.close();
+}
+
+console.log('누가 할까요 (이름 넣을 때만 저장)');
+// 새 친구는 사용 방법 창이 먼저 떠요 → 닫기
+async function closeGuide(page) {
+  await page.waitForSelector('.mode-grid');
+  if (await page.locator('.modal-back').count()) await page.keyboard.press('Escape');
+  await page.waitForSelector('.modal-back', { state: 'detached' });
+}
+{
+  const ctx = await browser.newContext({ viewport: { width: 1366, height: 768 } });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto(URL);
+  await check('시작하면 누가 할까요 창', async () => {
+    await page.waitForSelector('.player-gate');
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: path.join(OUT, 'player-gate.png') });
+  });
+  await check('이름으로 시작 → 위에 이름이 보이고 기록이 그 이름으로 저장', async () => {
+    await page.fill('.player-form input', '별빛토끼');
+    await page.click('.player-form button[type=submit]');
+    await closeGuide(page);
+    assert((await page.locator('.player-now').innerText()).includes('별빛토끼'), '이름 표시');
+    await page.evaluate(() => localStorage.setItem('pixel-magic-lab:p:' + encodeURIComponent('별빛토끼') + ':progress', JSON.stringify({ m1: { stars: 3, blocks: 3, bonus: true, doneAt: 1 } })));
+  });
+  await check('친구 바꾸기 → 처음부터 하기는 앞 친구 별 없이 0개', async () => {
+    await page.locator('.player-now').click();
+    await page.click('.player-guest');
+    await closeGuide(page);
+    assert((await page.locator('.wizard-badge b').innerText()) === '0', '별 0');
+    assert((await page.locator('.player-now').innerText()).includes('저장 안 함'), '저장 안 함 표시');
+  });
+  await check('같은 이름 → 이어서 하기면 별 그대로', async () => {
+    await page.locator('.player-now').click();
+    await page.fill('.player-form input', '별빛토끼');
+    await page.click('.player-form button[type=submit]');
+    await page.getByRole('button', { name: '▶ 이어서 하기' }).click();
+    await closeGuide(page);
+    assert((await page.locator('.wizard-badge b').innerText()) === '3', '별 3');
+  });
+  await check('처음부터 다시 → 그 이름 기록이 지워짐', async () => {
+    await page.locator('.player-now').click();
+    await page.fill('.player-form input', '별빛토끼');
+    await page.click('.player-form button[type=submit]');
+    await page.getByRole('button', { name: '처음부터 다시' }).first().click();
+    await page.locator('.confirm').getByRole('button', { name: '처음부터 다시' }).click();
+    await closeGuide(page);
+    assert((await page.locator('.wizard-badge b').innerText()) === '0', '별 0');
+  });
+  await check('폰 폭에서 창이 넘치지 않음', async () => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.locator('.player-now').click();
+    const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    assert(over <= 0, `넘침 ${over}px`);
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: path.join(OUT, 'player-gate-phone.png') });
+  });
+  await check('오류 없음', async () => assert(errors.length === 0, errors.join(' | ')));
   await ctx.close();
 }
 

@@ -23,6 +23,8 @@
     </div>
     <h1>뮤직 플레이 팩토리</h1>
     <p class="slogan">내가 만든 모양이 음악이 된다!</p>
+    <p class="player-bar"><span id="playerNow">🌱 처음부터 하기 · 저장 안 함</span>
+      <button type="button" class="chip" id="playerChange">친구 바꾸기</button></p>
     <nav class="menu">
       <button type="button" class="menu-btn m1" data-go="themes"><span class="mi">🎵</span>음악 만들기</button>
       <button type="button" class="menu-btn m2" data-go="library"><span class="mi">📦</span>나의 음악 보관함</button>
@@ -233,6 +235,29 @@
     <button type="button" class="wide-btn ghost" id="doneLibrary">📦 보관함 보기</button>
     <button type="button" class="wide-btn ghost" id="doneClose">✏️ 계속 만들기</button>
   </div>
+</dialog>
+
+<dialog id="playerDialog" class="dlg player-dlg" aria-labelledby="playerTitle">
+  <h3 id="playerTitle">누가 할까요?</h3>
+  <p class="player-sub">같은 노트북을 함께 써요. 저장하고 싶을 때만 이름이나 별명을 넣어요.</p>
+  <button type="button" class="wide-btn" id="playerGuest">🌱 처음부터 하기 <small>(저장 안 함)</small></button>
+  <p class="player-or">또는 이름·별명으로 저장하며 하기</p>
+  <form id="playerForm" class="player-form" autocomplete="off">
+    <input id="playerName" maxlength="12" placeholder="예: 별빛토끼" aria-label="이름 또는 별명">
+    <button type="submit" class="wide-btn ghost">시작</button>
+  </form>
+  <div id="playerAsk" class="player-ask" hidden>
+    <p id="playerAskText"></p>
+    <div class="dlg-btns">
+      <button type="button" class="wide-btn" id="playerContinue">▶ 이어서 하기</button>
+      <button type="button" class="wide-btn ghost" id="playerFresh">처음부터 다시</button>
+    </div>
+  </div>
+  <div id="playerListWrap" hidden>
+    <p class="player-or">저장한 친구 (눌러서 이어서 하기)</p>
+    <div id="playerList" class="player-list"></div>
+  </div>
+  <p class="player-hint">진짜 이름 대신 별명도 좋아요. 이름과 기록은 이 노트북 안에만 남아요.</p>
 </dialog>
 
 <dialog id="confirmDialog" class="dlg">

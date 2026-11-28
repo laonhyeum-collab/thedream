@@ -15,6 +15,7 @@ import { AudioEngine, Player } from './audio.js';
 import { MISSIONS, getMission, checkMission } from './missions.js';
 import { SONGS, LEVELS, getSong, songItems, songBeats, compareToSong } from './songs.js';
 import * as store from './storage.js';
+import * as profile from './profile.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -1618,7 +1619,85 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden && player.state === 'playing') { player.pause(); updatePlayUI(); }
 });
 
+// ---------- 누가 할까요 (같은 노트북을 함께 써요) ----------
+// 처음부터 하기: 저장 안 함 · 이름·별명: 그 이름으로만 저장하고 다음에 이어서
+function renderPlayerNow() {
+  const p = profile.currentPlayer();
+  $('#playerNow').textContent = p?.name ? `🙂 ${p.name} · 저장하며 하는 중` : '🌱 처음부터 하기 · 저장 안 함';
+}
+
+function renderPlayerList() {
+  const list = profile.listPlayers();
+  const box = $('#playerList');
+  box.replaceChildren();
+  $('#playerListWrap').hidden = list.length === 0;
+  for (const p of list.slice(0, 30)) {
+    const chip = el('span', 'player-chip');
+    const pick = el('button', '', `▶ ${p.name}`);
+    pick.type = 'button';
+    pick.addEventListener('click', () => choosePlayer(p.name, false));
+    const del = el('button', 'del', '✕');
+    del.type = 'button';
+    del.title = `${p.name} 기록 지우기`;
+    del.setAttribute('aria-label', `${p.name} 기록 지우기`);
+    del.addEventListener('click', async () => {
+      if (await confirmBox(`「${p.name}」의 저장 기록을 모두 지울까요?`)) { profile.forgetPlayer(p.name); renderPlayerList(); }
+    });
+    chip.append(pick, del);
+    box.append(chip);
+  }
+}
+
+function afterPlayerChosen() {
+  $('#playerDialog').close();
+  state.workId = null;
+  state.title = '';
+  state.createdAt = null;
+  renderPlayerNow();
+  go('home');
+}
+
+function choosePlayer(name, fresh) {
+  if (!profile.startNamed(name, { fresh })) return;
+  afterPlayerChosen();
+  toast(fresh ? `🙂 ${profile.cleanName(name)}, 처음부터 시작해요` : `🙂 ${profile.cleanName(name)}, 이어서 해요`);
+}
+
+function openPlayerGate() {
+  $('#playerName').value = '';
+  $('#playerAsk').hidden = true;
+  renderPlayerList();
+  const d = $('#playerDialog');
+  if (!d.open) d.showModal();
+}
+
+$('#playerGuest').addEventListener('click', () => { profile.startGuest(); afterPlayerChosen(); });
+$('#playerDialog').addEventListener('cancel', (e) => {
+  // Esc 로 닫으면 저장 안 하는 '처음부터 하기'
+  e.preventDefault();
+  if (!profile.currentPlayer()) profile.startGuest();
+  afterPlayerChosen();
+});
+$('#playerForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const name = profile.cleanName($('#playerName').value);
+  if (!name) { $('#playerName').focus(); return; }
+  if (profile.hasPlayer(name)) {
+    $('#playerAskText').textContent = `「${name}」 기록이 있어요. 어떻게 할까요?`;
+    $('#playerAsk').hidden = false;
+    $('#playerContinue').onclick = () => choosePlayer(name, false);
+    $('#playerFresh').onclick = async () => {
+      if (await confirmBox(`「${name}」의 예전 기록을 지우고 처음부터 할까요?`)) choosePlayer(name, true);
+    };
+    return;
+  }
+  choosePlayer(name, false);
+});
+$('#playerChange').addEventListener('click', openPlayerGate);
+renderPlayerNow();
+openPlayerGate();
+
 preloadImages();
 
 // 시험용 창구 (화면 동작에는 쓰지 않음)
-window.__mpf = { state, player, audio };
+window.__mpf = { state, player, audio, profile };
