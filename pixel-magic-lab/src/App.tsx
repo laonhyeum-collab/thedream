@@ -10,6 +10,7 @@ import { clearMissionData, loadProgress, loadSettings, saveProgress, saveSetting
 import { setMuted, sfx } from './lib/sound';
 import { parseLesson } from './lib/lesson';
 import { LessonMaker } from './components/LessonMaker';
+import { currentPlayer } from './lib/profile';
 
 type Mode = 'mission' | 'studio' | 'theater';
 
@@ -28,7 +29,8 @@ export function wizardTitle(stars: number): string {
   return '견습 마법사';
 }
 
-export default function App() {
+export default function App({ onChangePlayer }: { onChangePlayer?: () => void }) {
+  const me = currentPlayer();
   // 오늘 수업 모드(?lesson=m1.m3): 고른 미션만, 미션 모드만 보여요
   const lessonList = useMemo(() => parseLesson(window.location.search), []);
   const [mode, setMode] = useState<Mode>('mission');
@@ -162,6 +164,20 @@ export default function App() {
         </nav>
         )}
         <div className="top-right">
+          {onChangePlayer && (
+            <button
+              type="button"
+              className="player-now"
+              onClick={() => {
+                if ((dirty.current.studio || dirty.current.theater) && !window.confirm('저장하지 않은 작품이 있어요. 그래도 친구를 바꿀까요?')) return;
+                onChangePlayer();
+              }}
+              title="친구 바꾸기"
+            >
+              {me?.name ? `🙂 ${me.name}` : '🌱 저장 안 함'}
+              <small>바꾸기</small>
+            </button>
+          )}
           <div className="wizard-badge" title={`모은 별 ${totalStars}개 · 완료한 미션 ${doneCount}개`}>
             <Icon name="star" size={20} className="star-on" />
             <b>{totalStars}</b>

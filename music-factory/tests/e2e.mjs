@@ -70,8 +70,30 @@ async function attachMeter() {
   });
 }
 
-// ---------- 1. 메인 → 테마 → 창작 ----------
+// ---------- 0. 누가 할까요 (이름 넣을 때만 저장) ----------
 await page.goto(URL_);
+check(await page.locator('#playerDialog[open]').count() === 1, '시작하면 \'누가 할까요\' 창이 떠요');
+await page.screenshot({ path: path.join(OUT, '0-player.png') });
+await page.fill('#playerName', '별빛토끼');
+await page.click('#playerForm button[type=submit]');
+check(await page.locator('#playerDialog[open]').count() === 0, '이름으로 시작하면 창이 닫혀요');
+check((await page.textContent('#playerNow')).includes('별빛토끼'), '메인에 지금 하는 친구 이름이 보여요');
+await page.evaluate(() => { const s = window.__mpf.profile.playerStore(); s.setItem('musicPlayFactory.levels.v1', '[1]'); });
+await page.reload();
+check(await page.locator('#playerList button', { hasText: '별빛토끼' }).count() === 1, '저장한 이름이 목록에 보여요');
+await page.click('#playerGuest');
+check(await page.evaluate(() => window.__mpf.profile.playerStore().getItem('musicPlayFactory.levels.v1')) === null, '처음부터 하기는 앞 친구 기록 없이 시작');
+await page.click('#playerChange');
+await page.fill('#playerName', '별빛토끼');
+await page.click('#playerForm button[type=submit]');
+check(await page.locator('#playerAsk:not([hidden])').count() === 1, '같은 이름이면 이어서/처음부터 고르기');
+await page.click('#playerContinue');
+check(await page.evaluate(() => window.__mpf.profile.playerStore().getItem('musicPlayFactory.levels.v1')) === '[1]', '이어서 하기는 그 이름 기록 그대로');
+await page.click('#playerChange');
+await page.fill('#playerName', '시험');
+await page.click('#playerForm button[type=submit]');
+
+// ---------- 1. 메인 → 테마 → 창작 ----------
 await page.screenshot({ path: path.join(OUT, '1-home.png') });
 check(await page.locator('#home .menu-btn').count() === 6, '메인 메뉴 6개 (단계별 도전 포함)');
 await page.click('text=음악 만들기');
@@ -195,6 +217,7 @@ await page.click('#doneLibrary');
 check(await page.locator('#workList .work').count() === 1, '보관함에 작품 1개');
 await page.screenshot({ path: path.join(OUT, '5-library.png') });
 await page.reload();
+await page.click('#playerList button:has-text("시험")');
 await page.click('#home [data-go="library"]');
 await page.click('#workList .work [data-act="edit"]');
 await attachMeter();
@@ -208,6 +231,7 @@ await page.click('#btnClear');
 await page.click('#confirmYes');
 check((await itemsState()).length === 0, '초기화하면 모두 비움');
 await page.reload(); // 보관함 작품은 그대로
+await page.click('#playerList button:has-text("시험")');
 await page.click('#home [data-go="library"]');
 check(await page.locator('#workList .work').count() === 1, '초기화해도 저장한 작품은 남음');
 
@@ -332,6 +356,7 @@ const tctx = await browser.newContext({ viewport: { width: 1024, height: 768 }, 
 const tp = await tctx.newPage();
 tp.on('pageerror', (e) => errors.push(String(e)));
 await tp.goto(URL_);
+await tp.tap('#playerGuest');
 await tp.tap('text=음악 만들기');
 await tp.tap('.theme-card[data-theme="bingsu"]');
 const cdp = await tctx.newCDPSession(tp);
@@ -360,6 +385,7 @@ await tp.screenshot({ path: path.join(OUT, '7-tablet.png') });
 const lctx = await browser.newContext({ viewport: { width: 1024, height: 690 }, hasTouch: true });
 const lp = await lctx.newPage();
 await lp.goto(URL_);
+await lp.tap('#playerGuest');
 await lp.tap('text=음악 만들기');
 await lp.tap('.theme-card[data-theme="bingsu"]');
 const shownTab = await lp.evaluate(() => {
@@ -373,6 +399,7 @@ const pctx = await browser.newContext({ viewport: { width: 390, height: 664 }, h
 const pp = await pctx.newPage();
 pp.on('pageerror', (e) => errors.push(String(e)));
 await pp.goto(URL_);
+await pp.tap("#playerGuest");
 await pp.tap('text=음악 만들기');
 await pp.tap('.theme-card[data-theme="bingsu"]');
 const phone = await pp.evaluate(() => {
@@ -425,6 +452,8 @@ await pp.screenshot({ path: path.join(OUT, '8-phone.png') });
   vp.on('pageerror', (e) => errors.push(String(e)));
   vp.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   await vp.goto(URL_);
+  await vp.fill('#playerName', '단계');
+  await vp.click('#playerForm button[type=submit]');
   await vp.click('#home .menu-btn.m6');
   check(await vp.locator('#levelList .level-card').count() === 5, '단계별 도전: 단계 5개');
   check(await vp.locator('#levelList .level-card:not([disabled])').count() === 1, '단계별 도전: 처음엔 1단계만 열림');
@@ -447,8 +476,9 @@ await pp.screenshot({ path: path.join(OUT, '8-phone.png') });
   await vp.click('#btnBack');
   check(await vp.locator('#levelList .level-card:not([disabled])').count() === 2, '1단계 통과 후 2단계가 열림');
   // 5단계까지 통과한 기록으로 (저장된 진행 상황 복원)
-  await vp.evaluate(() => localStorage.setItem('musicPlayFactory.levels.v1', JSON.stringify([1, 2, 3, 4, 5])));
+  await vp.evaluate(() => window.__mpf.profile.playerStore().setItem('musicPlayFactory.levels.v1', JSON.stringify([1, 2, 3, 4, 5])));
   await vp.reload();
+  await vp.click('#playerList button:has-text("단계")');
   await vp.click('#home .menu-btn.m6');
   check(!(await vp.locator('#btnCombo').isDisabled()), '5단계 통과 후 랜덤 조합이 열림');
   await vp.click('#btnCombo');
@@ -543,6 +573,7 @@ await pp.screenshot({ path: path.join(OUT, '8-phone.png') });
   const pq = await p2.newPage();
   pq.on('pageerror', (e) => errors.push(String(e)));
   await pq.goto(URL_);
+  await pq.click("#playerGuest");
   await pq.tap('#home .menu-btn.m6');
   const over = await pq.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check(over <= 0, `폰: 단계별 도전 화면이 옆으로 넘치지 않음 (${over}px)`);
