@@ -78,3 +78,4 @@
 - 🌐 환경: 정기 세션(트리거)은 **Default 환경**(env_015LVcNACh6L6stVcPqGffCF)에서 돌아요. 'thedream' 환경이 아니에요. 2026-11-27에 Default에 목소리·모델 사이트 9개(translate.google.com, speech.platform.bing.com, huggingface 계열, raw.githubusercontent.com)를 더했어요. 직원 세션에 필요한 사이트는 Default에 넣어야 해요.
 - 🔊 목소리: Default 환경 설정 스크립트가 새 세션마다 edge-tts와 `ko-tts` 명령을 설치해요. `ko-tts "글 또는 @파일.txt" 결과.mp3 [ko-KR-SunHiNeural|ko-KR-InJoonNeural] [+0%]`. edge-tts는 자체 인증서 묶음을 써서 프록시에서 실패하므로 ko-tts가 /root/.ccr/ca-bundle.crt로 바꿔 연결해요.
 - 🧩 스킬: 직원용 스킬은 저장소 `.claude/skills/`에 넣어요(정기 세션은 main에서 시작해서 main에 있어야 읽어요). 2026-11-28 frontend-design·algorithmic-art를 Anthropic 공식 저장소에서 가져와 PR #50으로 올렸어요. 출처를 확인한 것만 넣어요.
+- 🟢 지금 하는 일 표시: '부서별 할 일' 맨 위에 사무실 상태 줄(🟢 지금 일하는 중 / ⏸ 쉬는 시간 + 다음 세션·마지막 작업), 직원 카드마다 '지금 하는 일' 또는 '다음에 할 일'. 새 필드 없이 status doing + updatedAt 40분 안(코드 `isLive`)으로 판단해요.

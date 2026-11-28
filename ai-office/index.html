@@ -333,6 +333,9 @@ form.order input[type=checkbox]{flex:none}
 .cmh.rp{background:var(--soft)}
 .cmh b{font-size:12px}
 .staffg{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.nowbar{grid-column:1/-1;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-size:13px;overflow-wrap:anywhere}
+.nowbar.on{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,var(--panel))}
+.stf .cur{font-size:12.5px;margin:2px 0 4px;color:var(--muted)} .stf .cur.on{color:var(--ok)} .stf .cur b{color:var(--ink);font-weight:600}
 .stf{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--panel2);display:grid;gap:4px;min-width:0}
 .stf.late{border-color:var(--bad);background:var(--bad-soft)}
 .stf .nm{display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:13px}
@@ -1024,6 +1027,16 @@ const hasFix=t=>!!t.fix||t.status==="revise";
 function prioRank(t){ return t.urgent?0 : hasFix(t)?1 : t.status==="doing"?2 : t.by==="대표"?3 : 4; }
 const byPrio=(a,b)=>prioRank(a)-prioRank(b)||String(a.createdAt||"").localeCompare(String(b.createdAt||""));
 let showAllStaff=false;
+// 지금 일하는 중 = 하는 중(doing)이면서 40분 안에 기록이 바뀐 업무. 따로 필드를 만들지 않고 기록 시각으로 판단해요.
+const isLive=t=>t.status==="doing" && (Date.now()-new Date(t.updatedAt||t.startedAt||0))<40*60e3;
+function nowLine(open){
+  const live=open.filter(isLive);
+  if(live.length) return `<div class="nowbar on">🟢 <b>지금 일하는 중</b> · ${live.map(t=>{ const m=ownerOf(t); return `${esc(m?m.name:"담당")}: ${esc(cut(t.title,40))}`; }).join(" / ")}</div>`;
+  const last=tasks.filter(t=>t.updatedAt).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt)))[0];
+  const lm=last&&ownerOf(last);
+  const lastTxt=last?` · 마지막 작업 ${esc(fmtDay(last.updatedAt))} ${esc(fmtTime(last.updatedAt))} ${esc(lm?lm.name:"")} '${esc(cut(last.title,30))}'`:"";
+  return `<div class="nowbar">⏸ <b>지금은 쉬는 시간</b> · 다음 정기 세션 ${nextSession()} 7분에 아래 순서대로 시작해요(14시는 급한 일·작은 일만, 22·02시는 목록 끝까지)${lastTxt}</div>`;
+}
 document.addEventListener("click",e=>{ if(e.target.closest("[data-staffall]")){ showAllStaff=true; safeRun(renderStaff); } });
 function renderStaff(){
   const el=$("#staffBoard"); if(!el) return;
@@ -1035,10 +1048,11 @@ function renderStaff(){
   const askBtn=m=>canWrite===false?"":`<button type="button" class="btn ghost" style="padding:2px 8px;font-size:12px" data-askm="${esc(m.id)}">💬 지시·질문</button>`;
   const cards=MEMBERS.filter(m=>by[m.id]).map(m=>{ const list=by[m.id]; const nLate=list.filter(t=>lateWhy(t)).length; const la=lastAct(m);
     list.sort(byPrio);
-    return `<div class="stf ${nLate?"late":""}"><div class="nm"><span><b>${esc(m.name)}</b> <span class="note">${esc(m.team)} · ${list.length}건</span></span><span>${deptChip(m.dept)} ${askBtn(m)}</span></div>${list.slice(0,showAllStaff?99:6).map((t,i)=>{ const w=lateWhy(t); return `<div class="ln ${w?"bad":""}">${i+1}. ${t.urgent?"🔥 ":hasFix(t)?"✏️ ":t.status==="doing"?"▶ ":""}${esc(cut(t.title,44))} <span class="note">${esc(STATUS[t.status]||t.status)}${originLabel(t)?" · "+esc(originLabel(t)):""}</span> ${cmtBadge(t)}${cmtBtn(t)}</div>`; }).join("")}${list.length>6&&!showAllStaff?`<button class="more" type="button" data-staffall>외 ${list.length-6}건 더 보기</button>`:""}<div class="note">마지막 갱신: ${la?esc(fmtDay(la))+" "+esc(fmtTime(la)):"기록 없음"}</div></div>`; });
+    const lv=list.find(isLive); const ready=t=>!/^⛔/.test(String(t.note||"")) && !(t.waitFor&&tasks.find(x=>x._id===t.waitFor&&x.status!=="done")); const top=lv||list.find(ready);
+    return `<div class="stf ${nLate?"late":""}"><div class="nm"><span><b>${esc(m.name)}</b> <span class="note">${esc(m.team)} · ${list.length}건</span></span><span>${deptChip(m.dept)} ${askBtn(m)}</span></div><div class="cur ${lv?"on":""}">${top?`${lv?"🟢 지금 하는 일":"⏭ 다음에 할 일"}: <b>${esc(cut(top.title,40))}</b>`:"⛔ 남은 일이 모두 대표님 결정·앞 업무를 기다려요"}</div>${list.slice(0,showAllStaff?99:6).map((t,i)=>{ const w=lateWhy(t); return `<div class="ln ${w?"bad":""}">${i+1}. ${t.urgent?"🔥 ":hasFix(t)?"✏️ ":t.status==="doing"?"▶ ":""}${esc(cut(t.title,44))} <span class="note">${esc(STATUS[t.status]||t.status)}${originLabel(t)?" · "+esc(originLabel(t)):""}</span> ${cmtBadge(t)}${cmtBtn(t)}</div>`; }).join("")}${list.length>6&&!showAllStaff?`<button class="more" type="button" data-staffall>외 ${list.length-6}건 더 보기</button>`:""}<div class="note">마지막 갱신: ${la?esc(fmtDay(la))+" "+esc(fmtTime(la)):"기록 없음"}</div></div>`; });
   const idle=MEMBERS.filter(m=>!by[m.id]).length;
   const idleM=MEMBERS.filter(m=>!by[m.id] && m.dept!=="ceo");
-  el.innerHTML = (cards.join("") || `<div class="empty">지금 맡은 일이 있는 직원이 없어요.</div>`) + (idleM.length&&canWrite!==false?`<div class="stf" style="grid-column:1/-1"><div class="note" style="margin-bottom:4px">맡은 일 없는 직원 · 눌러서 지시·질문</div><div style="display:flex;flex-wrap:wrap;gap:6px">${idleM.map(m=>`<button type="button" class="btn ghost" style="padding:2px 8px;font-size:12px" data-askm="${esc(m.id)}">${esc(m.name)} <span class="note">${esc(m.team)}</span></button>`).join("")}</div></div>`:"");
+  el.innerHTML = nowLine(open) + (cards.join("") || `<div class="empty">지금 맡은 일이 있는 직원이 없어요.</div>`) + (idleM.length&&canWrite!==false?`<div class="stf" style="grid-column:1/-1"><div class="note" style="margin-bottom:4px">맡은 일 없는 직원 · 눌러서 지시·질문</div><div style="display:flex;flex-wrap:wrap;gap:6px">${idleM.map(m=>`<button type="button" class="btn ghost" style="padding:2px 8px;font-size:12px" data-askm="${esc(m.id)}">${esc(m.name)} <span class="note">${esc(m.team)}</span></button>`).join("")}</div></div>`:"");
   $("#staffSum").textContent = `진행 ${open.length}건 · 늦은 일 ${late.length}건 · 맡은 일 없는 직원 ${idle}명`;
 }
 // ---------- 대표 요청 목록 (one ledger for everything the CEO asked) ----------
