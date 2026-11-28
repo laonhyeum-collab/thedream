@@ -303,7 +303,8 @@ h3.sub{font-family:var(--f-display);font-weight:400;font-size:16px;margin:14px 0
 .drow .da{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .pjchip{border:0;background:var(--soft);color:var(--accent);font:inherit;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;cursor:pointer}
 #docRel{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
-#docRel h4{margin:0 0 4px;font-size:13px}
+#docRel summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted)} #docRel details[open] summary{margin-bottom:6px}
+.doc-view{min-height:45vh} .doc-view .dh1,.doc-view .dh2{display:block;font-weight:700;font-size:1.08em;color:var(--ink);margin-top:6px} .doc-view .dh3,.doc-view .dh4{display:block;font-weight:700;color:var(--strat)}
 #docRel .rl{display:flex;flex-wrap:wrap;gap:6px}
 .prep{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .prep span{font-size:11.5px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);background:var(--panel2)}
@@ -1183,12 +1184,21 @@ function render(){
 const isDriveId=id=>/^[\w-]{20,}$/.test(String(id||"")) && !docs.some(x=>x._id===id);
 const driveHref=id=>"https://drive.google.com/open?id="+encodeURIComponent(id);
 function docLinkBtn(id,label){ return isDriveId(id) ? `<a class="btn ghost" href="${esc(driveHref(id))}" target="_blank" rel="noopener">${esc(label)}</a>` : `<button class="btn ghost" type="button" data-doc="${esc(id)}">${esc(label)}</button>`; }
+// 자료 본문: 직원이 쓴 마크다운(#·##·표)을 읽기 쉽게 바꿔요. 글은 모두 esc로 막아요.
+function docText(body){
+  return String(body||"(내용 없음)").split("\n").filter(l=>!/^\s*\|?\s*:?-{2,}/.test(l)).map(l=>{
+    const h=l.match(/^\s*(#{1,4})\s+(.*)$/); if(h) return `<span class="dh${h[1].length}">${esc(h[2].replace(/\*\*/g,""))}</span>`;
+    if(/^\s*\|.*\|\s*$/.test(l)) return esc(l.trim().replace(/^\||\|$/g,"").split("|").map(x=>x.trim()).filter(Boolean).join(" · "));
+    if(/^■/.test(l)) return `<b>${esc(l)}</b>`;
+    return esc(l).replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>");
+  }).join("\n");
+}
 function openDoc(id){
   const d = docs.find(x=>x._id===id);
   // 직원이 자료실 id 대신 드라이브 파일 id를 적은 경우: 드라이브에서 열어요.
   if(!d){ if(/^[\w-]{20,}$/.test(String(id||""))){ const a=document.createElement("a"); a.href=driveHref(id); a.target="_blank"; a.rel="noopener"; document.body.append(a); a.click(); a.remove(); } else alert("이 자료를 자료실에서 찾지 못했어요."); return; }
   docLinkedOpen=id;
-  $("#docTitle").textContent=d.title; $("#docBody").innerHTML=esc(d.body||"(내용 없음)").replace(/^(■[^\n]*)$/gm,"<b>$1</b>"); $("#docFiles").innerHTML=fileLinks(d); $("#docRel").innerHTML=relatedHtml(d); $("#docView").hidden=false; document.body.style.overflow="hidden"; $("#docBody").scrollTop=0;
+  $("#docTitle").textContent=d.title; $("#docBody").innerHTML=docText(d.body); $("#docFiles").innerHTML=fileLinks(d); $("#docRel").innerHTML=relatedHtml(d); $("#docView").hidden=false; document.body.style.overflow="hidden"; $("#docBody").scrollTop=0;
 }
 const closeDoc=()=>{ $("#docView").hidden=true; docLinkedOpen=null; document.body.style.overflow=""; };
 $("#docClose").addEventListener("click",closeDoc);
@@ -1932,7 +1942,7 @@ function renderLibrary(){
 function relatedHtml(d){ const m=docMeta(d); const p=libProjects().find(x=>x.id===m.proj); if(!p||p.id==="etc") return "";
   const sib=docs.filter(x=>x._id!==d._id && docMeta(x).proj===p.id).slice(0,12);
   const app=p.appId? apps.find(a=>a._id===p.appId) : null;
-  return `<h4>${esc(p.icon||"")} ${esc(p.name)} 관련 자료</h4><div class="rl">${app&&safeUrl(app.liveUrl)?`<a href="${esc(app.liveUrl)}" target="_blank" rel="noopener">▶ 앱 열기</a>`:""}${sib.map(x=>`<button class="btn ghost" type="button" data-doc="${esc(x._id)}">${catName(docMeta(x).cat)[1]} ${esc(cut(x.title,40))}</button>`).join("")}<button class="pjchip" type="button" data-proj="${esc(p.id)}">한 화면에서 모두 보기 →</button></div>`; }
+  return `<details><summary>${esc(p.icon||"")} ${esc(p.name)} 관련 자료 ${sib.length}개 보기</summary><div class="rl">${app&&safeUrl(app.liveUrl)?`<a href="${esc(app.liveUrl)}" target="_blank" rel="noopener">▶ 앱 열기</a>`:""}${sib.map(x=>`<button class="btn ghost" type="button" data-doc="${esc(x._id)}">${catName(docMeta(x).cat)[1]} ${esc(cut(x.title,40))}</button>`).join("")}<button class="pjchip" type="button" data-proj="${esc(p.id)}">한 화면에서 모두 보기 →</button></div></details>`; }
 function openProject(id){ libView="project"; libOpen=id; libQ=""; $("#libQ").value=""; if(!$("#docView").hidden) closeDoc(); document.querySelector('#tabs button[data-tab="docs"]')?.click(); renderLibrary(); setTimeout(()=>document.getElementById("proj-"+id)?.scrollIntoView({behavior:"smooth",block:"start"}),50); }
 document.addEventListener("click", e=>{
   const v=e.target.closest("[data-libview]"); if(v){ libView=v.dataset.libview; try{ localStorage.setItem("office-libview",libView); }catch(_){} renderLibrary(); return; }
