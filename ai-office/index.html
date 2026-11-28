@@ -458,10 +458,7 @@ form.order input[type=checkbox]{flex:none}
         </form>
       </section>
       <span hidden><span id="kP"></span><span id="kD"></span><span id="kC"></span><span id="kS"></span></span>
-      <div class="two">
-        <div class="min0"><h2>오늘의 브리핑</h2><div class="brief" id="brief"></div></div>
-        <div class="min0"><h2>방금 들어온 소식</h2><div class="feed" id="miniFeed"></div></div>
-      </div>
+      <div class="min0"><h2>오늘의 브리핑</h2><div class="brief" id="brief"></div></div>
       <div class="status-line" id="dbStatus">사무실 데이터를 불러오는 중…</div>
     </div>
   </section>
@@ -536,10 +533,6 @@ form.order input[type=checkbox]{flex:none}
     <div class="imgrid" id="imgDoneList"></div>
   </section>
 
-  <section class="panel" data-pane="feed" hidden>
-    <h2>업무 피드</h2>
-    <div class="feed" id="feedList"></div>
-  </section>
 
   <section class="panel" data-pane="sched" hidden>
     <h2>내 수업 일정</h2>
@@ -975,16 +968,8 @@ $("#tabs").addEventListener("click",e=>{
 try{ const t=localStorage.getItem("office-tab"); if(t) document.querySelector(`#tabs button[data-tab="${t}"]`)?.click(); }catch(_){}
 
 // ---------- Renderers ----------
-function feedRows(list){
-  if(!list.length) return `<div class="empty">아직 업무 기록이 없어요. 직원들이 일하면 여기에 쌓여요.</div>`;
-  let out="", day="";
-  list.forEach(f=>{
-    const d=fmtDay(f.at); if(d!==day){ day=d; out+=`<div class="day">${esc(d)}</div>`; }
-    const link = safeUrl(f.link) ? ` <a href="${esc(f.link)}" target="_blank" rel="noopener">열기</a>` : "";
-    out+=`<div class="row"><div class="tm">${esc(fmtTime(f.at))}</div><div class="tx">${deptChip(f.dept)} <b>${esc(f.member||"")}</b> ${esc(f.text)}${link}</div></div>`;
-  });
-  return out;
-}
+// 직원 말풍선·직원 창의 '최근 한 일'은 업무 기록(updatedAt)에서 바로 만들어요(예전 feed 모음은 더 쓰지 않아요).
+function taskFeed(){ return tasks.filter(t=>t.updatedAt&&!t.mergedInto).sort((a,b)=>String(b.updatedAt).localeCompare(String(a.updatedAt))).slice(0,150).map(t=>{ const m=ownerOf(t); return {at:t.updatedAt, dept:t.dept, member:m?m.name:"", text:`${STATUS[t.status]||t.status} · ${cut(t.title,34)}`}; }); }
 function attList(a){
   const list=(Array.isArray(a)?a:[]).filter(f=>f&&typeof f.url==="string"&&f.url.startsWith("/_blob/"));
   if(!list.length) return "";
@@ -1152,8 +1137,6 @@ function render(){
   const n=$("#nApprove"); n.hidden=!(pending.length+confirms.length); n.textContent=pending.length+confirms.length;
   safeRun(renderTodo); safeRun(renderClasses); safeRun(renderStaff); safeRun(renderGen); safeRun(renderReqs);
   safeRun(renderBrief);
-  $("#miniFeed").innerHTML = feedRows(feed.slice(0,6));
-  $("#feedList").innerHTML = feedRows(feed);
   $("#confirmList").innerHTML = confirms.length ? confirms.map(t=>taskCard(t,"confirm")).join("") : `<div class="empty">컨펌할 결과물이 없어요. 부서 검수와 총괄 검수를 통과한 결과물이 여기로 와요.</div>`;
   $("#approveList").innerHTML = pending.length ? pending.map(t=>taskCard(t,"approve")).join("") : `<div class="empty">결재할 기획안이 없어요.</div>`;
   const rest = tasks.filter(t=>!["proposed","confirm"].includes(t.status));
@@ -2116,8 +2099,7 @@ $("#genForm").addEventListener("submit", async e=>{
   const err=()=>{ clearTimeout(timer); $("#dbStatus").textContent="데이터 연결이 끊겼어요. 페이지를 새로 열어주세요."; };
   const rows = s => s.docs.map(d=>({...d.data(), _id:d.id}));
   db.doc("office/state").onSnapshot(s=>{ office = s.exists? s.data() : {}; tickClock(); render(); if(!s.metadata.fromCache) done(); }, err);
-  db.collection("tasks").orderBy("createdAt","desc").limit(200).onSnapshot(s=>{ tasks=rows(s); render(); }, err);
-  db.collection("feed").orderBy("at","desc").limit(150).onSnapshot(s=>{ feed=rows(s); render(); }, err);
+  db.collection("tasks").orderBy("createdAt","desc").limit(200).onSnapshot(s=>{ tasks=rows(s); feed=taskFeed(); render(); }, err);
   db.collection("schedule").orderBy("date","asc").limit(200).onSnapshot(s=>{ schedule=rows(s); render(); renderCal(); }, err);
   db.collection("docs").orderBy("createdAt","desc").limit(400).onSnapshot(s=>{ docs=rows(s); render(); }, err);
   db.collection("apps").orderBy("order","asc").limit(100).onSnapshot(s=>{ apps=rows(s); render(); }, err);

@@ -79,3 +79,4 @@
 - 🔊 목소리: Default 환경 설정 스크립트가 새 세션마다 edge-tts와 `ko-tts` 명령을 설치해요. `ko-tts "글 또는 @파일.txt" 결과.mp3 [ko-KR-SunHiNeural|ko-KR-InJoonNeural] [+0%]`. edge-tts는 자체 인증서 묶음을 써서 프록시에서 실패하므로 ko-tts가 /root/.ccr/ca-bundle.crt로 바꿔 연결해요.
 - 🧩 스킬: 직원용 스킬은 저장소 `.claude/skills/`에 넣어요(정기 세션은 main에서 시작해서 main에 있어야 읽어요). 2026-11-28 frontend-design·algorithmic-art를 Anthropic 공식 저장소에서 가져와 PR #50으로 올렸어요. 출처를 확인한 것만 넣어요.
 - 🟢 지금 하는 일 표시: '부서별 할 일' 맨 위에 사무실 상태 줄(🟢 지금 일하는 중 / ⏸ 쉬는 시간 + 다음 세션·마지막 작업), 직원 카드마다 '지금 하는 일' 또는 '다음에 할 일'. 새 필드 없이 status doing + updatedAt 40분 안(코드 `isLive`)으로 판단해요.
+- 🗑 '방금 들어온 소식'(feed 모음)을 대시보드에서 없앴어요. 재설계 뒤 세션이 feed를 쓰지 않아 11/26에 멈춰 있었어요. 직원 말풍선·직원 창의 최근 한 일은 업무 기록(tasks.updatedAt)에서 바로 만들어요(코드 `taskFeed`). feed 컬렉션은 더 읽지 않아요.
