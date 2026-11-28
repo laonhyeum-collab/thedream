@@ -1191,7 +1191,7 @@
   const skeleton = (p) => p.q.replace(/<[^>]+>/g, '').replace(/\d+(\.\d+)?/g, '#').replace(/\s+/g, ' ').trim() + (p.svg ? '|그림' : '');
   // 문장제를 넣을 자리: 네 문제마다 한 문제 (4, 8, 12 … 번)
   const isWordSlot = (i) => i % 4 === 3;
-  const HELP = { clockSvg, fracBarSvg, fracPieSvg, numberLineSvg, circleSvg, triangleSvg, straightAngleSvg, boxSvg, sectorSvg, crossSvg, parallelSvg };
+  const HELP = { clockSvg, groupsSvg, fracBarSvg, fracPieSvg, numberLineSvg, circleSvg, triangleSvg, straightAngleSvg, shapeSvg, boxSvg, sectorSvg, rightTriSvg, rectDiagSvg, crossSvg, parallelSvg };
   function makeProblems(unitId, level, count, seed) {
     const gen = G[unitId];
     if (!gen) throw new Error('없는 단원: ' + unitId);
